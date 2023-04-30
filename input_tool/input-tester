@@ -34,6 +34,7 @@ options = [
     "pythoncmd",
 ]
 
+from typing import List
 from input_tool.common.parser import Parser
 from input_tool.common.commands import Langs, Config, Solution, Validator, Checker
 from input_tool.common.messages import *
@@ -56,8 +57,8 @@ if args.deprecated:
 Config.python_exec = args.pythoncmd
 
 
-def parse_timelimit(str_timelimit):
-    res = {}
+def parse_timelimit(str_timelimit: str) -> dict[Langs.Lang | str, float]:
+    res: dict[Langs.Lang | str, float] = {}
     for p in str_timelimit.split(","):
         ext, t = p.split("=") if "=" in p else ("", p)
         t = float(t)
@@ -72,7 +73,7 @@ Config.warn_timelimits.update(parse_timelimit(args.warntimelimit))
 # {{{ ------------ prepare programs ------------------
 
 
-def get_relevant_prog_files_in_directory(directory):
+def get_relevant_prog_files_in_directory(directory: str) -> list[str]:
     return [
         de.path
         for de in os.scandir(directory)
@@ -81,8 +82,8 @@ def get_relevant_prog_files_in_directory(directory):
     ]
 
 
-solutions = []
-checker = []
+solutions: List[Solution | Validator] = []
+checkers: List[str] = []
 files = list(
     itertools.chain.from_iterable(
         get_relevant_prog_files_in_directory(p) if os.path.isdir(p) else [p]
@@ -95,20 +96,20 @@ for p in files:
     if Validator.filename_befits(p):
         solutions.append(Validator(p, args))
     elif Checker.filename_befits(p):
-        checker.append(p)
+        checkers.append(p)
     else:
         solutions.append(Solution(p, args))
 if args.diffcmd is not None:
-    checker = [args.diffcmd]
-if not checker:
-    checker.append("diff")
-if len(checker) > 1:
+    checkers = [args.diffcmd]
+if not checkers:
+    checkers.append("diff")
+if len(checkers) > 1:
     error(
-        f"More than one checker found {checker}.\n"
+        f"More than one checker found {checkers}.\n"
         + "Set explicitly with -d/--diffcmd (e.g. -d diff) "
         + "or leave only one checker in the directory."
     )
-checker = Checker(checker[0], args)
+checker: Checker = Checker(checkers[0], args)
 if args.sort:
     solutions.sort()
 programs = [checker]
@@ -145,6 +146,9 @@ if not args.dupprog:
 # }}}
 # {{{ ------------ prepare inputs ----------------
 
+assert type(args.indir) is str
+assert type(args.outdir) is str
+
 inputs = sorted(filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)))
 
 if args.outext != args.tempext and not args.reset:
@@ -155,7 +159,9 @@ else:
     infob("Outputs will be regenerated")
 
 
-def get_result_file(out_file, temp_file, isvalidator, force_out=False):
+def get_result_file(
+    out_file: str, temp_file: str, isvalidator: bool, force_out: bool = False
+):
     if isvalidator:
         return temp_file
     if force_out:

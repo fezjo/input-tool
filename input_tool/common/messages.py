@@ -1,7 +1,9 @@
 # (c) 2014 jano <janoh@ksp.sk>
 # Various types of messages with colors
-import sys
+from __future__ import annotations
 from enum import Enum
+import sys
+from typing import Any, Sequence
 
 
 class Status(Enum):
@@ -16,23 +18,23 @@ class Status(Enum):
     err = 6, None
     valid = 7, None
 
-    def __init__(self, id, warntle):
+    def __init__(self, id: int, warntle: bool):
         self.id = id
         self.warntle = warntle
 
-    def __eq__(self, other):
-        return self.id == other.id
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Status) and self.id == other.id
 
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def set_warntle(self, state=True):
+    def set_warntle(self, state: bool = True):
         return Status((self.id, None if self.warntle is None else state))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return Status.reprs[self]
 
-    def colored(self, end=None):
+    def colored(self, end: Any = None) -> str:
         return "%s%s%s" % (Color.status[self], self, end or Color.normal)
 
 
@@ -55,7 +57,7 @@ class Color:
 
     @staticmethod
     def setup(args):
-        Color.colorful = args.colorful
+        Color.colorful: bool = args.colorful
         Color.normal = Color("normal")
         Color.infog = Color("good")
         Color.infob = Color("fine")
@@ -63,9 +65,7 @@ class Color:
         Color.error = Color("error")
         Color.table = Color("blue")
         Color.scores = [Color("special1", "special2", "score%s" % i) for i in range(5)]
-        Color.status = {}
-        for s in Status:
-            Color.status[s] = Color(str(s), "bold")
+        Color.status = {s: Color(str(s)) for s in Status}
 
     def __init__(self, *args):
         if Color.colorful:
@@ -78,7 +78,7 @@ class Color:
         return self.code
 
     @staticmethod
-    def score_color(points, maxpoints):
+    def score_color(points: float, maxpoints: float) -> Color:
         bounds = [0, 4, 7, 9, 10]
         p = 0
         while p < 4 and points * 10 > maxpoints * bounds[p]:
@@ -86,7 +86,7 @@ class Color:
         return Color.scores[p]
 
     @staticmethod
-    def colorize(status: Status, text, end=None):
+    def colorize(status: Status, text: Any, end: Color | None = None):
         index = status in (Status.ok, Status.valid)
         return "%s%s%s" % (
             (Color.warning, Color.infog)[index],
@@ -153,36 +153,43 @@ while _changed:
 # {{{ ---------------------- messages ----------------------------
 
 
-def error(text, doquit=True):
+def error(text: Any, doquit: bool = True):
     _sew("%s%s%s\n" % (Color.error, text, Color.normal))
     if doquit:
         quit(1)
 
 
-def warning(text):
+def warning(text: Any):
     _sew("%s%s%s\n" % (Color.warning, text, Color.normal))
 
 
-def infob(text):
+def infob(text: Any):
     _sew("%s%s%s\n" % (Color.infob, text, Color.normal))
 
 
-def infog(text):
+def infog(text: Any):
     _sew("%s%s%s\n" % (Color.infog, text, Color.normal))
 
 
-def info(text):
+def info(text: Any):
     _sew("%s\n" % text)
 
 
 # }}}
 
 
-def wide_str(width, side):
+def wide_str(width: int, side: int):
     return "{:%s%ss}" % (("", ">", "<")[side], width)
 
 
-def table_row(color, columns, widths, alignments, header=False):
+def table_row(
+    color: Color,
+    columns: Sequence[Any],
+    widths: Sequence[int],
+    alignments: Sequence[int],
+    header: bool = False,
+):
+    columns = list(columns)
     for i in range(len(columns)):
         if header == True:
             columns[i] = wide_str(widths[i], alignments[i]).format(columns[i])
@@ -196,7 +203,9 @@ def table_row(color, columns, widths, alignments, header=False):
     return "%s| %s |%s" % (str(Color.table), " | ".join(columns), str(Color.normal))
 
 
-def table_header(columns, widths, alignments):
+def table_header(
+    columns: Sequence[Any], widths: Sequence[int], alignments: Sequence[int]
+):
     first_row = table_row(Color.table, columns, widths, alignments, True)
     second_row = "|".join(
         [str(Color.table)] + ["-" * (w + 2) for w in widths] + [str(Color.normal)]
