@@ -55,9 +55,10 @@ class Input:
     maxid = 0
     MAXINT = 2**31
 
-    def __lt__(self, other: Input):
+    def __lt__(self, other: Input) -> bool:
         if self.batch != other.batch:
-            return self.batch < other.batch
+            assert type(self.batch) == type(other.batch)
+            return self.batch < other.batch # type: ignore
         return self.name < other.name
 
     def __init__(self, text: str, batchid: int, subid: int, inputid: int):

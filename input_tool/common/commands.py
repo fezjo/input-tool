@@ -330,7 +330,9 @@ class Solution(Program):
         old_status = self.statistics.result
         new_status = self.updated_status(old_status, status)
         if old_status == new_status == status and status.warntle is not None:
-            new_status = new_status.set_warntle(old_status.warntle | status.warntle)
+            new_status = new_status.set_warntle(
+                status.warntle if status.warntle else old_status.warntle
+            )
         self.statistics.result = new_status
 
     def get_timelimit(self, timelimits: dict[Langs.Lang | str, float]) -> float:

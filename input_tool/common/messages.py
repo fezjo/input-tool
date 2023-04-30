@@ -18,9 +18,13 @@ class Status(Enum):
     err = 6, None
     valid = 7, None
 
-    def __init__(self, id: int, warntle: bool | None):
-        self.id = id
-        self.warntle = warntle
+    @property
+    def id(self) -> int:
+        return self.value[0]
+
+    @property
+    def warntle(self) -> bool | None:
+        return self.value[1]
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Status) and self.id == other.id
@@ -28,17 +32,17 @@ class Status(Enum):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def set_warntle(self, state: bool = True) -> Status:
+    def set_warntle(self, state: bool | None = True) -> Status:
         return Status((self.id, None if self.warntle is None else state))
 
     def __str__(self) -> str:
-        return Status.reprs[self]
+        return status_reprs[self]
 
     def colored(self, end: Any = None) -> str:
         return "%s%s%s" % (Color.status[self], self, end or Color.normal)
 
 
-Status.reprs = {
+status_reprs = {
     Status.ok: "OK",
     Status.tok: "tOK",
     Status.wa: "WA",
@@ -146,8 +150,9 @@ _changed = True
 while _changed:
     _changed = False
     for key in _codemap:
-        if isinstance(_codemap[key], str):
-            _codemap[key] = _codemap[_codemap[key]]
+        key2 = _codemap[key]
+        if isinstance(key2, str):
+            _codemap[key] = _codemap[key2]
             _changed = True
 
 # {{{ ---------------------- messages ----------------------------
