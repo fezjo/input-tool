@@ -37,7 +37,7 @@ import shutil
 import subprocess
 from collections import defaultdict
 from input_tool.common.messages import *
-from typing import Iterable, List, Sequence, Tuple, TypedDict
+from typing import Iterable, Sequence, Tuple, TypedDict
 
 
 def is_file_newer(file1: str, file2: str) -> bool | None:
@@ -85,7 +85,7 @@ class Langs:
         return Langs.Lang.unknown
 
     @staticmethod
-    def collect_exts(langs: Iterable[Lang]):
+    def collect_exts(langs: Iterable[Lang]) -> set[str]:
         return set(ext for lang in langs for ext in Langs.ext[lang])
 
 
@@ -96,10 +96,10 @@ class Config:
 
 
 class Program:
-    def compare_mask(self):
-        return (0, self.name)
+    def compare_mask(self) -> Tuple[int, int, str]:
+        return (0, 0, self.name)
 
-    def __lt__(self, other: Program):
+    def __lt__(self, other: Program) -> bool:
         return self.compare_mask() < other.compare_mask()
 
     def _transform(self) -> None:
@@ -107,7 +107,7 @@ class Program:
         self.source = None
         self.ext = None
         self.run_cmd = self.name
-        self.filestoclear: List[str] = []
+        self.filestoclear: list[str] = []
         self.lang: Langs.Lang = Langs.Lang.unknown
 
         # if it is final command, dont do anything
@@ -117,7 +117,7 @@ class Program:
         # compute source, binary and extension
         # TODO: base self.name can have multiple sources
         if not "." in self.name:
-            valid: List[str] = []
+            valid: list[str] = []
             for ext_category in (Langs.lang_compiled, Langs.lang_script):
                 for ext in Langs.collect_exts(ext_category):
                     if os.path.exists(self.name + "." + ext):
@@ -220,7 +220,7 @@ class Program:
             else:
                 warning("Not found %s" % f)
 
-    def __init__(self, name: str, args: Namespace):
+    def __init__(self, name: str, args: Args):
         self.name = name
         self.quiet: bool = args.quiet
         self.cancompile: bool = args.compile
@@ -237,7 +237,7 @@ class Solution(Program):
         sumtime: float
         batchresults: dict[str, Status]
         result: Status
-        times: defaultdict[str, List[float]]
+        times: defaultdict[str, list[tuple[float]]]
         failedbatches: set[str]
 
     cmd_maxlen = len("Solution")
@@ -268,7 +268,7 @@ class Solution(Program):
                 score += int(parts[1])
         return (-1, -score, self.name)
 
-    def __init__(self, name: str, args):
+    def __init__(self, name: str, args: Args):
         super().__init__(name, args)
         self.statistics: Solution.Statistics = {
             "maxtime": -1,
@@ -343,8 +343,8 @@ class Solution(Program):
             os.getpid(),
         )
 
-        memorylimit = int(memorylimit * 1024) if memorylimit else "unlimited"
-        ulimit_cmd = "ulimit -m %s; ulimit -s %s" % (memorylimit, memorylimit)
+        str_memorylimit = int(memorylimit * 1024) if memorylimit else "unlimited"
+        ulimit_cmd = "ulimit -m %s; ulimit -s %s" % (str_memorylimit, str_memorylimit)
         timelimit_cmd = "timeout %s" % timelimit if timelimit else ""
         time_cmd = '/usr/bin/time -f "%s" -a -o %s -q' % ("%e %U %S", timefile)
         date_cmd = "date +%%s%%N >>%s" % timefile
@@ -362,7 +362,9 @@ class Solution(Program):
     def run_args(self, ifile: str) -> str:
         return ""
 
-    def run(self, ifile: str, ofile: str, tfile: str, checker: Checker, args) -> None:
+    def run(
+        self, ifile: str, ofile: str, tfile: str, checker: Checker, args: Args
+    ) -> None:
         batch = os.path.basename(ifile).split(".")[0]
         if args.fskip and batch in self.statistics["failedbatches"]:
             return
@@ -441,8 +443,8 @@ class Validator(Solution):
     def filename_befits(filename: str) -> bool:
         return to_base_alnum(filename).startswith("val")
 
-    def compare_mask(self) -> Tuple[int, str]:
-        return (-2, self.name)
+    def compare_mask(self) -> Tuple[int, int, str]:
+        return (-2, 0, self.name)
 
     def updated_status(self, original: Status, new: Status) -> Status:
         if original == Status.valid:
@@ -453,7 +455,7 @@ class Validator(Solution):
             return Status.err
         return original
 
-    def get_statistics(self):
+    def get_statistics(self) -> str:
         for key in self.statistics["batchresults"]:
             self.statistics["maxtime"] = max(
                 self.statistics["maxtime"],
@@ -471,10 +473,10 @@ class Validator(Solution):
 
         return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
 
-    def run_args(self, ifile):
+    def run_args(self, ifile: str) -> str:
         return " ".join(ifile.split("/")[-1].split(".")) + " "
 
-    def __init__(self, name, args):
+    def __init__(self, name: str, args: Args):
         super().__init__(name, args)
         self.statistics["result"] = Status.valid
 
@@ -489,17 +491,17 @@ class Checker(Program):
                 return prefix
         return None
 
-    def compare_mask(self) -> Tuple[int, str]:
-        return (-3, self.name)
+    def compare_mask(self) -> Tuple[int, int, str]:
+        return (-3, 0, self.name)
 
-    def __init__(self, name: str, args):
+    def __init__(self, name: str, args: Args):
         super().__init__(name, args)
         if name == "diff":
             self.run_cmd = "diff"
             self.compilecmd = None
             self.forceexecute = True
 
-    def diff_cmd(self, ifile: str, ofile: str, tfile: str):
+    def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> str | None:
         diff_map = {
             "diff": " %s %s > /dev/null" % (ofile, tfile),
             "check": " %s %s %s > /dev/null" % (ifile, ofile, tfile),
@@ -511,12 +513,12 @@ class Checker(Program):
             return self.run_cmd + diff_map[prefix]
         return None
 
-    def check(self, ifile: str, ofile: str, tfile: str):
+    def check(self, ifile: str, ofile: str, tfile: str) -> int:
         se = subprocess.PIPE if self.quiet else None
         cmd = self.diff_cmd(ifile, ofile, tfile)
         if cmd is None:
             error("Unsupported checker %s" % self.name)
-            return Status.err
+            return -1
         result = subprocess.call(cmd, shell=True, stderr=se)
         if not result in (0, 1):
             warning("Checker exited with status %s" % result)
@@ -524,10 +526,10 @@ class Checker(Program):
 
 
 class Generator(Program):
-    def compare_mask(self) -> Tuple[int, str]:
-        return (-4, self.name)
+    def compare_mask(self) -> Tuple[int, int, str]:
+        return (-4, 0, self.name)
 
-    def generate(self, ifile: str, text: str):
+    def generate(self, ifile: str, text: str) -> Status:
         cmd = "%s > %s" % (self.run_cmd, ifile)
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
         p.communicate(str.encode(text))

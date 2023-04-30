@@ -29,12 +29,13 @@ import sys
 
 parser = Parser(description, options)
 args = parser.parse()
-Color.setup(args)
+Color.setup(args.colorful)
 
 if args.description:
-    recipe = Recipe(open(args.description, "r"))
+    with open(args.description, "r") as f:
+        recipe = Recipe(f.readlines())
 else:
-    recipe = Recipe(sys.stdin)
+    recipe = Recipe(sys.stdin.readlines())
 
 recipe.process()
 programs = {x: Generator(x, args) for x in recipe.programs}
@@ -44,7 +45,7 @@ gencmd = args.gencmd
 programs[gencmd] = Generator(gencmd, args)
 
 
-def cleanup():
+def cleanup() -> None:
     if args.clearbin:
         for p in programs:
             programs[p].clear_files()

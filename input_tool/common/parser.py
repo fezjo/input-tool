@@ -1,5 +1,45 @@
 # (c) 2014 jano <janoh@ksp.sk>
 import argparse
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass
+class Args:
+    indir: str
+    outdir: str
+    inext: str
+    outext: str
+    tempext: str
+    reset: bool
+    batchname: str
+    multi: bool
+    timelimit: str
+    warntimelimit: str
+    memorylimit: float
+    wrapper: str | bool
+    diffcmd: str | None
+    fskip: bool
+    dupprog: bool
+    compile: bool
+    sort: bool
+    execute: bool
+    pythoncmd: str
+    colorful: bool
+    colortest: bool
+    quiet: bool
+    Quiet: bool
+    stats: bool
+    cleartemp: bool
+    clearbin: bool
+    clearinput: bool
+    programs: list[str]
+    description: str
+    gencmd: str
+    task: str | None
+    deprecated: list[Any]
+    inside_oneline: bool
+    inside_inputmaxlen: int
 
 
 class Parser:
@@ -175,10 +215,6 @@ class Parser:
             ("-b", "--boring"),
             {dest: "colorful", action: "store_false", help: "turn colors off"},
         ),
-        "Colorful": (
-            ("-B", "--Boring"),
-            {dest: "colorful", action: "store_false", help: "turn colors off"},
-        ),
         "colortest": (
             ("--colortest",),
             {dest: "colortest", action: "store_true", help: "test colors and exit"},
@@ -256,7 +292,7 @@ class Parser:
         ),
     }
 
-    def __init__(self, description, arguments):
+    def __init__(self, description: str, arguments: list[str]):
         self.parser = argparse.ArgumentParser(description=description)
         for arg in arguments:
             args, kwargs = self.options.get(arg, (None, None))
@@ -264,6 +300,6 @@ class Parser:
                 raise NameError("Unrecognized option %s" % arg)
             self.parser.add_argument(*args, **kwargs)
 
-    def parse(self):
+    def parse(self) -> Args:
         self.args = self.parser.parse_args()
-        return self.args
+        return Args(**vars(self.args))

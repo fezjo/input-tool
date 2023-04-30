@@ -18,7 +18,7 @@ class Status(Enum):
     err = 6, None
     valid = 7, None
 
-    def __init__(self, id: int, warntle: bool):
+    def __init__(self, id: int, warntle: bool | None):
         self.id = id
         self.warntle = warntle
 
@@ -28,7 +28,7 @@ class Status(Enum):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def set_warntle(self, state: bool = True):
+    def set_warntle(self, state: bool = True) -> Status:
         return Status((self.id, None if self.warntle is None else state))
 
     def __str__(self) -> str:
@@ -56,8 +56,8 @@ class Color:
     colorful = False
 
     @staticmethod
-    def setup(args):
-        Color.colorful: bool = args.colorful
+    def setup(colorful: bool) -> None:
+        Color.colorful: bool = colorful
         Color.normal = Color("normal")
         Color.infog = Color("good")
         Color.infob = Color("fine")
@@ -67,14 +67,14 @@ class Color:
         Color.scores = [Color("special1", "special2", "score%s" % i) for i in range(5)]
         Color.status = {s: Color(str(s)) for s in Status}
 
-    def __init__(self, *args):
+    def __init__(self, *args: str):
         if Color.colorful:
             modifiers = [str(_codemap[c]) for c in args]
             self.code = "\033[%sm" % ";".join(modifiers)
         else:
             self.code = ""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.code
 
     @staticmethod
@@ -86,7 +86,7 @@ class Color:
         return Color.scores[p]
 
     @staticmethod
-    def colorize(status: Status, text: Any, end: Color | None = None):
+    def colorize(status: Status, text: Any, end: Color | None = None) -> str:
         index = status in (Status.ok, Status.valid)
         return "%s%s%s" % (
             (Color.warning, Color.infog)[index],
@@ -98,7 +98,7 @@ class Color:
 _sow = sys.stdout.write
 _sew = sys.stderr.write
 
-_codemap = {
+_codemap: dict[str, str | int] = {
     "OK": "green",
     "tOK": "green",
     "WA": "red",
@@ -153,32 +153,32 @@ while _changed:
 # {{{ ---------------------- messages ----------------------------
 
 
-def error(text: Any, doquit: bool = True):
+def error(text: Any, doquit: bool = True) -> None:
     _sew("%s%s%s\n" % (Color.error, text, Color.normal))
     if doquit:
         quit(1)
 
 
-def warning(text: Any):
+def warning(text: Any) -> None:
     _sew("%s%s%s\n" % (Color.warning, text, Color.normal))
 
 
-def infob(text: Any):
+def infob(text: Any) -> None:
     _sew("%s%s%s\n" % (Color.infob, text, Color.normal))
 
 
-def infog(text: Any):
+def infog(text: Any) -> None:
     _sew("%s%s%s\n" % (Color.infog, text, Color.normal))
 
 
-def info(text: Any):
+def info(text: Any) -> None:
     _sew("%s\n" % text)
 
 
 # }}}
 
 
-def wide_str(width: int, side: int):
+def wide_str(width: int, side: int) -> str:
     return "{:%s%ss}" % (("", ">", "<")[side], width)
 
 
@@ -213,10 +213,8 @@ def table_header(
     return "\n%s\n%s" % (first_row, second_row)
 
 
-def color_test():
-    args = lambda: None
-    setattr(args, "colorful", True)
-    Color.setup(args)
+def color_test() -> None:
+    Color.setup(True)
 
     info("white")
     infob("blue")
