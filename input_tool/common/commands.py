@@ -37,9 +37,11 @@ import shutil
 import subprocess
 from collections import defaultdict
 from input_tool.common.messages import *
-from typing import Iterable, Sequence, Tuple, TypedDict
+from typing import Iterable, Sequence, Tuple
+from dataclasses import dataclass
 
 from input_tool.common.parser import ArgsGenerator, ArgsTester
+
 Args = ArgsGenerator | ArgsTester
 
 
@@ -235,7 +237,8 @@ class Program:
 
 
 class Solution(Program):
-    class Statistics(TypedDict):
+    @dataclass
+    class Statistics:
         maxtime: float
         sumtime: float
         batchresults: dict[str, Status]
@@ -273,14 +276,14 @@ class Solution(Program):
 
     def __init__(self, name: str, args: Args):
         super().__init__(name, args)
-        self.statistics: Solution.Statistics = {
-            "maxtime": -1,
-            "sumtime": 0,
-            "batchresults": {},
-            "result": Status.ok,
-            "times": defaultdict(list),
-            "failedbatches": set(),
-        }
+        self.statistics = Solution.Statistics(
+            maxtime=-1,
+            sumtime=0,
+            batchresults={},
+            result=Status.ok,
+            times=defaultdict(list),
+            failedbatches=set(),
+        )
 
     @staticmethod
     def get_statistics_header(inputs: Iterable[str]) -> str:
@@ -292,24 +295,24 @@ class Solution(Program):
 
     def get_statistics(self) -> str:
         points, maxpoints = 0, 0
-        for batch in self.statistics["batchresults"]:
+        for batch in self.statistics.batchresults:
             if "sample" in batch:
                 continue
             maxpoints += 1
-            if self.statistics["batchresults"][batch] == Status.ok:
+            if self.statistics.batchresults[batch] == Status.ok:
                 points += 1
-                self.statistics["maxtime"] = max(
-                    self.statistics["maxtime"],
-                    max(map(lambda ts: ts[0], self.statistics["times"][batch])),
+                self.statistics.maxtime = max(
+                    self.statistics.maxtime,
+                    max(map(lambda ts: ts[0], self.statistics.times[batch])),
                 )
         color = Color.score_color(points, maxpoints)
         widths = (Solution.cmd_maxlen, 8, 9, 6, 6)
         colnames = [
             self.run_cmd,
-            self.statistics["maxtime"],
-            self.statistics["sumtime"],
+            self.statistics.maxtime,
+            self.statistics.sumtime,
             points,
-            self.statistics["result"],
+            self.statistics.result,
         ]
 
         return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
@@ -317,18 +320,18 @@ class Solution(Program):
     def record(self, ifile: str, status: Status, times: Sequence[float]) -> None:
         input = ifile.rsplit("/", 1)[1].rsplit(".", 1)[0]
         batch = input if input.endswith("sample") else input.rsplit(".", 1)[0]
-        batchresults = self.statistics["batchresults"]
+        batchresults = self.statistics.batchresults
         batchresults[batch] = self.updated_status(
             batchresults.get(batch, Status.ok), status
         )
-        self.statistics["times"][batch].append(tuple(times))
-        self.statistics["sumtime"] += times[0]
+        self.statistics.times[batch].append(tuple(times))
+        self.statistics.sumtime += times[0]
 
-        old_status = self.statistics["result"]
+        old_status = self.statistics.result
         new_status = self.updated_status(old_status, status)
         if old_status == new_status == status and status.warntle is not None:
             new_status = new_status.set_warntle(old_status.warntle | status.warntle)
-        self.statistics["result"] = new_status
+        self.statistics.result = new_status
 
     def get_timelimit(self, timelimits: dict[Langs.Lang | str, float]) -> float:
         if self.ext in timelimits:
@@ -369,7 +372,7 @@ class Solution(Program):
         self, ifile: str, ofile: str, tfile: str, checker: Checker, args: ArgsTester
     ) -> None:
         batch = os.path.basename(ifile).split(".")[0]
-        if args.fskip and batch in self.statistics["failedbatches"]:
+        if args.fskip and batch in self.statistics.failedbatches:
             return
 
         isvalidator = isinstance(self, Validator)
@@ -413,7 +416,7 @@ class Solution(Program):
                 os.remove(timefile)
 
         if status is not Status.ok:
-            self.statistics["failedbatches"].add(batch)
+            self.statistics.failedbatches.add(batch)
         if isvalidator and (status in (Status.ok, Status.wa)):
             status = Status.valid
 
@@ -459,19 +462,19 @@ class Validator(Solution):
         return original
 
     def get_statistics(self) -> str:
-        for key in self.statistics["batchresults"]:
-            self.statistics["maxtime"] = max(
-                self.statistics["maxtime"],
-                max(map(lambda ts: ts[0], self.statistics["times"][key])),
+        for key in self.statistics.batchresults:
+            self.statistics.maxtime = max(
+                self.statistics.maxtime,
+                max(map(lambda ts: ts[0], self.statistics.times[key])),
             )
-        color = Color.score_color(self.statistics["result"] == Status.valid, 1)
+        color = Color.score_color(self.statistics.result == Status.valid, 1)
         widths = (Solution.cmd_maxlen, 8, 9, 6, 6)
         colnames = [
             self.run_cmd,
-            self.statistics["maxtime"],
-            self.statistics["sumtime"],
+            self.statistics.maxtime,
+            self.statistics.sumtime,
             "",
-            self.statistics["result"],
+            self.statistics.result,
         ]
 
         return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
@@ -481,7 +484,7 @@ class Validator(Solution):
 
     def __init__(self, name: str, args: Args):
         super().__init__(name, args)
-        self.statistics["result"] = Status.valid
+        self.statistics.result = Status.valid
 
 
 class Checker(Program):
