@@ -1,23 +1,49 @@
 # (c) 2014 jano <janoh@ksp.sk>
 import argparse
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Type, TypeVar
 
 
 @dataclass
-class Args:
+class ArgsSample:
+    indir: str
+    outdir: str
+    inext: str
+    outext: str
+    batchname: str
+    multi: bool
+    colorful: bool
+    task: str | None
+    deprecated: list[Any] = field(default_factory=list)
+
+
+@dataclass
+class ArgsGenerator:
+    indir: str
+    inext: str
+    compile: bool
+    execute: bool
+    pythoncmd: str
+    colorful: bool
+    quiet: bool
+    clearbin: bool
+    clearinput: bool
+    description: str
+    gencmd: str
+    deprecated: list[Any] = field(default_factory=list)
+
+
+@dataclass
+class ArgsTester:
     indir: str
     outdir: str
     inext: str
     outext: str
     tempext: str
     reset: bool
-    batchname: str
-    multi: bool
     timelimit: str
     warntimelimit: str
     memorylimit: float
-    wrapper: str | bool
     diffcmd: str | None
     fskip: bool
     dupprog: bool
@@ -28,18 +54,13 @@ class Args:
     colorful: bool
     colortest: bool
     quiet: bool
-    Quiet: bool
     stats: bool
     cleartemp: bool
     clearbin: bool
-    clearinput: bool
     programs: list[str]
-    description: str
-    gencmd: str
-    task: str | None
-    deprecated: list[Any]
-    inside_oneline: bool
-    inside_inputmaxlen: int
+    inside_oneline: bool = field(default=False)
+    inside_inputmaxlen: int = field(default=0)
+    deprecated: list[Any] = field(default_factory=list)
 
 
 class Parser:
@@ -212,7 +233,7 @@ class Parser:
         ),
         # verbosing
         "colorful": (
-            ("-b", "--boring"),
+            ("-B", "--boring"),
             {dest: "colorful", action: "store_false", help: "turn colors off"},
         ),
         "colortest": (
@@ -300,6 +321,8 @@ class Parser:
                 raise NameError("Unrecognized option %s" % arg)
             self.parser.add_argument(*args, **kwargs)
 
-    def parse(self) -> Args:
+    Args = TypeVar("Args", ArgsSample, ArgsGenerator, ArgsTester)
+
+    def parse(self, container: Type[Args]) -> Args:
         self.args = self.parser.parse_args()
-        return Args(**vars(self.args))
+        return container(**vars(self.args))

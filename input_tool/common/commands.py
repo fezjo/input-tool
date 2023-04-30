@@ -39,6 +39,9 @@ from collections import defaultdict
 from input_tool.common.messages import *
 from typing import Iterable, Sequence, Tuple, TypedDict
 
+from input_tool.common.parser import ArgsGenerator, ArgsTester
+Args = ArgsGenerator | ArgsTester
+
 
 def is_file_newer(file1: str, file2: str) -> bool | None:
     if not os.path.exists(file1) or not os.path.exists(file2):
@@ -363,7 +366,7 @@ class Solution(Program):
         return ""
 
     def run(
-        self, ifile: str, ofile: str, tfile: str, checker: Checker, args: Args
+        self, ifile: str, ofile: str, tfile: str, checker: Checker, args: ArgsTester
     ) -> None:
         batch = os.path.basename(ifile).split(".")[0]
         if args.fskip and batch in self.statistics["failedbatches"]:

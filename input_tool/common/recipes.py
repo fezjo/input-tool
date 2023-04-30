@@ -26,10 +26,11 @@ Format of description files:
         Use {{ }} instead of single brackets or use ~ to turn of effects
 
 """
+from __future__ import annotations
 from random import randint
 from typing import Sequence
 
-from input_tool.common.parser import Args
+from input_tool.common.parser import ArgsSample
 
 
 def _int_log(number: int, base: int) -> int:
@@ -54,12 +55,13 @@ class Input:
     maxid = 0
     MAXINT = 2**31
 
-    def __lt__(self, other: object):
+    def __lt__(self, other: Input):
         if self.batch != other.batch:
             return self.batch < other.batch
         return self.name < other.name
 
-    def __init__(self, text: str, batchid: int, subid: int, inputid: int):
+    def __init__(self, text: str, batchid: str, subid: int, inputid: int):
+        print(batchid, subid, inputid)
         self.text = text
         self.effects = True
         self.commands: dict[str, str] = {}
@@ -127,7 +129,7 @@ class Input:
 
 
 class Sample(Input):
-    def __init__(self, lines, path, batchname, id, ext):
+    def __init__(self, lines: str, path: str, batchname: str, id: int, ext: str):
         super().__init__(lines, 0, id, id)
         self.path = path + "/"
         self.ext = ext
@@ -141,7 +143,7 @@ class Sample(Input):
 
 class Recipe:
     def __init__(self, recipe: Sequence[str]):
-        self.recipe: str = recipe
+        self.recipe = recipe
         self.programs: list[str] = []
         self.inputs: list[Input] = []
 
@@ -241,7 +243,7 @@ _cumberbatch = """\
 ~~~~~~::::,::,.,.....:::~~:~::,,,,,.....,,,,,,,,,,,,,,,,,:,:"""
 
 
-def prepare(args: Args) -> None:
+def prepare(args: ArgsSample) -> None:
     # lol ;)
     if args.batchname.lower() == "cumber":
         print(_cumberbatch)

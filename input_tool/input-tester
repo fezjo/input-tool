@@ -34,7 +34,7 @@ options = [
     "pythoncmd",
 ]
 
-from input_tool.common.parser import Parser
+from input_tool.common.parser import Parser, ArgsTester
 from input_tool.common.commands import (
     Langs,
     Config,
@@ -49,7 +49,7 @@ import itertools
 import os
 
 parser = Parser(description, options)
-args = parser.parse()
+args = parser.parse(ArgsTester)
 if args.colortest:
     color_test()
     quit(0)
