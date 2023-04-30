@@ -60,13 +60,14 @@ class Input:
             return self.batch < other.batch
         return self.name < other.name
 
-    def __init__(self, text: str, batchid: str, subid: int, inputid: int):
+    def __init__(self, text: str, batchid: int, subid: int, inputid: int):
         print(batchid, subid, inputid)
         self.text = text
         self.effects = True
         self.commands: dict[str, str] = {}
         self.batch = batchid
-        self.name = subid
+        self.subid = subid
+        self.name: str = ""
         self.id = inputid
         self.generator = None
         Input.maxbatch = max(Input.maxbatch, batchid)
@@ -76,17 +77,13 @@ class Input:
     def _apply_commands(self) -> None:
         if not self.effects:
             return
-        v = self.commands.get("batch", None)
-        if v:
+        if v := self.commands.get("batch", None):
             self.batch = v
-        v = self.commands.get("name", None)
-        if v:
+        if v := self.commands.get("name", None):
             self.name = v
-        v = self.commands.get("class", None)
-        if v:
+        if v := self.commands.get("class", None):
             self.name = v + self.name
-        v = self.commands.get("gen", None)
-        if v:
+        if v := self.commands.get("gen", None):
             self.generator = v
 
     def _apply_format(self) -> None:
@@ -107,11 +104,8 @@ class Input:
         self.compiled = True
         if isinstance(self.batch, int):
             self.batch = _create_name(self.batch, 10, _int_log(Input.maxbatch, 10))
-        if isinstance(self.name, int):
-            if Input.maxid == 0:
-                self.name = ""
-            else:
-                self.name = _create_name(self.name, 26, _int_log(Input.maxid, 26))
+        if Input.maxid > 0:
+            self.name = _create_name(self.subid, 26, _int_log(Input.maxid, 26))
         self._apply_commands()
         self._apply_format()
         if self.name:
