@@ -140,7 +140,7 @@ parallel_logger_manager = ParallelLoggerManager()
 for prog in programs:
     prog.logger = parallel_logger_manager.get_sink()
 
-with ThreadPoolExecutor(max_workers=args.threads) as executor:
+with ThreadPoolExecutor(max_workers=max(4, args.threads)) as executor:
     futures = [executor.submit(p.prepare) for p in programs]
     for future, logger in zip(futures, parallel_logger_manager.sinks):
         future.result()
