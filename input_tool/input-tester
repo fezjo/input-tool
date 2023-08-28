@@ -136,9 +136,16 @@ def cleanup() -> None:
 
 atexit.register(cleanup)
 
+parallel_logger_manager = ParallelLoggerManager()
+for prog in programs:
+    prog.logger = parallel_logger_manager.get_sink()
+
 with ThreadPoolExecutor(max_workers=args.threads) as executor:
-    for p in programs:
-        executor.submit(p.prepare)
+    futures = [executor.submit(p.prepare) for p in programs]
+    for future, logger in zip(futures, parallel_logger_manager.sinks):
+        future.result()
+        plain(logger.read())
+    parallel_logger_manager.clear_buffers()
 
 # multiple solutions can have same run command after compilation
 if not args.dupprog:
