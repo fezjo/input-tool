@@ -20,7 +20,7 @@
   - Zvýšené limity pre pamäť a zásobník
   - **Deduplikovanie programov na vstupe** (spolu s `-K` umožnuje rýchlejšie testovanie, vypnúť cez `--dupprog`)
   - **Paralelné generovanie vstupov a testovanie** (pomocou prepínača `-j`)
-- Podpora alternatívnych Python interpreterov (**PyPy**) pomocou `--pythoncmd cmd`
+  - Podpora alternatívnych Python interpreterov (**PyPy**) pomocou `--pythoncmd cmd` &ndash; generovanie vstupov predvolene pomocou `pypy3`
 - **Rozšírená funkcionalita IDF o vlastné premenné**
 - Možnosť nemať nainštalovaný `time`
 - Zrušená podpora pre Python2

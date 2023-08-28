@@ -31,7 +31,7 @@ options = [
     "programs",
     "fskip",
     "dupprog",
-    "pythoncmd",
+    "pythoncmd_test",
     "threads_test",
     "rustime",
 ]

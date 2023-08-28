@@ -12,7 +12,7 @@ options = [
     "compile",
     "execute",
     "gencmd",
-    "pythoncmd",
+    "pythoncmd_gen",
     "threads_gen",
     "colorful",
     "quiet",

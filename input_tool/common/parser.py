@@ -237,7 +237,15 @@ class Parser:
                 + "as compiling",
             },
         ),
-        "pythoncmd": (
+        "pythoncmd_gen": (
+            ("--pythoncmd",),
+            {
+                dest: "pythoncmd",
+                default: "pypy3",
+                help: "what command is used to execute python, e.g. `python3` or `pypy3` (default=pypy3)",
+            },
+        ),
+        "pythoncmd_test": (
             ("--pythoncmd",),
             {
                 dest: "pythoncmd",
