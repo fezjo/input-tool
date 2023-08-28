@@ -26,6 +26,12 @@ input-tester:
     how many threads to use (default=1)
 ```
 
+### Paralelizácia
+
+Paralelné testovanie prebieha iba v rámci jedného vstupu &ndash; teda druhý vstup sa začne testovať až keď všetky programy dobehnú na tom prvom.
+
+Pri testovaní viacero riešení naraz budú časy ktoré nameriame na jednotlivých riešeniach o kúsok väčšie ako tie pri sériovom testovaní. Odporúčame teda občas a hlavne pred zverejnením úloh pretestovať riešenia bez paralelizácie.
+
 ### Inteligencia
 
 Nástroj sa snaží byť inteligentný. Na zoznam riešení mu vieme dať priečinok a nástroj sa v ňom pokúsi nájsť relevantné programy (`sol*`, `val*`, `check*`, ...). Ďalej sa pokúsi (magicky) utriediť riešenia od najlepšieho po najhoršie. Poradie má zmysel napríklad, keď sa generujú nové výstupy. Nakoniec sa nástroj pokúsi zistiť, ako ste tieto programy chceli spustiť.

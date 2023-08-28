@@ -177,11 +177,7 @@ Niekedy by sme boli radi, keby Python nebol taký pomalý. To sa dá väčšinou
 
 ### `-j --threads`
 
-Generovanie a testovanie veľa vstupov a riešení často dlho trvá. Paralelizáciou práce vieme tento čas skrátiť. Paralelizácia však nie je priamočiare pozitívum. Keď dáme vstupy generovať so 100 vláknami, neuvidíme 100x zrýchlenie. Využitím príliš nadbytočného množstva vlákien si vieme výkon znížiť a optimálny počet vie byť oveľa menej než dostupný počet vlákien vášho procesoru.
-
-Paralelné testovanie prebieha iba v rámci jedného vstupu, teda druhý vstup sa začne testovať až keď všetky programy dobehnú na tom prvom. Pri testovaní viacero riešení naraz, budú časy ktoré nameriame väčšie ako tie pri sériovom testovaní. Odporúčame teda občas a hlavne pred zverejnením úloh pretestovať riešenia bez paralelizácie.
-
-Z týchto dôvodov je predvolené množstvo vlákien pre generátor 4 a pre testovač 1.
+Kompilovanie, generovanie aj testovanie vieme značne urýchliť paralelizáciou. Tento argument určuje, koľko vlákien sa má použiť. Väčšinou existuje optimálny počet vlákien, ktorý je menší ako počet dostupných vlákien vášho procesoru. Odporúčame teda občas a hlavne pred zverejnením úloh pretestovať riešenia bez paralelizácie.
 
 ### Príklady
 
