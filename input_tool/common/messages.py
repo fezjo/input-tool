@@ -62,6 +62,7 @@ class Color:
     @staticmethod
     def setup(colorful: bool) -> None:
         Color.colorful: bool = colorful
+        Color.dim = Color("dim")
         Color.normal = Color("normal")
         Color.infog = Color("good")
         Color.infob = Color("fine")
@@ -165,31 +166,47 @@ class Logger:
     def write(self, text: Any) -> None:
         self.file.write(text)
 
-    def error(self, text: Any, doquit: bool = True) -> None:
-        self.write("%s%s%s\n" % (Color.error, text, Color.normal))
+    def colored(self, text: Any, color: Color, end: Any = "\n") -> None:
+        self.write("%s%s%s%s" % (color, text, Color.normal, end))
+
+    def error(self, text: Any, doquit: bool = True, stderr: bool = False) -> None:
+        message = "%s%s%s\n" % (Color.error, text, Color.normal)
+        self.write(message)
+        if stderr:
+            _sew(message)
         if doquit:
             quit(1)
 
     def warning(self, text: Any) -> None:
-        self.write("%s%s%s\n" % (Color.warning, text, Color.normal))
+        self.colored(text, Color.warning)
 
+    # blue
     def infob(self, text: Any) -> None:
-        self.write("%s%s%s\n" % (Color.infob, text, Color.normal))
+        self.colored(text, Color.infob)
 
+    # green
     def infog(self, text: Any) -> None:
-        self.write("%s%s%s\n" % (Color.infog, text, Color.normal))
+        self.colored(text, Color.infog)
 
     def info(self, text: Any) -> None:
         self.write("%s\n" % text)
 
-    def plain(self, text: Any, end: str = "\n") -> None:
-        self.write("%s%s" % (text, end))
+    def plain(self, text: Any) -> None:
+        self.write(text)
 
 
 class BufferedLogger(Logger):
     def __init__(self, file=sys.stderr):
         self.file = file
         self.buffer = []
+
+    def error(self, text: Any, doquit: bool = True, flush: bool = True) -> None:
+        message = "%s%s%s\n" % (Color.error, text, Color.normal)
+        self.write(message)
+        if flush:
+            self.flush()
+        if doquit:
+            quit(1)
 
     def write(self, text: Any) -> None:
         self.buffer.append(text)
@@ -237,8 +254,8 @@ def info(text: Any) -> None:
     _sew("%s\n" % text)
 
 
-def plain(text: Any, end: str = "\n") -> None:
-    _sew("%s%s" % (text, end))
+def plain(text: Any) -> None:
+    _sew(text)
 
 
 # }}}

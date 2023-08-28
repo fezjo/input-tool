@@ -242,7 +242,7 @@ for input in inputs:
 
         for future, logger in zip(futures, parallel_logger_manager.sinks):
             future.result()
-            plain(logger.read(), "")
+            plain(logger.read())
         parallel_logger_manager.clear_buffers()
 
 # ------------ print sumary ------------------

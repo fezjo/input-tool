@@ -459,7 +459,7 @@ class Solution(Program):
         else:
             summary = "    %s  %s" % (run_cmd, time)
 
-        self.logger.plain("%s %s" % (Color.colorize(status, summary), status.colored()))
+        self.logger.plain("%s %s\n" % (Color.colorize(status, summary), status.colored()))
 
         if status == Status.err:
             self.logger.error("Internal error. Testing will not continue", doquit=True)
