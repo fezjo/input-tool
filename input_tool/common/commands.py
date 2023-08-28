@@ -211,12 +211,16 @@ class Program:
 
     def prepare(self) -> None:
         if self.compilecmd != None:
-            so = subprocess.PIPE if self.quiet else None
-            se = subprocess.STDOUT if self.quiet else None
             self.logger.infob("Compiling: %s" % self.compilecmd)
-            try:
-                subprocess.check_call(self.compilecmd, shell=True, stdout=so, stderr=se)
-            except:
+            result = subprocess.run(
+                self.compilecmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            if not self.quiet:
+                self.logger.plain(result.stdout.decode("utf-8"))
+            if result.returncode:
                 self.logger.error("Compilation failed.")
 
         assert self.run_cmd
@@ -407,8 +411,6 @@ class Solution(Program):
 
         if not self.ready:
             self.logger.error("%s not prepared for execution" % self.name)
-        so = subprocess.PIPE if self.quiet else None
-        se = subprocess.PIPE if self.quiet else None
 
         # run solution
         run_times: Optional[list[float]] = None
@@ -416,8 +418,15 @@ class Solution(Program):
         memorylimit = float(Config.memorylimit)
         timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
         try:
-            exit_code = subprocess.call(cmd, stdout=so, stderr=se, shell=True)
-            status = self.translate_exit_code_to_status(exit_code)
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,  # stdout goes to file anyway
+                stderr=subprocess.PIPE,
+            )
+            if not self.quiet:
+                self.logger.colored(result.stderr.decode("utf-8"), Color.dim, "")
+            status = self.translate_exit_code_to_status(result.returncode)
 
             run_times = self.get_times(timefile)
             if not run_times and status == Status.ok:
@@ -459,7 +468,9 @@ class Solution(Program):
         else:
             summary = "    %s  %s" % (run_cmd, time)
 
-        self.logger.plain("%s %s\n" % (Color.colorize(status, summary), status.colored()))
+        self.logger.plain(
+            "%s %s\n" % (Color.colorize(status, summary), status.colored())
+        )
 
         if status == Status.err:
             self.logger.error("Internal error. Testing will not continue", doquit=True)
@@ -541,15 +552,16 @@ class Checker(Program):
         return None
 
     def check(self, ifile: str, ofile: str, tfile: str) -> int:
-        se = subprocess.PIPE if self.quiet else None
         cmd = self.diff_cmd(ifile, ofile, tfile)
         if cmd is None:
             self.logger.error("Unsupported checker %s" % self.name)
             return -1
-        result = subprocess.call(cmd, shell=True, stderr=se)
-        if not result in (0, 1):
+        result = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE)
+        if not self.quiet:
+            self.logger.plain(result.stderr.decode("utf-8"))
+        if not result.returncode in (0, 1):
             self.logger.warning("Checker exited with status %s" % result)
-        return result
+        return result.returncode
 
 
 class Generator(Program):
