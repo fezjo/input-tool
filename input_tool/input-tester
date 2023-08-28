@@ -136,8 +136,9 @@ def cleanup() -> None:
 
 atexit.register(cleanup)
 
-for p in programs:
-    p.prepare()
+with ThreadPoolExecutor(max_workers=args.threads) as executor:
+    for p in programs:
+        executor.submit(p.prepare)
 
 # multiple solutions can have same run command after compilation
 if not args.dupprog:
