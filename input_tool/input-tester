@@ -231,7 +231,8 @@ for input in inputs:
                 isinstance(sol, Validator),
                 result_force,
             )
-            if result_file == output_file:
+            is_generator = result_file == output_file
+            if is_generator:
                 reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
                 infob("File %s will be created now (%s)." % (output_file, reason))
                 generated_output = True
@@ -245,7 +246,10 @@ for input in inputs:
                 ):
                     os.remove(result_file)
 
-            futures.append(executor.submit(run_sol, sol, result_file))
+            future = executor.submit(run_sol, sol, result_file)
+            futures.append(future)
+            if is_generator:
+                future.result()
 
         for future, logger in zip(futures, parallel_logger_manager.sinks):
             future.result()
