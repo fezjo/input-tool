@@ -102,8 +102,8 @@ files = list(
         for p in args.programs
     )
 )
-if not args.dupprog:  # remove duplicate paths
-    files = list(set(files))
+if not args.dupprog:  # remove duplicate paths keeping order
+    files = list(dict.fromkeys(files))
 for p in files:
     if Validator.filename_befits(p):
         solutions.append(Validator(p))
