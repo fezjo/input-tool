@@ -218,7 +218,17 @@ for input in inputs:
     if len(solutions) > 1:
         print("%s >" % (input))
 
+    def run_sol(sol: Solution, result_file: str, is_generator: bool) -> None:
+        sol.run(input_file, output_file, result_file, checker, is_generator)
+        if (
+            args.cleartemp
+            and output_file != result_file
+            and os.path.exists(result_file)
+        ):
+            os.remove(result_file)
+
     generated_output = False
+    checker.output_ready.clear()
     futures = []
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         for si, sol in enumerate(solutions):
@@ -231,26 +241,18 @@ for input in inputs:
                 isinstance(sol, Validator),
                 result_force,
             )
+
             is_generator = result_file == output_file
+            future = executor.submit(run_sol, sol, result_file, is_generator)
             if is_generator:
                 reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
                 infob("File %s will be created now (%s)." % (output_file, reason))
                 generated_output = True
-
-            def run_sol(sol: Solution, result_file: str) -> None:
-                sol.run(input_file, output_file, result_file, checker)
-                if (
-                    args.cleartemp
-                    and output_file != result_file
-                    and os.path.exists(result_file)
-                ):
-                    os.remove(result_file)
-
-            future = executor.submit(run_sol, sol, result_file)
+                future.add_done_callback(lambda _: checker.output_ready.set())
             futures.append(future)
-            if is_generator:
-                future.result()
 
+        if not generated_output:
+            checker.output_ready.set()
         for future, logger in zip(futures, parallel_logger_manager.sinks):
             future.result()
             plain(logger.read())

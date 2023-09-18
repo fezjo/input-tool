@@ -39,6 +39,7 @@ from enum import Enum
 import shutil
 import subprocess
 import tempfile
+import threading
 from typing import Iterable, Optional, Sequence, Tuple
 
 from input_tool.common.messages import *
@@ -403,7 +404,14 @@ class Solution(Program):
         except:
             return None
 
-    def run(self, ifile: str, ofile: str, tfile: str, checker: Checker) -> None:
+    def run(
+        self,
+        ifile: str,
+        ofile: str,
+        tfile: str,
+        checker: Checker,
+        is_output_generator: bool = False,
+    ) -> None:
         batch = os.path.basename(ifile).split(".")[0]
         isvalidator = isinstance(self, Validator)
         if not isvalidator and Config.fskip and batch in self.statistics.failedbatches:
@@ -432,6 +440,8 @@ class Solution(Program):
             if not run_times and status == Status.ok:
                 status = Status.exc
             if status == Status.ok and not isvalidator:
+                if not is_output_generator:
+                    checker.output_ready.wait()
                 if checker.check(ifile, ofile, tfile):
                     status = Status.wa
         except Exception as e:
@@ -522,6 +532,7 @@ class Validator(Solution):
 class Checker(Program):
     def __init__(self, name: str):
         super().__init__(name)
+        self.output_ready = threading.Event()
         if name == "diff":
             self.run_cmd = "diff"
             self.compilecmd = None
