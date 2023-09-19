@@ -241,8 +241,9 @@ for input in inputs:
     for _ in solutions:
         parallel_logger_manager.get_sink()
 
+    output_ready = checker.output_ready[input_file]
+    output_ready.clear()
     generated_output = False
-    checker.output_ready.clear()
     futures = []
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         for si, sol in enumerate(solutions):
@@ -267,11 +268,11 @@ for input in inputs:
             if is_generator:
                 infob(get_output_creation_message(output_file))
                 generated_output = True
-                future.add_done_callback(lambda _: checker.output_ready.set())
+                future.add_done_callback(lambda _: output_ready.set())
             futures.append(future)
 
         if not generated_output:
-            checker.output_ready.set()
+            output_ready.set()
         for future, logger in zip(futures, parallel_logger_manager.sinks):
             future.result()
             plain(logger.read())

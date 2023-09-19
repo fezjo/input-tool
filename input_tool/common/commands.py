@@ -443,8 +443,8 @@ class Solution(Program):
                 status = Status.exc
             if status == Status.ok and not isvalidator:
                 if not is_output_generator:
-                    checker.output_ready.wait()
-                if checker.check(ifile, ofile, tfile):
+                    checker.output_ready[ifile].wait()
+                if checker.check(ifile, ofile, tfile, logger):
                     status = Status.wa
         except Exception as e:
             status = Status.err
@@ -532,7 +532,7 @@ class Validator(Solution):
 class Checker(Program):
     def __init__(self, name: str):
         super().__init__(name)
-        self.output_ready = threading.Event()
+        self.output_ready = defaultdict(threading.Event)
         if name == "diff":
             self.run_cmd = "diff"
             self.compilecmd = None
