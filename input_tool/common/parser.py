@@ -257,8 +257,8 @@ class Parser:
             ("-j", "--threads"),
             {
                 dest: "threads",
-                default: 4,
-                help: "how many threads to use (default=4)",
+                default: 6,
+                help: "how many threads to use (default=6)",
                 "type": int,
             },
         ),
@@ -266,8 +266,8 @@ class Parser:
             ("-j", "--threads"),
             {
                 dest: "threads",
-                default: 1,
-                help: "how many threads to use (default=1)",
+                default: 4,
+                help: "how many threads to use (default=4)",
                 "type": int,
             },
         ),

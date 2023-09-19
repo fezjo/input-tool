@@ -177,7 +177,7 @@ Niekedy by sme boli radi, keby Python nebol taký pomalý. To sa dá väčšinou
 
 ### `-j --threads`
 
-Kompilovanie, generovanie aj testovanie vieme značne urýchliť paralelizáciou. Tento argument určuje, koľko vlákien sa má použiť. Väčšinou existuje optimálny počet vlákien, ktorý je menší ako počet dostupných vlákien vášho procesoru. Odporúčame teda občas a hlavne pred zverejnením úloh pretestovať riešenia bez paralelizácie.
+Kompilovanie, generovanie aj testovanie vieme značne urýchliť paralelizáciou. Tento argument určuje, koľko vlákien sa má použiť. Väčšinou existuje optimálny počet vlákien, ktorý je menší ako počet dostupných vlákien vášho procesoru. Odporúčame teda občas a hlavne pred zverejnením úloh pretestovať riešenia bez paralelizácie (`-j 1`).
 
 ### Príklady
 

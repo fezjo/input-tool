@@ -23,7 +23,7 @@ input-tester:
   -q, --quiet
     dont let subprograms print stuff
   -j THREADS, --threads THREADS
-    how many threads to use (default=1)
+    how many threads to use (default=4)
 ```
 
 ### Paralelizácia
