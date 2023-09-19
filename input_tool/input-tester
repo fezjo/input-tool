@@ -40,8 +40,10 @@ import atexit
 from concurrent.futures import ThreadPoolExecutor
 import itertools
 import os
+from typing import Optional
 
 from input_tool.common.commands import (
+    default_logger,
     Langs,
     Config,
     Program,
@@ -137,11 +139,10 @@ def cleanup() -> None:
 atexit.register(cleanup)
 
 parallel_logger_manager = ParallelLoggerManager()
-for prog in programs:
-    prog.logger = parallel_logger_manager.get_sink()
-
 with ThreadPoolExecutor(max_workers=max(4, args.threads)) as executor:
-    futures = [executor.submit(p.prepare) for p in programs]
+    futures = [
+        executor.submit(p.prepare, parallel_logger_manager.get_sink()) for p in programs
+    ]
     for future, logger in zip(futures, parallel_logger_manager.sinks):
         future.result()
         plain(logger.read())
@@ -162,11 +163,6 @@ if not args.dupprog:
             d[key] = s
             l.append(s)
     solutions = l
-
-parallel_logger_manager = ParallelLoggerManager()
-for sol in solutions:
-    sol.logger = parallel_logger_manager.get_sink()
-
 
 # }}}
 # {{{ ------------ prepare inputs ----------------
@@ -218,14 +214,23 @@ for input in inputs:
     if len(solutions) > 1:
         print("%s >" % (input))
 
-    def run_sol(sol: Solution, result_file: str, is_generator: bool) -> None:
-        sol.run(input_file, output_file, result_file, checker, is_generator)
+    def run_sol(
+        sol: Solution,
+        result_file: str,
+        is_generator: bool,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        sol.run(input_file, output_file, result_file, checker, is_generator, logger)
         if (
             args.cleartemp
             and output_file != result_file
             and os.path.exists(result_file)
         ):
             os.remove(result_file)
+
+    parallel_logger_manager = ParallelLoggerManager()
+    for _ in solutions:
+        parallel_logger_manager.get_sink()
 
     generated_output = False
     checker.output_ready.clear()
@@ -243,7 +248,13 @@ for input in inputs:
             )
 
             is_generator = result_file == output_file
-            future = executor.submit(run_sol, sol, result_file, is_generator)
+            future = executor.submit(
+                run_sol,
+                sol,
+                result_file,
+                is_generator,
+                parallel_logger_manager.sinks[si],
+            )
             if is_generator:
                 reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
                 infob("File %s will be created now (%s)." % (output_file, reason))

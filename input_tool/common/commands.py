@@ -115,7 +115,6 @@ class Program:
         self.cancompile: bool = Config.compile
         self.forceexecute: bool = Config.execute
         self.ready = False
-        self.logger = logger if logger is not None else default_logger
 
         # compute run_cmd, compilecmd and filestoclear
         self._transform()
@@ -152,7 +151,7 @@ class Program:
                 if os.path.exists(self.name):
                     valid.append("<noextension>")
             if len(valid) > 1:
-                self.logger.warning(
+                default_logger.warning(
                     "Warning: multiple possible sources for %s, using first %s"
                     % (self.name, valid)
                 )
@@ -210,9 +209,10 @@ class Program:
             if self.lang is Langs.Lang.java:
                 self.run_cmd = "java -Xss256m " + self.run_cmd
 
-    def prepare(self) -> None:
+    def prepare(self, logger: Optional[Logger] = None) -> None:
+        logger = default_logger if logger is None else logger
         if self.compilecmd != None:
-            self.logger.infob("Compiling: %s" % self.compilecmd)
+            logger.infob("Compiling: %s" % self.compilecmd)
             result = subprocess.run(
                 self.compilecmd,
                 shell=True,
@@ -220,9 +220,9 @@ class Program:
                 stderr=subprocess.STDOUT,
             )
             if not self.quiet:
-                self.logger.plain(result.stdout.decode("utf-8"))
+                logger.plain(result.stdout.decode("utf-8"))
             if result.returncode:
-                self.logger.error("Compilation failed.")
+                logger.error("Compilation failed.")
 
         assert self.run_cmd
         if (
@@ -244,7 +244,7 @@ class Program:
                 else:
                     os.remove(f)
             else:
-                self.logger.warning("Not found %s" % f)
+                default_logger.warning("Not found %s" % f)
 
 
 class Solution(Program):
@@ -411,14 +411,16 @@ class Solution(Program):
         tfile: str,
         checker: Checker,
         is_output_generator: bool = False,
+        logger: Optional[Logger] = None,
     ) -> None:
+        logger = default_logger if logger is None else logger
         batch = os.path.basename(ifile).split(".")[0]
         isvalidator = isinstance(self, Validator)
         if not isvalidator and Config.fskip and batch in self.statistics.failedbatches:
             return
 
         if not self.ready:
-            self.logger.error("%s not prepared for execution" % self.name)
+            logger.error("%s not prepared for execution" % self.name)
 
         # run solution
         run_times: Optional[list[float]] = None
@@ -433,7 +435,7 @@ class Solution(Program):
                 stderr=subprocess.PIPE,
             )
             if not self.quiet:
-                self.logger.colored(result.stderr.decode("utf-8"), Color.dim, "")
+                logger.colored(result.stderr.decode("utf-8"), Color.dim, "")
             status = self.translate_exit_code_to_status(result.returncode)
 
             run_times = self.get_times(timefile)
@@ -446,7 +448,7 @@ class Solution(Program):
                     status = Status.wa
         except Exception as e:
             status = Status.err
-            self.logger.warning(str(e))
+            logger.warning(str(e))
         finally:
             if os.path.exists(timefile):
                 os.remove(timefile)
@@ -478,12 +480,10 @@ class Solution(Program):
         else:
             summary = "    %s  %s" % (run_cmd, time)
 
-        self.logger.plain(
-            "%s %s\n" % (Color.colorize(status, summary), status.colored())
-        )
+        logger.plain("%s %s\n" % (Color.colorize(status, summary), status.colored()))
 
         if status == Status.err:
-            self.logger.error("Internal error. Testing will not continue", doquit=True)
+            logger.error("Internal error. Testing will not continue", doquit=True)
 
 
 class Validator(Solution):
@@ -562,16 +562,19 @@ class Checker(Program):
             return self.run_cmd + diff_map[prefix]
         return None
 
-    def check(self, ifile: str, ofile: str, tfile: str) -> int:
+    def check(
+        self, ifile: str, ofile: str, tfile: str, logger: Optional[Logger] = None
+    ) -> int:
+        logger = default_logger if logger is None else logger
         cmd = self.diff_cmd(ifile, ofile, tfile)
         if cmd is None:
-            self.logger.error("Unsupported checker %s" % self.name)
+            logger.error("Unsupported checker %s" % self.name)
             return -1
         result = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE)
         if not self.quiet:
-            self.logger.plain(result.stderr.decode("utf-8"))
+            logger.plain(result.stderr.decode("utf-8"))
         if not result.returncode in (0, 1):
-            self.logger.warning("Checker exited with status %s" % result)
+            logger.warning("Checker exited with status %s" % result)
         return result.returncode
 
 
