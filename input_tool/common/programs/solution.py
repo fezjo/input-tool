@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import os
 import subprocess
 import tempfile
-from typing import Optional, Sequence, Tuple, Iterable
+from typing import List, Optional, Sequence, Tuple, Iterable
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
 from input_tool.common.messages import (
@@ -30,7 +30,6 @@ class Solution(Program):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.is_validator = False
         self.statistics = Solution.Statistics(
             maxtime=-1,
             sumtime=0,
@@ -102,12 +101,16 @@ class Solution(Program):
         ]
         return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
 
+    @staticmethod
+    def parse_batch(ifile: str):
+        name = os.path.basename(ifile)
+        input, _ext = os.path.splitext(name)
+        return input if input.endswith("sample") else input.rsplit(".", 1)[0]
+
     def record(
         self, ifile: str, status: Status, times: Optional[Sequence[float]]
     ) -> None:
-        name = os.path.basename(ifile)
-        input, _ext = os.path.splitext(name)
-        batch = input if input.endswith("sample") else input.rsplit(".", 1)[0]
+        batch = self.parse_batch(ifile)
         batchresults = self.statistics.batchresults
         batchresults[batch] = self.updated_status(
             batchresults.get(batch, Status.ok), status
@@ -174,28 +177,18 @@ class Solution(Program):
         except:
             return None
 
-    def run(
+    def _run(
         self,
         ifile: str,
         ofile: str,
         tfile: str,
-        checker: Checker,
-        is_output_generator: bool = False,
-        logger: Optional[Logger] = None,
-    ) -> None:
-        logger = default_logger if logger is None else logger
-        batch = os.path.basename(ifile).split(".")[0]
-        if (
-            not self.is_validator
-            and Config.fskip
-            and batch in self.statistics.failedbatches
-        ):
-            return
-
+        checker: Optional[Checker],
+        is_output_generator: bool,
+        logger: Logger,
+    ):
         if not self.ready:
             logger.error(f"{self.name} not prepared for execution")
 
-        # run solution
         run_times: Optional[list[float]] = None
         timelimit = self.get_timelimit(Config.timelimits)
         memorylimit = float(Config.memorylimit)
@@ -214,7 +207,7 @@ class Solution(Program):
             run_times = self.get_times(timefile)
             if not run_times and status == Status.ok:
                 status = Status.exc
-            if status == Status.ok and not self.is_validator:
+            if checker is not None and status == Status.ok:
                 if not is_output_generator:
                     checker.output_ready[ifile].wait()
                 if checker.check(ifile, ofile, tfile, logger):
@@ -226,21 +219,15 @@ class Solution(Program):
             if os.path.exists(timefile):
                 os.remove(timefile)
 
-        if status is not Status.ok:
-            self.statistics.failedbatches.add(batch)
-        if self.is_validator and (status in (Status.ok, Status.wa)):
-            status = Status.valid
+        return run_times, status
 
-        warntle = self.get_timelimit(Config.warn_timelimits) * 1000
-        status = status.set_warntle(
-            not self.is_validator
-            and warntle != 0
-            and run_times is not None
-            and run_times[0] >= warntle
-        )
-
-        # construct summary
-        self.record(ifile, status, run_times)
+    def output_testcase_summary(
+        self,
+        ifile: str,
+        status: Status,
+        run_times: Optional[List[float]],
+        logger: Logger,
+    ) -> None:
         run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.run_cmd)
         time_format = ["{:6d}ms", "{:6d}ms [{:6.2f}={:6.2f}+{:6.2f}]"][Config.rus_time]
         time = "err" if run_times is None else time_format.format(*run_times)
@@ -259,3 +246,32 @@ class Solution(Program):
 
         if status == Status.err:
             logger.error("Internal error. Testing will not continue", doquit=True)
+
+    def run(
+        self,
+        ifile: str,
+        ofile: str,
+        tfile: str,
+        checker: Checker,
+        is_output_generator: bool = False,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        batch = self.parse_batch(ifile)
+        if Config.fskip and batch in self.statistics.failedbatches:
+            return
+
+        logger = default_logger if logger is None else logger
+        run_times, status = self._run(
+            ifile, ofile, tfile, checker, is_output_generator, logger
+        )
+
+        if status is not Status.ok:
+            self.statistics.failedbatches.add(batch)
+
+        warntle = self.get_timelimit(Config.warn_timelimits) * 1000
+        status = status.set_warntle(
+            warntle != 0 and run_times is not None and run_times[0] >= warntle
+        )
+
+        self.record(ifile, status, run_times)
+        self.output_testcase_summary(ifile, status, run_times, logger)

@@ -1,13 +1,13 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from input_tool.common.commands import Config, to_base_alnum
-from input_tool.common.messages import Color, Status, table_row
+from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
+from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.solution import Solution
 
 class Validator(Solution):
     def __init__(self, name: str):
         super().__init__(name)
-        self.is_validator = True
         self.statistics.result = Status.valid
 
     @staticmethod
@@ -46,3 +46,25 @@ class Validator(Solution):
 
     def run_args(self, ifile: str) -> str:
         return " ".join(ifile.split("/")[-1].split(".")) + " "
+
+    def run(
+        self,
+        ifile: str,
+        ofile: str,
+        tfile: str,
+        checker: Checker,
+        is_output_generator: bool = False,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        logger = default_logger if logger is None else logger
+        run_times, status = self._run(
+            ifile, ofile, tfile, None, is_output_generator, logger
+        )
+
+        if status is not Status.ok:
+            self.statistics.failedbatches.add(self.parse_batch(ifile))
+        if status in (Status.ok, Status.wa):
+            status = Status.valid
+
+        self.record(ifile, status, run_times)
+        self.output_testcase_summary(ifile, status, run_times, logger)
