@@ -163,10 +163,6 @@ Neoptimálne riešenia by často bežali zbytočne dlho, ak vôbec aj dobehli. T
 
 Už existujú výstupy ale sú zlé? `-R` prepíše výstupy nanovo tým, čo vyrobí prvý program.
 
-### `-K --keep-bin`
-
-Ponecháva binárne súbory po kompilácii, čím sa značne urýchľuje celkový čas testovania. Je možné, že sa na začiatku vypíše veľa varovaní &ndash; malo by to byť vporiadku, ale treba ich zohľadniť a dávať si pozor.
-
 ### `-d --diff`
 
 Niektoré úlohy potrebujú na určenie správnosti hodnotič. Ten vie byť automaticky určený ak ako argument uvedieme priečinok v ktorom sa nachádza a hodnotič má štandardné meno. Ak tieto podmienky nie sú splnené, vieme ho manuálne určiť pomocou tohoto argumentu, napríklad `-d checker.py`.
@@ -186,14 +182,12 @@ Kompilovanie, generovanie aj testovanie vieme značne urýchliť paralelizáciou
 input-tester -h
 # najzákladnejšie použitie, keď máme všetko v aktuálnom priečinku
 input-tester .
-# chceme si ušetriť kompiláciu pri dodatočnom spustení
-input-tester -K .
 # chceme spustiť iba vzorové riešenia
-input-tester -K sol-100*
-# chceme vidieť na ktorých všetkých vstupoch programy nefungujú, nielen na ktorých sadách
-input-tester -KF .
+input-tester sol-100*
+# chceme vidieť na ktorých všetkých vstupoch programy nefungujú, nielen na ktorých sadách a robíme to sériovo
+input-tester -F -j 1 .
 # bežné použitie, ak si dáme všetky riešenia do priečinku `sols`
-input-tester -K -t "3,cpp=0.5,py=5" sols .
+input-tester -t "3,cpp=0.5,py=5" sols .
 ```
 
 # Pokročilé

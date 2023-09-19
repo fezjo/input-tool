@@ -13,8 +13,6 @@ input-tester:
     dont skip the rest of input files in the same batch after first fail
   -R, --Reset
     recompute outputs
-  -K, --keep-bin
-    dont remove binary files after finishing
   -d, --diff
     program which checks correctness of output (default=diff),
     arguments given to program depends of prefix: diff $our $theirs, check $inp $our $theirs

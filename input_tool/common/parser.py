@@ -324,11 +324,11 @@ class Parser:
             },
         ),
         "clearbin": (
-            ("-K", "--keep-bin"),
+            ("--clear-bin",),
             {
                 dest: "clearbin",
-                action: "store_false",
-                help: "dont remove binary files after finishing",
+                action: "store_true",
+                help: "remove binary files after finishing",
             },
         ),
         "clearinput": (
