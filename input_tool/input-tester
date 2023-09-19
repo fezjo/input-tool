@@ -94,7 +94,7 @@ Config.warn_timelimits.update(parse_timelimit(args.warntimelimit))
 
 def get_relevant_prog_files_in_directory(directory: str) -> list[str]:
     return [
-        de.path
+        os.path.normpath(de.path)
         for de in os.scandir(directory)
         if de.is_file()
         and any(cl.filename_befits(de.name) for cl in (Solution, Validator, Checker))
@@ -174,7 +174,11 @@ if not args.dupprog:
     solutions = l
 
 for s in solutions:
-    Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.run_cmd))
+    Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
+infob("")
+for s in solutions:
+    infob(f"Program {s.name:{Config.cmd_maxlen}}   is ran as `{s.run_cmd}`")
+infob("")
 
 # }}}
 # {{{ ------------ prepare inputs ----------------

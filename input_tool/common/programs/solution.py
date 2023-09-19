@@ -78,7 +78,7 @@ class Solution(Program):
         color = Color.score_color(points, maxpoints)
         widths = (Config.cmd_maxlen, 8, 9, 6, 6)
         colnames = [
-            self.run_cmd,
+            self.name,
             self.statistics.maxtime,
             self.statistics.sumtime,
             points,
@@ -213,7 +213,7 @@ class Solution(Program):
         run_times: Optional[List[float]],
         logger: Logger,
     ) -> None:
-        run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.run_cmd)
+        run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.name)
         time_format = ["{:6d}ms", "{:6d}ms [{:6.2f}={:6.2f}+{:6.2f}]"][Config.rus_time]
         time = "err" if run_times is None else time_format.format(*run_times)
 

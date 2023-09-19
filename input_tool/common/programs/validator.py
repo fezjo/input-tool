@@ -35,7 +35,7 @@ class Validator(Solution):
         color = Color.score_color(self.statistics.result == Status.valid, 1)
         widths = (Config.cmd_maxlen, 8, 9, 6, 6)
         colnames = [
-            self.run_cmd,
+            self.name,
             self.statistics.maxtime,
             self.statistics.sumtime,
             "",
