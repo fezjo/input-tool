@@ -205,9 +205,11 @@ Config.inside_inputmaxlen = max(map(len, inputs))
 
 # ------------ test solutions ----------------
 
+
 def get_output_creation_message(output_file: str) -> str:
     reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
     return "File %s will be created now (%s)." % (output_file, reason)
+
 
 def general_run_sol(
     sol: Solution, input_file: str, output_file: str, result_file: str, *rargs
@@ -223,29 +225,33 @@ def general_run_sol(
     except Exception as err:
         error(err)
 
-for input in inputs:
-    input_file = args.indir + "/" + input
-    prefix = args.outdir + "/" + input.rsplit(".", 1)[0]
-    output_file = prefix + "." + args.outext
-    temp_file = prefix + ".s{:0>2}." + args.tempext
 
-    if len(solutions) > 1:
-        print("%s >" % (input))
-
-    run_sol = lambda sol, resf, *rargs, inpf=input_file, outf=output_file: general_run_sol(
-        sol, inpf, outf, resf, *rargs
-    )
+parallel_logger_manager = ParallelLoggerManager()
 
 
-    parallel_logger_manager = ParallelLoggerManager()
-    for _ in solutions:
-        parallel_logger_manager.get_sink()
+def logger_close_and_trigger(logger: BufferedLogger) -> None:
+    logger.close()
+    parallel_logger_manager.closed_event.set()
 
-    output_ready = checker.output_ready[input_file]
-    output_ready.clear()
-    generated_output = False
-    futures = []
-    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+
+with ThreadPoolExecutor(max_workers=args.threads) as executor:
+    for input in inputs:
+        input_file = args.indir + "/" + input
+        prefix = args.outdir + "/" + input.rsplit(".", 1)[0]
+        output_file = prefix + "." + args.outext
+        temp_file = prefix + ".s{:0>2}." + args.tempext
+
+        testcase_logger = parallel_logger_manager.get_sink()
+        if len(solutions) > 1:
+            testcase_logger.info("%s >" % (input))
+
+        run_sol = lambda sol, resf, *rargs, inpf=input_file, outf=output_file: general_run_sol(
+            sol, inpf, outf, resf, *rargs
+        )
+
+        output_ready = checker.output_ready[input_file]
+        output_ready.clear()
+        generated_output = False
         for si, sol in enumerate(solutions):
             result_force = (
                 "temp" if generated_output else "out" if args.reset else "none"
@@ -258,25 +264,23 @@ for input in inputs:
             )
 
             is_generator = result_file == output_file
-            future = executor.submit(
-                run_sol,
-                sol,
-                result_file,
-                is_generator,
-                parallel_logger_manager.sinks[si],
-            )
+            logger = parallel_logger_manager.get_sink()
+            future = executor.submit(run_sol, sol, result_file, is_generator, logger)
             if is_generator:
-                infob(get_output_creation_message(output_file))
+                testcase_logger.infob(get_output_creation_message(output_file))
                 generated_output = True
-                future.add_done_callback(lambda _: output_ready.set())
-            futures.append(future)
+                future.add_done_callback(lambda _, o=output_ready: o.set())
+            future.add_done_callback(lambda _, l=logger: logger_close_and_trigger(l))
 
         if not generated_output:
             output_ready.set()
-        for future, logger in zip(futures, parallel_logger_manager.sinks):
-            future.result()
-            plain(logger.read())
-        parallel_logger_manager.clear_buffers()
+        logger_close_and_trigger(testcase_logger)
+
+    while parallel_logger_manager.last_open < len(parallel_logger_manager.sinks):
+        parallel_logger_manager.closed_event.wait()
+        parallel_logger_manager.closed_event.clear()
+        plain(parallel_logger_manager.read_closed())
+
 
 # ------------ print sumary ------------------
 

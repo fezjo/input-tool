@@ -3,6 +3,7 @@
 from __future__ import annotations
 from enum import Enum
 import sys
+import threading
 from typing import Any, Sequence
 
 
@@ -199,6 +200,7 @@ class BufferedLogger(Logger):
     def __init__(self, file=sys.stderr):
         self.file = file
         self.buffer = []
+        self.open = True
 
     def error(self, text: Any, doquit: bool = True, flush: bool = True) -> None:
         message = "%s%s%s\n" % (Color.error, text, Color.normal)
@@ -215,13 +217,18 @@ class BufferedLogger(Logger):
         return "".join(self.buffer)
 
     def flush(self) -> None:
-        self.file.write("".join(self.buffer))
+        self.file.write(self.read())
         self.buffer.clear()
+
+    def close(self) -> None:
+        self.open = False
 
 
 class ParallelLoggerManager:
     def __init__(self):
         self.sinks: list[BufferedLogger] = []
+        self.last_open = 0
+        self.closed_event = threading.Event()
 
     def get_sink(self) -> BufferedLogger:
         self.sinks.append(BufferedLogger())
@@ -230,6 +237,16 @@ class ParallelLoggerManager:
     def clear_buffers(self) -> None:
         for c in self.sinks:
             c.buffer.clear()
+
+    def read_closed(self):
+        res = []
+        while self.last_open < len(self.sinks):
+            sink = self.sinks[self.last_open]
+            if sink.open:
+                break
+            res.append(sink.read())
+            self.last_open += 1
+        return "".join(res)
 
 
 def error(text: Any, doquit: bool = True) -> None:

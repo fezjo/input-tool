@@ -28,8 +28,6 @@ input-tester:
 
 ### Paralelizácia
 
-Paralelné testovanie prebieha iba v rámci jedného vstupu &ndash; teda druhý vstup sa začne testovať až keď všetky programy dobehnú na tom prvom.
-
 Pri testovaní viacero riešení naraz budú časy ktoré nameriame na jednotlivých riešeniach o kúsok väčšie ako tie pri sériovom testovaní. Odporúčame teda občas a hlavne pred zverejnením úloh pretestovať riešenia bez paralelizácie.
 
 ### Inteligencia
