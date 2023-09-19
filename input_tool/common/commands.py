@@ -178,27 +178,30 @@ class Program:
         )
         if docompile:
             if self.lang is Langs.Lang.c:
-                self.compilecmd = f'CFLAGS="-O2 -std=c17 $CFLAGS" make {self.run_cmd}'
+                options = f'CFLAGS="-O2 -std=c17 $CFLAGS"'
+                self.compilecmd = f"make {options} {self.run_cmd}"
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.cpp:
-                self.compilecmd = (
-                    f'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" make {self.run_cmd}'
-                )
+                options = f'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS"'
+                self.compilecmd = f"make {options} {self.run_cmd}"
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.pascal:
-                self.compilecmd = "fpc -o {} {}".format(self.run_cmd, self.source)
+                options = f'PFLAGS="-O2 $FFLAGS"'
+                self.compilecmd = f"make {options} {self.run_cmd}"
+                # self.compilecmd = "fpc -o {} {}".format(self.run_cmd, self.source)
+                # self.filestoclear.append(self.run_cmd + ".o")
                 self.filestoclear.append(self.run_cmd)
-                self.filestoclear.append(self.run_cmd + ".o")
             elif self.lang is Langs.Lang.java:
-                class_dir = ".classdir-{}-{}.tmp".format(
-                    to_base_alnum(self.name), os.getpid()
+                class_dir = "{}/.classdir-{}-{}.tmp".format(
+                    Config.progdir, to_base_alnum(self.name), os.getpid()
                 )
                 os.mkdir(class_dir)
                 self.compilecmd = f"javac {self.source} -d {class_dir}"
                 self.filestoclear.append(class_dir)
                 self.run_cmd = f"-cp {class_dir} {self.run_cmd}"
             elif self.lang is Langs.Lang.rust:
-                self.compilecmd = f"rustc -C opt-level=2 {self.run_cmd}.rs"
+                options = f"-C opt-level=2"
+                self.compilecmd = f"rustc {options} {self.run_cmd}.rs"
                 self.filestoclear.append(self.run_cmd)
 
         if not os.access(self.run_cmd, os.X_OK):
