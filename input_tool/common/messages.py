@@ -4,7 +4,7 @@ from __future__ import annotations
 from enum import Enum
 import sys
 import threading
-from typing import Any, Sequence
+from typing import Any, List, Sequence
 
 
 class Status(Enum):
@@ -199,7 +199,7 @@ class Logger:
 class BufferedLogger(Logger):
     def __init__(self, file=sys.stderr):
         self.file = file
-        self.buffer = []
+        self.buffer: List[str] = []
         self.open = True
 
     def error(self, text: Any, doquit: bool = True, flush: bool = True) -> None:
@@ -239,7 +239,7 @@ class ParallelLoggerManager:
             c.buffer.clear()
 
     def read_closed(self):
-        res = []
+        res: List[str] = []
         while self.last_open < len(self.sinks):
             sink = self.sinks[self.last_open]
             if sink.open:

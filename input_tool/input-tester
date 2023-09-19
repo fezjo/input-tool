@@ -225,7 +225,7 @@ def get_output_creation_message(output_file: str) -> str:
 
 
 def general_run_sol(
-    sol: Solution, input_file: str, output_file: str, result_file: str, *rargs
+    sol: Solution, input_file: str, output_file: str, result_file: str, *rargs: Any
 ) -> None:
     try:
         sol.run(input_file, output_file, result_file, checker, *rargs)
@@ -258,8 +258,8 @@ with ThreadPoolExecutor(max_workers=args.threads) as executor:
         if len(solutions) > 1:
             testcase_logger.info(f"{input} >")
 
-        run_sol = lambda sol, resf, *rargs, inpf=input_file, outf=output_file: general_run_sol(
-            sol, inpf, outf, resf, *rargs
+        run_sol = lambda sol, resf, *rargs, inpf=input_file, outf=output_file: (
+            general_run_sol(sol, inpf, outf, resf, *rargs)
         )
 
         output_ready = checker.output_ready[input_file]

@@ -30,7 +30,7 @@ import sys
 from input_tool.common.commands import Config, Generator
 from input_tool.common.messages import *
 from input_tool.common.parser import Parser, ArgsGenerator
-from input_tool.common.recipes import Recipe
+from input_tool.common.recipes import Input, Recipe
 
 parser = Parser(description, options)
 args = parser.parse(ArgsGenerator)
@@ -98,17 +98,23 @@ recipe.inputs.sort()
 leftw = max([len(i.get_name(ext=args.inext)) for i in recipe.inputs])
 prev = None
 
+
+def get_ifile(x: Input):
+    return x.get_name(path=indir + "/", ext=args.inext)
+
+
 with ThreadPoolExecutor(max_workers=args.threads) as executor:
-    get_ifile = lambda x: x.get_name(path=indir + "/", ext=args.inext)
-    futures = []
-    for input in recipe.inputs:
-        ifile = get_ifile(input)
-        future = executor.submit(
-            programs[input.generator or gencmd].generate,
-            ifile,
-            input.get_generation_text(),
+    futures = [
+        (
+            executor.submit(
+                programs[input.generator or gencmd].generate,
+                get_ifile(input),
+                input.get_generation_text(),
+            ),
+            input,
         )
-        futures.append((future, input))
+        for input in recipe.inputs
+    ]
 
     # for input, future in futures:
     for future, input in futures:
