@@ -35,6 +35,8 @@ import os
 from enum import Enum
 from typing import Iterable
 
+from input_tool.common.messages import table_header
+
 
 def is_file_newer(file1: str, file2: str) -> bool | None:
     if not os.path.exists(file1) or not os.path.exists(file2):
@@ -98,6 +100,13 @@ class Config:
     progdir: str
     cmd_maxlen: int = len("Solution")
 
+
+def get_statistics_header(inputs: Iterable[str]) -> str:
+    batches = set([x.rsplit(".", 2)[0] for x in inputs if not "sample" in x])
+    pts = len(batches)
+    widths = [Config.cmd_maxlen, 8, 9, 6, 6]
+    colnames = ["Solution", "Max time", "Times sum", f"Pt {pts:3}", "Status"]
+    return table_header(colnames, widths, [-1, 1, 1, 1, 0])
 
 """
 # compile the wrapper if turned on

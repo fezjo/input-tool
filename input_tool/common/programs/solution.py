@@ -3,17 +3,10 @@ from dataclasses import dataclass
 import os
 import subprocess
 import tempfile
-from typing import List, Optional, Sequence, Tuple, Iterable
+from typing import List, Optional, Sequence, Tuple
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
-from input_tool.common.messages import (
-    Color,
-    default_logger,
-    Logger,
-    Status,
-    table_header,
-    table_row,
-)
+from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 
@@ -65,14 +58,6 @@ class Solution(Program):
             elif parts[1] == "wa":
                 score -= 100
         return (-1, -score, self.name)
-
-    @staticmethod
-    def get_statistics_header(inputs: Iterable[str]) -> str:
-        batches = set([x.rsplit(".", 2)[0] for x in inputs if not "sample" in x])
-        pts = len(batches)
-        widths = [Config.cmd_maxlen, 8, 9, 6, 6]
-        colnames = ["Solution", "Max time", "Times sum", f"Pt {pts:3}", "Status"]
-        return table_header(colnames, widths, [-1, 1, 1, 1, 0])
 
     def grade_results(self) -> tuple[int, int]:
         points, maxpoints = 0, 0
