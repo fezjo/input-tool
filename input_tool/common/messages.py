@@ -196,6 +196,9 @@ class Logger:
         self.write(text)
 
 
+default_logger = Logger()
+
+
 class BufferedLogger(Logger):
     def __init__(self, file=sys.stderr):
         self.file = file

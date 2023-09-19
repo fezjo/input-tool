@@ -42,16 +42,13 @@ from concurrent.futures import ThreadPoolExecutor
 import itertools
 import os
 
-from input_tool.common.commands import (
-    Langs,
-    Config,
-    Program,
-    Solution,
-    Validator,
-    Checker,
-)
+from input_tool.common.commands import Langs, Config
 from input_tool.common.messages import *
 from input_tool.common.parser import Parser, ArgsTester
+from input_tool.common.programs.checker import Checker
+from input_tool.common.programs.program import Program
+from input_tool.common.programs.solution import Solution
+from input_tool.common.programs.validator import Validator
 
 parser = Parser(description, options)
 args = parser.parse(ArgsTester)
@@ -175,6 +172,9 @@ if not args.dupprog:
             d[key] = s
             l.append(s)
     solutions = l
+
+for s in solutions:
+    Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.run_cmd))
 
 # }}}
 # {{{ ------------ prepare inputs ----------------

@@ -27,9 +27,10 @@ import os
 import shutil
 import sys
 
-from input_tool.common.commands import Config, Generator
+from input_tool.common.commands import Config
 from input_tool.common.messages import *
 from input_tool.common.parser import Parser, ArgsGenerator
+from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
 
 parser = Parser(description, options)
