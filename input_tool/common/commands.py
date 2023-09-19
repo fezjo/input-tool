@@ -152,8 +152,7 @@ class Program:
                     valid.append("<noextension>")
             if len(valid) > 1:
                 default_logger.warning(
-                    "Warning: multiple possible sources for %s, using first %s"
-                    % (self.name, valid)
+                    f"Warning: multiple possible sources for {self.name}, using first {valid}"
                 )
         else:
             self.source = self.name
@@ -179,40 +178,39 @@ class Program:
         )
         if docompile:
             if self.lang is Langs.Lang.c:
-                self.compilecmd = 'CFLAGS="-O2 -std=c17 $CFLAGS" make %s' % self.run_cmd
+                self.compilecmd = f'CFLAGS="-O2 -std=c17 $CFLAGS" make {self.run_cmd}'
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.cpp:
                 self.compilecmd = (
-                    'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" make %s' % self.run_cmd
+                    f'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" make {self.run_cmd}'
                 )
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.pascal:
-                self.compilecmd = "fpc -o%s %s" % (self.run_cmd, self.source)
+                self.compilecmd = "fpc -o {} {}".format(self.run_cmd, self.source)
                 self.filestoclear.append(self.run_cmd)
                 self.filestoclear.append(self.run_cmd + ".o")
             elif self.lang is Langs.Lang.java:
-                class_dir = ".classdir-%s-%s.tmp" % (
-                    to_base_alnum(self.name),
-                    os.getpid(),
+                class_dir = ".classdir-{}-{}.tmp".format(
+                    to_base_alnum(self.name), os.getpid()
                 )
                 os.mkdir(class_dir)
-                self.compilecmd = "javac %s -d %s" % (self.source, class_dir)
+                self.compilecmd = f"javac {self.source} -d {class_dir}"
                 self.filestoclear.append(class_dir)
-                self.run_cmd = "-cp %s %s" % (class_dir, self.run_cmd)
+                self.run_cmd = f"-cp {class_dir} {self.run_cmd}"
             elif self.lang is Langs.Lang.rust:
-                self.compilecmd = "rustc -C opt-level=2 %s.rs" % self.run_cmd
+                self.compilecmd = f"rustc -C opt-level=2 {self.run_cmd}.rs"
                 self.filestoclear.append(self.run_cmd)
 
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
-                self.run_cmd = "%s %s" % (Config.pythoncmd, self.source)
+                self.run_cmd = f"{Config.pythoncmd} {self.source}"
             if self.lang is Langs.Lang.java:
                 self.run_cmd = "java -Xss256m " + self.run_cmd
 
     def prepare(self, logger: Optional[Logger] = None) -> None:
         logger = default_logger if logger is None else logger
         if self.compilecmd != None:
-            logger.infob("Compiling: %s" % self.compilecmd)
+            logger.infob(f"Compiling: {self.compilecmd}")
             result = subprocess.run(
                 self.compilecmd,
                 shell=True,
@@ -244,7 +242,7 @@ class Program:
                 else:
                     os.remove(f)
             else:
-                default_logger.warning("Not found %s" % f)
+                default_logger.warning(f"Not found {f}")
 
 
 class Solution(Program):
@@ -302,7 +300,7 @@ class Solution(Program):
         batches = set([x.rsplit(".", 2)[0] for x in inputs if not "sample" in x])
         pts = len(batches)
         widths = [Solution.cmd_maxlen, 8, 9, 6, 6]
-        colnames = ["Solution", "Max time", "Times sum", "Pt %3d" % pts, "Status"]
+        colnames = ["Solution", "Max time", "Times sum", f"Pt {pts:3}", "Status"]
         return table_header(colnames, widths, [-1, 1, 1, 1, 0])
 
     def grade_results(self) -> tuple[int, int]:
@@ -420,7 +418,7 @@ class Solution(Program):
             return
 
         if not self.ready:
-            logger.error("%s not prepared for execution" % self.name)
+            logger.error(f"{self.name} not prepared for execution")
 
         # run solution
         run_times: Optional[list[float]] = None
@@ -476,11 +474,13 @@ class Solution(Program):
             input = ("{:" + str(Config.inside_inputmaxlen) + "s}").format(
                 (ifile.rsplit("/", 1)[1])
             )
-            summary = "%s < %s %s" % (run_cmd, input, time)
+            summary = "{} < {} {}".format(run_cmd, input, time)
         else:
-            summary = "    %s  %s" % (run_cmd, time)
+            summary = "    {}  {}".format(run_cmd, time)
 
-        logger.plain("%s %s\n" % (Color.colorize(status, summary), status.colored()))
+        logger.plain(
+            "{} {}\n".format(Color.colorize(status, summary), status.colored())
+        )
 
         if status == Status.err:
             logger.error("Internal error. Testing will not continue", doquit=True)
@@ -568,13 +568,13 @@ class Checker(Program):
         logger = default_logger if logger is None else logger
         cmd = self.diff_cmd(ifile, ofile, tfile)
         if cmd is None:
-            logger.error("Unsupported checker %s" % self.name)
+            logger.error(f"Unsupported checker {self.name}")
             return -1
         result = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE)
         if not self.quiet:
             logger.plain(result.stderr.decode("utf-8"))
         if not result.returncode in (0, 1):
-            logger.warning("Checker exited with status %s" % result)
+            logger.warning(f"Checker exited with status {result}")
         return result.returncode
 
 
@@ -583,7 +583,7 @@ class Generator(Program):
         return (-4, 0, self.name)
 
     def generate(self, ifile: str, text: str) -> Status:
-        cmd = "%s > %s" % (self.run_cmd, ifile)
+        cmd = f"{self.run_cmd} > {ifile}"
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
         p.communicate(str.encode(text))
         return Status.exc if p.returncode else Status.ok
@@ -593,13 +593,13 @@ class Generator(Program):
 # compile the wrapper if turned on
 wrapper_binary = None
 if args.wrapper != False:
-    path = args.wrapper or '$WRAPPER'
-    if os.uname()[-1] == 'x86_64':
-        wrapper_source='%s/wrapper-mj-amd64.c' % path
+    path = args.wrapper or "$WRAPPER"
+    if os.uname()[-1] == "x86_64":
+        wrapper_source = f"{path}/wrapper-mj-amd64.c"
     else:
-        wrapper_source='%s/wrapper-mj-x86.c' % path
-    wrapper_binary='%s/wrapper' % path
-    if os.system('gcc -O2 -o %s %s' % (wrapper_binary, wrapper_source)):
-        error('Wrapper compile failed.')
+        wrapper_source = f"{path}/wrapper-mj-x86.c"
+    wrapper_binary = f"{path}/wrapper"
+    if os.system(f"gcc -O2 -o {wrapper_binary} {wrapper_source}"):
+        error("Wrapper compile failed.")
         quit(1)
 """

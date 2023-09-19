@@ -190,7 +190,7 @@ class Logger:
         self.colored(text, Color.infog)
 
     def info(self, text: Any) -> None:
-        self.write("%s\n" % text)
+        self.write(f"{text}\n")
 
     def plain(self, text: Any) -> None:
         self.write(text)
@@ -268,7 +268,7 @@ def infog(text: Any) -> None:
 
 
 def info(text: Any) -> None:
-    _sew("%s\n" % text)
+    _sew(f"{text}\n")
 
 
 def plain(text: Any) -> None:

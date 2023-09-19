@@ -42,13 +42,13 @@ if args.multi:
     Input.maxid = 1
 
 warning_messages = {
-    "noend": "In %s some line does not end with \\n",
-    "empty": "%s is empty",
-    "emptyline": "%s is just an empty line",
-    "ws-start": "In %s some line starts with a whitespace",
-    "ws-end": "In %s some line ends with a whitespace",
-    "bl-start": "%s starts with blank line",
-    "bl-end": "%s ends with blank line",
+    "noend": "In {} some line does not end with \\n",
+    "empty": "{} is empty",
+    "emptyline": "{} is just an empty line",
+    "ws-start": "In {} some line starts with a whitespace",
+    "ws-end": "In {} some line ends with a whitespace",
+    "bl-start": "{} starts with blank line",
+    "bl-end": "{} ends with blank line",
 }
 
 tips: list[str] = []
@@ -117,14 +117,14 @@ for sample in samples:
 
 tips = sorted(list(set(tips)))
 for w in tips:
-    message = warning_messages[w] % "some input/output"
+    message = warning_messages[w].format("some input/output")
     message = message[0].upper() + message[1:]
     warning(message)
 
 indir = args.indir
 for d in (args.indir, args.outdir):
     if not os.path.exists(d):
-        infob("Creating directory '%s'" % d)
+        infob(f"Creating directory '{d}'")
         os.makedirs(d)
 
 for sample in samples:

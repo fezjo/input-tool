@@ -358,7 +358,7 @@ class Parser:
         for arg in arguments:
             args, kwargs = self.options.get(arg, (None, None))
             if args == None or kwargs == None:
-                raise NameError("Unrecognized option %s" % arg)
+                raise NameError(f"Unrecognized option {arg}")
             self.parser.add_argument(*args, **kwargs)
 
     Args = TypeVar("Args", ArgsSample, ArgsGenerator, ArgsTester)

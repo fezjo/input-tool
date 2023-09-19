@@ -104,7 +104,7 @@ class Input:
         self._apply_commands()
         self._apply_format()
         if self.name:
-            self.name = ".%s" % self.name
+            self.name = f".{self.name}"
 
     def get_name(self, path: str = "", ext: str = "") -> str:
         return "%s%s%s.%s" % (path, self.batch, self.name, ext)

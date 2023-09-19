@@ -42,8 +42,7 @@ Config.pythoncmd = next(
 )
 if Config.pythoncmd != args.pythoncmd:
     warning(
-        "Python interpreter '%s' not found, using '%s'"
-        % (args.pythoncmd, Config.pythoncmd)
+        f"Python interpreter '{args.pythoncmd}' not found, using '{Config.pythoncmd}'"
     )
 
 for key in ("quiet", "compile", "execute"):
@@ -77,21 +76,21 @@ for p in sorted(programs):
 
 indir = args.indir
 if not os.path.exists(indir):
-    infob("Creating directory '%s'" % indir)
+    infob(f"Creating directory '{indir}'")
     os.makedirs(indir)
 
 filestoclear = os.listdir(indir)
 if len(filestoclear) and args.clearinput:
-    infob("Cleaning directory '%s:'" % indir)
+    infob(f"Cleaning directory '{indir}:'")
     # delete only following files
     exttodel = ["in", "out", "temp", args.inext]
     for file in filestoclear:
         if file.endswith(args.inext) and "sample" in file:
-            info("  ommiting file '%s'" % file)
+            info(f"  ommiting file '{file}'")
         elif file.rsplit(".", 1)[-1] not in exttodel:
-            info("  not deleting file '%s'" % file)
+            info(f"  not deleting file '{file}'")
         else:
-            os.remove("%s/%s" % (indir, file))
+            os.remove(f"{indir}/{file}")
 
 
 infob("Generating:")
@@ -121,7 +120,7 @@ with ThreadPoolExecutor(max_workers=args.threads) as executor:
             print(" " * (leftw + 4) + ".")
         prev = input
 
-        msg = "  %s  <  %s" % (short, input.get_info_text(len(short) + 4))
+        msg = "  {}  <  {}".format(short, input.get_info_text(len(short) + 4))
         if status != Status.ok:
             msg += "\t!Generator encountered an error!"
         print(Color.colorize(status, msg))

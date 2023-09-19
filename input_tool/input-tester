@@ -63,7 +63,7 @@ Color.setup(args.colorful)
 
 if args.deprecated:
     for option in args.deprecated:
-        warning("Option '%s' is deprecated." % option)
+        warning(f"Option '{option}' is deprecated.")
 
 for key in ("pythoncmd", "fskip", "memorylimit", "quiet", "compile", "execute"):
     setattr(Config, key, getattr(args, key))
@@ -155,8 +155,8 @@ if not args.dupprog:
         key = s.run_cmd
         if key in d:
             warning(
-                "Solution %s and %s have the same run command. "
-                "Keeping only first." % (d[key].name, s.name)
+                f"Solution {d[key].name} and {s.name} have the same run command. "
+                "Keeping only first."
             )
         else:
             d[key] = s
@@ -191,7 +191,7 @@ def temp_clear() -> None:
         filter(lambda x: x.endswith(args.tempext), os.listdir(args.outdir))
     )
     if len(tempfiles):
-        info("Deleting all .%s files" % args.tempext)
+        info(f"Deleting all .{args.tempext} files")
         for tempfile in tempfiles:
             os.remove(args.outdir + "/" + tempfile)
 
@@ -208,7 +208,7 @@ Config.inside_inputmaxlen = max(map(len, inputs))
 
 def get_output_creation_message(output_file: str) -> str:
     reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
-    return "File %s will be created now (%s)." % (output_file, reason)
+    return f"File {output_file} will be created now ({reason})."
 
 
 def general_run_sol(
@@ -243,7 +243,7 @@ with ThreadPoolExecutor(max_workers=args.threads) as executor:
 
         testcase_logger = parallel_logger_manager.get_sink()
         if len(solutions) > 1:
-            testcase_logger.info("%s >" % (input))
+            testcase_logger.info(f"{input} >")
 
         run_sol = lambda sol, resf, *rargs, inpf=input_file, outf=output_file: general_run_sol(
             sol, inpf, outf, resf, *rargs
