@@ -106,6 +106,7 @@ class Config:
     execute: bool
     inside_oneline: bool
     inside_inputmaxlen: int
+    progdir: str
 
 
 class Program:
@@ -178,17 +179,20 @@ class Program:
         )
         if docompile:
             if self.lang is Langs.Lang.c:
-                options = f'CFLAGS="-O2 -std=c17 $CFLAGS"'
-                self.compilecmd = f"make {options} {self.run_cmd}"
+                options = f'CFLAGS="-O2 -std=c17 $CFLAGS" VPATH=../..'
+                self.compilecmd = f"cd {Config.progdir}; make {options} {self.run_cmd}"
+                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.cpp:
-                options = f'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS"'
-                self.compilecmd = f"make {options} {self.run_cmd}"
+                options = f'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" VPATH=../..'
+                self.compilecmd = f"cd {Config.progdir}; make {options} {self.run_cmd}"
+                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.pascal:
-                options = f'PFLAGS="-O2 $FFLAGS"'
-                self.compilecmd = f"make {options} {self.run_cmd}"
-                # self.compilecmd = "fpc -o {} {}".format(self.run_cmd, self.source)
+                options = f'PFLAGS="-O2 $FFLAGS" VPATH=../..'
+                self.compilecmd = f"cd {Config.progdir}; make {options} {self.run_cmd}"
+                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
+                # self.compilecmd = "fpc -o {}/{} {}".format(Config.progdir, self.run_cmd, self.source)
                 # self.filestoclear.append(self.run_cmd + ".o")
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.java:
@@ -200,8 +204,9 @@ class Program:
                 self.filestoclear.append(class_dir)
                 self.run_cmd = f"-cp {class_dir} {self.run_cmd}"
             elif self.lang is Langs.Lang.rust:
-                options = f"-C opt-level=2"
+                options = f"-C opt-level=2 --out-dir {Config.progdir}"
                 self.compilecmd = f"rustc {options} {self.run_cmd}.rs"
+                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
                 self.filestoclear.append(self.run_cmd)
 
         if not os.access(self.run_cmd, os.X_OK):

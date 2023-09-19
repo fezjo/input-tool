@@ -38,6 +38,7 @@ class ArgsGenerator:
 class ArgsTester:
     indir: str
     outdir: str
+    progdir: str
     inext: str
     outext: str
     tempext: str
@@ -90,6 +91,14 @@ class Parser:
                 dest: "outdir",
                 default: "test",
                 help: "directory for output and temporary files (default=test)",
+            },
+        ),
+        "progdir": (
+            ("-p", "--progdir"),
+            {
+                dest: "progdir",
+                default: "test/prog",
+                help: "directory where programs compile to (default=test/prog)",
             },
         ),
         "inext": (

@@ -10,6 +10,7 @@ By default, automatically decide, how to compile and run solution.
 options = [
     "indir",
     "outdir",
+    "progdir",
     "inext",
     "outext",
     "tempext",
@@ -42,7 +43,6 @@ import itertools
 import os
 
 from input_tool.common.commands import (
-    default_logger,
     Langs,
     Config,
     Program,
@@ -65,9 +65,18 @@ if args.deprecated:
     for option in args.deprecated:
         warning(f"Option '{option}' is deprecated.")
 
-for key in ("pythoncmd", "fskip", "memorylimit", "quiet", "compile", "execute"):
+for key in (
+    "progdir",
+    "pythoncmd",
+    "fskip",
+    "memorylimit",
+    "quiet",
+    "compile",
+    "execute",
+):
     setattr(Config, key, getattr(args, key))
 Config.rus_time = os.access("/usr/bin/time", os.X_OK) and args.rustime
+os.makedirs(Config.progdir, exist_ok=True)
 
 
 def parse_timelimit(str_timelimit: str) -> dict[Langs.Lang | str, float]:
@@ -133,6 +142,10 @@ def cleanup() -> None:
     if args.clearbin:
         for p in programs:
             p.clear_files()
+        try:
+            os.rmdir(Config.progdir)
+        except OSError:
+            warning(f"Program directory not empty {os.listdir(Config.progdir)}")
 
 
 atexit.register(cleanup)
