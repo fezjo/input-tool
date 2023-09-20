@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 
-from input_tool.common.commands import Config, to_base_alnum
-from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
+from input_tool.common.commands import to_base_alnum
+from input_tool.common.messages import Color, default_logger, Logger, Status
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.solution import Solution
 
@@ -23,26 +23,10 @@ class Validator(Solution):
         if original == Status.valid:
             return new
         return original
-
-    def grade_results(self) -> None:
-        for batch, _ in self.statistics.batchresults.items():
-            times = [ts[0] for ts in self.statistics.times[batch] if ts]
-            self.statistics.maxtime = max(self.statistics.maxtime, max(times))
-            self.statistics.sumtime += sum(times)
-
-    def get_statistics(self) -> str:
-        self.grade_results()
+    
+    def get_statistics_color_and_points(self) -> Tuple[Color, str]:
         color = Color.score_color(self.statistics.result == Status.valid, 1)
-        widths = (Config.cmd_maxlen, 8, 9, 6, 6)
-        colnames = [
-            self.name,
-            self.statistics.maxtime,
-            self.statistics.sumtime,
-            "",
-            self.statistics.result,
-        ]
-
-        return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
+        return color, ""
 
     def run_args(self, ifile: str) -> str:
         return " ".join(ifile.split("/")[-1].split(".")) + " "

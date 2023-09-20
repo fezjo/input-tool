@@ -58,6 +58,12 @@ class Solution(Program):
             elif parts[1] == "wa":
                 score -= 100
         return (-1, -score, self.name)
+    
+    def compute_time_statistics(self) -> None:
+        for batch, _ in self.statistics.batchresults.items():
+            times = [ts[0] for ts in self.statistics.times[batch] if ts]
+            self.statistics.maxtime = max(self.statistics.maxtime, max(times))
+            self.statistics.sumtime += sum(times)
 
     def grade_results(self) -> tuple[int, int]:
         points, maxpoints = 0, 0
@@ -68,14 +74,16 @@ class Solution(Program):
             if result != Status.ok:
                 continue
             points += 1
-            times = [ts[0] for ts in self.statistics.times[batch] if ts]
-            self.statistics.maxtime = max(self.statistics.maxtime, max(times))
-            self.statistics.sumtime += sum(times)
         return points, maxpoints
-
-    def get_statistics(self) -> str:
+    
+    def get_statistics_color_and_points(self) -> Tuple[Color, str]:
         points, maxpoints = self.grade_results()
         color = Color.score_color(points, maxpoints)
+        return color, str(points)
+
+    def get_statistics(self) -> str:
+        self.compute_time_statistics()
+        color, points = self.get_statistics_color_and_points()
         widths = (Config.cmd_maxlen, 8, 9, 6, 6)
         colnames = [
             self.name,
