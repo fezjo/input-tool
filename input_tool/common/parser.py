@@ -1,7 +1,7 @@
 # (c) 2014 jano <janoh@ksp.sk>
 import argparse
 from dataclasses import dataclass, field
-from typing import Any, Type, TypeVar
+from typing import Any, Sequence, Type, TypeVar
 
 
 @dataclass
@@ -362,7 +362,7 @@ class Parser:
         ),
     }
 
-    def __init__(self, description: str, arguments: list[str]):
+    def __init__(self, description: str, arguments: Sequence[str]):
         self.parser = argparse.ArgumentParser(description=description)
         for arg in arguments:
             args, kwargs = self.options.get(arg, (None, None))

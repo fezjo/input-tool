@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import os
 import subprocess
 import tempfile
-from typing import List, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
 from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
@@ -210,7 +210,7 @@ class Solution(Program):
         self,
         ifile: str,
         status: Status,
-        run_times: Optional[List[float]],
+        run_times: Optional[Sequence[float]],
         logger: Logger,
     ) -> None:
         run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.name)
