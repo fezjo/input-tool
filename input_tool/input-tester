@@ -237,16 +237,12 @@ def get_output_creation_message(output_file: str) -> str:
 
 
 def general_run_sol(
-    sol: Solution, input_file: str, output_file: str, result_file: str, *rargs: Any
+    sol: Solution, ifile: str, ofile: str, rfile: str, cleartemp: bool, *rargs: Any
 ) -> None:
     try:
-        sol.run(input_file, output_file, result_file, checker, *rargs)
-        if (
-            args.cleartemp  # TODO how to get this config?
-            and output_file != result_file
-            and os.path.exists(result_file)
-        ):
-            os.remove(result_file)
+        sol.run(ifile, ofile, rfile, checker, *rargs)
+        if cleartemp and ofile != rfile and os.path.exists(rfile):
+            os.remove(rfile)
     except Exception as err:
         error(err)
 
@@ -276,12 +272,12 @@ def test_all(
 
             def run_sol(
                 sol: Solution,
-                resf: str,
+                rfile: str,
                 *rargs: Any,
-                inpf: str = input_file,
-                outf: str = output_file,
+                ifile: str = input_file,
+                ofile: str = output_file,
             ) -> None:
-                general_run_sol(sol, inpf, outf, resf, *rargs)
+                general_run_sol(sol, ifile, ofile, rfile, args.cleartemp, *rargs)
 
             output_ready = checker.output_ready[input_file]
             output_ready.clear()
