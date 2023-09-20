@@ -20,6 +20,7 @@ class ArgsSample:
 @dataclass
 class ArgsGenerator:
     indir: str
+    progdir: str
     inext: str
     compile: bool
     execute: bool

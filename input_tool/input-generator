@@ -8,6 +8,7 @@ generator. Empty lines separate batches.
 """
 options = [
     "indir",
+    "progdir",
     "inext",
     "compile",
     "execute",
@@ -46,7 +47,7 @@ if Config.pythoncmd != args.pythoncmd:
         f"Python interpreter '{args.pythoncmd}' not found, using '{Config.pythoncmd}'"
     )
 
-for key in ("quiet", "compile", "execute"):
+for key in ("progdir", "quiet", "compile", "execute"):
     setattr(Config, key, getattr(args, key))
 
 if args.description:
