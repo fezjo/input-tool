@@ -4,7 +4,7 @@ from __future__ import annotations
 from enum import Enum
 import sys
 import threading
-from typing import Any, Sequence
+from typing import Any, Sequence, TextIO
 
 
 class Status(Enum):
@@ -161,7 +161,7 @@ while _changed:
 
 
 class Logger:
-    def __init__(self, file=sys.stderr):
+    def __init__(self, file: TextIO = sys.stderr):
         self.file = file
 
     def write(self, text: Any) -> None:
@@ -170,11 +170,9 @@ class Logger:
     def colored(self, text: Any, color: Color, end: Any = "\n") -> None:
         self.write("%s%s%s%s" % (color, text, Color.normal, end))
 
-    def error(self, text: Any, doquit: bool = True, stderr: bool = False) -> None:
+    def error(self, text: Any, *, doquit: bool = True) -> None:
         message = "%s%s%s\n" % (Color.error, text, Color.normal)
         self.write(message)
-        if stderr:
-            _sew(message)
         if doquit:
             quit(1)
 
@@ -200,12 +198,12 @@ default_logger = Logger()
 
 
 class BufferedLogger(Logger):
-    def __init__(self, file=sys.stderr):
+    def __init__(self, file: TextIO = sys.stderr):
         self.file = file
         self.buffer: list[str] = []
         self.open = True
 
-    def error(self, text: Any, doquit: bool = True, flush: bool = True) -> None:
+    def error(self, text: Any, *, doquit: bool = True, flush: bool = True) -> None:
         message = "%s%s%s\n" % (Color.error, text, Color.normal)
         self.write(message)
         if flush:

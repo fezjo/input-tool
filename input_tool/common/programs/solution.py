@@ -18,7 +18,7 @@ class Solution(Program):
         sumtime: float
         batchresults: dict[str, Status]
         result: Status
-        times: defaultdict[str, list[Optional[tuple[float]]]]
+        times: defaultdict[str, list[Optional[tuple[float, ...]]]]
         failedbatches: set[str]
 
     def __init__(self, name: str):

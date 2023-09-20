@@ -274,9 +274,14 @@ def test_all(
             if len(solutions) > 1:
                 testcase_logger.info(f"{input} >")
 
-            run_sol = lambda sol, resf, *rargs, inpf=input_file, outf=output_file: (
+            def run_sol(
+                sol: Solution,
+                resf: str,
+                *rargs: Any,
+                inpf: str = input_file,
+                outf: str = output_file,
+            ) -> None:
                 general_run_sol(sol, inpf, outf, resf, *rargs)
-            )
 
             output_ready = checker.output_ready[input_file]
             output_ready.clear()
