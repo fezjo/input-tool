@@ -253,6 +253,17 @@ def test_all(
     threads: int,
     args: ArgsTester,
 ) -> None:
+    """
+    First solution generates output file if it doesn't exist. All the other
+    solutions can run in parallel however, they can't be checked via the Checker
+    unless the output file is generated. They wait for Event, which is triggered
+    when the generating solution thread finishes.
+
+    The logs from all the threads are stored separately. Whenever a thread
+    finishes, the corresponding logger closes and triggers an Event.
+    Subsequently, the main thread reads as many of the closed logs as possible
+    and prints them.
+    """
     parallel_logger_manager = ParallelLoggerManager()
 
     def logger_close_and_trigger(logger: BufferedLogger) -> None:
