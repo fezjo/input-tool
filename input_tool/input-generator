@@ -27,6 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 import shutil
 import sys
+from typing import Optional
 
 from input_tool.common.commands import Config
 from input_tool.common.messages import *
@@ -34,103 +35,118 @@ from input_tool.common.parser import Parser, ArgsGenerator
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
 
-parser = Parser(description, options)
-args = parser.parse(ArgsGenerator)
-Color.setup(args.colorful)
 
-pythoncmds = [args.pythoncmd, "pypy3", "python3", "python"]
-Config.pythoncmd = next(
-    (x for x in pythoncmds if shutil.which(x)), "NO_PYTHON_INTERPRETER_FOUND"
-)
-if Config.pythoncmd != args.pythoncmd:
-    warning(
-        f"Python interpreter '{args.pythoncmd}' not found, using '{Config.pythoncmd}'"
+def parse_args() -> ArgsGenerator:
+    parser = Parser(description, options)
+    return parser.parse(ArgsGenerator)
+
+
+def setup_pythoncmd(argcmd: str) -> None:
+    pythoncmds = [argcmd, "pypy3", "python3", "python"]
+    Config.pythoncmd = next(
+        (x for x in pythoncmds if shutil.which(x)), "NO_PYTHON_INTERPRETER_FOUND"
     )
+    if Config.pythoncmd != argcmd:
+        warning(f"Python interpreter '{argcmd}' not found, using '{Config.pythoncmd}'")
 
-for key in ("progdir", "quiet", "compile", "execute"):
-    setattr(Config, key, getattr(args, key))
 
-if args.description:
-    with open(args.description, "r") as f:
-        recipe = Recipe(f.readlines())
-else:
-    recipe = Recipe(sys.stdin.readlines())
+def setup_config(args: ArgsGenerator) -> None:
+    for key in ("progdir", "quiet", "compile", "execute"):
+        setattr(Config, key, getattr(args, key))
 
-recipe.process()
-programs = {x: Generator(x) for x in recipe.programs}
 
-# {{{ ----------- prepare programs -------------------
-gencmd = args.gencmd
-programs[gencmd] = Generator(gencmd)
+def get_recipe(file: Optional[str]) -> Recipe:
+    if file is not None:
+        with open(file, "r") as f:
+            text = f.readlines()
+    else:
+        text = sys.stdin.readlines()
+    return Recipe(text)
 
 
 def cleanup() -> None:
-    if args.clearbin:
-        for p in programs:
-            programs[p].clear_files()
+    for p in programs:
+        programs[p].clear_files()
 
 
-atexit.register(cleanup)
-
-for p in sorted(programs):
-    programs[p].prepare()
-# }}}
-
-indir = args.indir
-if not os.path.exists(indir):
-    infob(f"Creating directory '{indir}'")
-    os.makedirs(indir)
-
-filestoclear = os.listdir(indir)
-if len(filestoclear) and args.clearinput:
-    infob(f"Cleaning directory '{indir}:'")
-    # delete only following files
-    exttodel = ["in", "out", "temp", args.inext]
-    for file in filestoclear:
-        if file.endswith(args.inext) and "sample" in file:
-            info(f"  ommiting file '{file}'")
-        elif file.rsplit(".", 1)[-1] not in exttodel:
-            info(f"  not deleting file '{file}'")
-        else:
-            os.remove(f"{indir}/{file}")
+def prepare_programs(programs: dict[str, Generator]) -> None:
+    for p in sorted(programs):
+        programs[p].prepare()
 
 
-infob("Generating:")
-recipe.inputs.sort()
-leftw = max([len(i.get_name(ext=args.inext)) for i in recipe.inputs])
-prev = None
+def setup_indir(indir: str, inext: str, clear_input: bool):
+    if not os.path.exists(indir):
+        infob(f"Creating directory '{indir}'")
+        os.makedirs(indir)
+
+    filestoclear = os.listdir(indir)
+    if filestoclear and clear_input:
+        infob(f"Cleaning directory '{indir}:'")
+        # delete only following files
+        exttodel = ["in", "out", "temp", inext]
+        for file in filestoclear:
+            if file.endswith(inext) and "sample" in file:
+                info(f"  ommiting file '{file}'")
+            elif file.rsplit(".", 1)[-1] not in exttodel:
+                info(f"  not deleting file '{file}'")
+            else:
+                os.remove(f"{indir}/{file}")
 
 
-def get_ifile(x: Input):
-    return x.get_name(path=indir + "/", ext=args.inext)
+def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> str:
+    return x.get_name(path=args.indir + "/" if path else "", ext=args.inext)
 
 
-with ThreadPoolExecutor(max_workers=args.threads) as executor:
-    futures = [
-        (
-            executor.submit(
-                programs[input.generator or gencmd].generate,
-                get_ifile(input),
-                input.get_generation_text(),
-            ),
-            input,
+def print_message_for_input(
+    leftw: int, status: Status, input: Input, prev: Optional[Input] = None
+):
+    short = ("{:>" + str(leftw) + "s}").format(get_ifile(input, args))
+
+    if prev and prev.batch != input.batch:
+        print(" " * (leftw + 4) + ".")
+
+    msg = "  {}  <  {}".format(short, input.get_info_text(len(short) + 4))
+    if status != Status.ok:
+        msg += "\t!Generator encountered an error!"
+    print(Color.colorize(status, msg))
+
+
+def generate_all(
+    recipe: Recipe, programs: dict[str, Generator], args: ArgsGenerator
+) -> None:
+    def submit_input(executor: ThreadPoolExecutor, input: Input):
+        return executor.submit(
+            programs[input.generator or gencmd].generate,
+            get_ifile(input, args, True),
+            input.get_generation_text(),
         )
-        for input in recipe.inputs
-    ]
 
-    # for input, future in futures:
-    for future, input in futures:
-        status = future.result()
-        ifile = get_ifile(input)
-        short = ("{:>" + str(leftw) + "s}").format(input.get_name(ext=args.inext))
+    infob("Generating:")
+    leftw = max([len(get_ifile(i, args)) for i in recipe.inputs])
+    prev = None
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        futures = [(submit_input(executor, input), input) for input in recipe.inputs]
+        for future, input in futures:
+            print_message_for_input(leftw, future.result(), input, prev)
+            prev = input
+    infob("Done")
 
-        if prev and prev.batch != input.batch:
-            print(" " * (leftw + 4) + ".")
-        prev = input
 
-        msg = "  {}  <  {}".format(short, input.get_info_text(len(short) + 4))
-        if status != Status.ok:
-            msg += "\t!Generator encountered an error!"
-        print(Color.colorize(status, msg))
+args = parse_args()
+Color.setup(args.colorful)
+setup_pythoncmd(args.pythoncmd)
+setup_config(args)
 
-infob("Done")
+recipe = get_recipe(args.description)
+recipe.process()
+recipe.inputs.sort()
+
+programs = {x: Generator(x) for x in recipe.programs}
+gencmd = args.gencmd
+programs[gencmd] = Generator(gencmd)
+prepare_programs(programs)
+if args.clearbin:
+    atexit.register(cleanup)
+
+setup_indir(args.indir, args.inext, args.clearinput)
+generate_all(recipe, programs, args)
