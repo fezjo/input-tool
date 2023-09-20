@@ -1,12 +1,11 @@
 import subprocess
-from typing import Tuple
 
 from input_tool.common.messages import Status
 from input_tool.common.programs.program import Program
 
 
 class Generator(Program):
-    def compare_mask(self) -> Tuple[int, int, str]:
+    def compare_mask(self) -> tuple[int, int, str]:
         return (-4, 0, self.name)
 
     def generate(self, ifile: str, text: str) -> Status:

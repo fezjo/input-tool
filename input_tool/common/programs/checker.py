@@ -1,7 +1,7 @@
 from collections import defaultdict
 import subprocess
 from threading import Event
-from typing import DefaultDict, Optional, Tuple
+from typing import DefaultDict, Optional
 
 from input_tool.common.commands import to_base_alnum
 from input_tool.common.messages import default_logger, Logger
@@ -26,7 +26,7 @@ class Checker(Program):
                 return prefix
         return None
 
-    def compare_mask(self) -> Tuple[int, int, str]:
+    def compare_mask(self) -> tuple[int, int, str]:
         return (-3, 0, self.name)
 
     def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> str | None:

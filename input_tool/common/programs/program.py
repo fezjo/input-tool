@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from typing import Optional, Tuple
+from typing import Optional
 
 from input_tool.common.commands import to_base_alnum, Config, Langs, is_file_newer
 from input_tool.common.messages import default_logger, Logger
@@ -19,7 +19,7 @@ class Program:
         # compute run_cmd, compilecmd and filestoclear
         self._transform()
 
-    def compare_mask(self) -> Tuple[int, int, str]:
+    def compare_mask(self) -> tuple[int, int, str]:
         return (0, 0, self.name)
 
     def __lt__(self, other: Program) -> bool:

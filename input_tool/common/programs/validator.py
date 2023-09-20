@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 from input_tool.common.commands import to_base_alnum
 from input_tool.common.messages import Color, default_logger, Logger, Status
@@ -14,7 +14,7 @@ class Validator(Solution):
     def filename_befits(filename: str) -> bool:
         return to_base_alnum(filename).startswith("val")
 
-    def compare_mask(self) -> Tuple[int, int, str]:
+    def compare_mask(self) -> tuple[int, int, str]:
         return (-2, 0, self.name)
 
     def updated_status(self, original: Status, new: Status) -> Status:
@@ -24,7 +24,7 @@ class Validator(Solution):
             return new
         return original
     
-    def get_statistics_color_and_points(self) -> Tuple[Color, str]:
+    def get_statistics_color_and_points(self) -> tuple[Color, str]:
         color = Color.score_color(self.statistics.result == Status.valid, 1)
         return color, ""
 

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import os
 import subprocess
 import tempfile
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
 from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
@@ -43,7 +43,7 @@ class Solution(Program):
             return new
         return original
 
-    def compare_mask(self) -> Tuple[int, int, str]:
+    def compare_mask(self) -> tuple[int, int, str]:
         filename = os.path.basename(self.name)
         name, _ext = os.path.splitext(filename)
         parts = name.split("-")
@@ -76,7 +76,7 @@ class Solution(Program):
             points += 1
         return points, maxpoints
     
-    def get_statistics_color_and_points(self) -> Tuple[Color, str]:
+    def get_statistics_color_and_points(self) -> tuple[Color, str]:
         points, maxpoints = self.grade_results()
         color = Color.score_color(points, maxpoints)
         return color, str(points)
@@ -127,7 +127,7 @@ class Solution(Program):
 
     def get_exec_cmd(
         self, ifile: str, tfile: str, timelimit: float = 0.0, memorylimit: float = 0.0
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         timefile = tempfile.NamedTemporaryFile(delete=False)
         timefile.close()
         timefile = timefile.name
