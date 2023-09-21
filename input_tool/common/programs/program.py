@@ -76,24 +76,19 @@ class Program:
                 or is_file_newer(self.source, self.run_cmd)
             )
         )
+
+        def setup_compile_by_make(options: str) -> None:
+            self.compilecmd = f"cd {Config.progdir}; make VPATH=../.. {options} {self.run_cmd}"
+            self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
+            self.filestoclear.append(self.run_cmd)
+
         if docompile:
             if self.lang is Langs.Lang.c:
-                options = f'CFLAGS="-O2 -std=c17 $CFLAGS" VPATH=../..'
-                self.compilecmd = f"cd {Config.progdir}; make {options} {self.run_cmd}"
-                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
-                self.filestoclear.append(self.run_cmd)
+                setup_compile_by_make('CFLAGS="-O2 -std=c17 $CFLAGS"')
             elif self.lang is Langs.Lang.cpp:
-                options = f'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" VPATH=../..'
-                self.compilecmd = f"cd {Config.progdir}; make {options} {self.run_cmd}"
-                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
-                self.filestoclear.append(self.run_cmd)
+                setup_compile_by_make('CXXFLAGS="-O2 -std=c++20 $CXXFLAGS"')
             elif self.lang is Langs.Lang.pascal:
-                options = f'PFLAGS="-O2 $FFLAGS" VPATH=../..'
-                self.compilecmd = f"cd {Config.progdir}; make {options} {self.run_cmd}"
-                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
-                # self.compilecmd = "fpc -o {}/{} {}".format(Config.progdir, self.run_cmd, self.source)
-                # self.filestoclear.append(self.run_cmd + ".o")
-                self.filestoclear.append(self.run_cmd)
+                setup_compile_by_make('PFLAGS="-O2 $FFLAGS"')
             elif self.lang is Langs.Lang.java:
                 class_dir = "{}/.classdir-{}-{}.tmp".format(
                     Config.progdir, to_base_alnum(self.name), os.getpid()
