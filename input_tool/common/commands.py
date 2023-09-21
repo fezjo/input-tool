@@ -33,7 +33,7 @@ program.ext      -- If .pyX, run as 'pythonX program.ext. py = py3
 
 import os
 from enum import Enum
-from typing import Iterable
+from typing import Iterable, Optional
 
 from input_tool.common.messages import table_header
 
@@ -97,7 +97,7 @@ class Config:
     execute: bool
     inside_oneline: bool
     inside_inputmaxlen: int
-    progdir: str
+    progdir: Optional[str]
     cmd_maxlen: int = len("Solution")
 
 

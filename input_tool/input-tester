@@ -87,7 +87,10 @@ def setup_config(args: ArgsTester) -> None:
     ):
         setattr(Config, key, getattr(args, key))
     Config.rus_time = os.access("/usr/bin/time", os.X_OK) and args.rustime
-    os.makedirs(Config.progdir, exist_ok=True)
+    if not Config.progdir:
+        Config.progdir = None
+    else:
+        os.makedirs(Config.progdir, exist_ok=True)
 
     Config.timelimits.update(parse_timelimit(args.timelimit))
     Config.warn_timelimits.update(parse_timelimit(args.warntimelimit))
@@ -144,10 +147,11 @@ def create_programs_from_files(
 def cleanup() -> None:
     for p in programs:
         p.clear_files()
-    try:
-        os.rmdir(Config.progdir)
-    except OSError:
-        warning(f"Program directory not empty {os.listdir(Config.progdir)}")
+    if Config.progdir is not None:
+        try:
+            os.removedirs(Config.progdir)
+        except OSError:
+            warning(f"Program directory not empty {os.listdir(Config.progdir)}")
 
 
 def prepare_programs(programs: Sequence[Program], threads: int) -> None:

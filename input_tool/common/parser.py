@@ -103,7 +103,8 @@ class Parser:
             {
                 "dest": "progdir",
                 "default": "test/prog",
-                "help": "directory where programs compile to (default=test/prog)",
+                "help": "directory where programs compile to (default=test/prog), "
+                'compile next to source file if set to ""',
             },
         ),
         "inext": (

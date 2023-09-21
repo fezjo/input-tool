@@ -80,17 +80,23 @@ class Program:
         def setup_compile_by_make(options: str) -> None:
             """
             self.run_cmd and Config.progdir can be:
-            /dir/exe, ~/dir/exe, ../dir/exe, ./dir/exe, dir/exe, exe
+            /dir/exe, ~/dir/exe, ../dir/exe, ./dir/exe, dir/exe, exe,
+            and needs to work with includes.
             """
-            path, exe = os.path.split(self.run_cmd)
-            path = path if path else "."
-            path = min(
-                os.path.relpath(path, Config.progdir), os.path.abspath(path), key=len
-            )
-            self.compilecmd = (
-                f"cd {Config.progdir}; make VPATH='{path}' {options} {exe}"
-            )
-            self.run_cmd = f"{Config.progdir}/{exe}"
+            if Config.progdir is None:
+                self.compilecmd = f"make {options} {self.run_cmd}"
+            else:
+                path, exe = os.path.split(self.run_cmd)
+                path = path if path else "."
+                path = min(
+                    os.path.relpath(path, Config.progdir),
+                    os.path.abspath(path),
+                    key=len,
+                )
+                self.compilecmd = (
+                    f"cd {Config.progdir}; make VPATH='{path}' {options} {exe}"
+                )
+                self.run_cmd = f"{Config.progdir}/{exe}"
             self.filestoclear.append(self.run_cmd)
 
         if docompile:
