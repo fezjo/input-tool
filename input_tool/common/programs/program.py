@@ -78,23 +78,20 @@ class Program:
         )
 
         def setup_compile_by_make(options: str) -> None:
-            # absolute path
-            # ~/...
-            # relative path
-            # relative up
-            # no path
-            # progdir as above
-            if path := os.path.split(self.run_cmd)[0]:
-                os.makedirs(path, exist_ok=True)
-            path = f"{Config.progdir}/{path}"
-            self.compilecmd = (
-                f"make VPATH={Config.progdir} {options} {self.run_cmd}; "
-                f"mv {self.run_cmd} {path} || :"
+            """
+            self.run_cmd and Config.progdir can be:
+            /dir/exe, ~/dir/exe, ../dir/exe, ./dir/exe, dir/exe, exe
+            """
+            path, exe = os.path.split(self.run_cmd)
+            path = path if path else "."
+            path = min(
+                os.path.relpath(path, Config.progdir), os.path.abspath(path), key=len
             )
-            self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
+            self.compilecmd = (
+                f"cd {Config.progdir}; make VPATH='{path}' {options} {exe}"
+            )
+            self.run_cmd = f"{Config.progdir}/{exe}"
             self.filestoclear.append(self.run_cmd)
-            if path:
-                self.filestoclear.append(path)
 
         if docompile:
             if self.lang is Langs.Lang.c:
