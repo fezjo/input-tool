@@ -18,15 +18,15 @@
   - Štatistiky po vyhodnotení (vypnúť cez `--no-statistics`)
   - **Kompilovanie C++ s optimalizáciami a novším štandardom**
   - Zvýšené limity pre pamäť a zásobník
-  - **Deduplikovanie programov na vstupe** (spolu s `-K` umožnuje rýchlejšie testovanie, vypnúť cez `--dupprog`)
+  - Deduplikovanie programov na vstupe (vypnúť cez `--dupprog`)
   - **Paralelné kompilovanie, generovanie vstupov a testovanie** (pomocou prepínača `-j`)
   - Podpora alternatívnych Python interpreterov (**PyPy**) pomocou `--pythoncmd cmd` &ndash; generovanie vstupov predvolene pomocou `pypy3`
+- **Kompilovanie do samostatného priečinku**, kompilovanie Java riešení v dočasnom priečinku
 - **Rozšírená funkcionalita IDF o vlastné premenné**
+- Informovanie o neúspešnom generovaní vstupov
 - Možnosť nemať nainštalovaný `time`
 - Zrušená podpora pre Python2
-- Kompilovanie Java riešení v dočasnom priečinku
-- Informovanie o neúspešnom generovaní vstupov
-- Sformátovaný a otypovaný kód
+- Sformátovaný, otypovaný, zmodernizovaný a zrefaktorizovaný kód
 - Prepísané README
 - Bugfixes
 
@@ -55,8 +55,8 @@ Na **Linuxe** je to dosť jednoduché.
 1. Prerekvizity:
 
    - Potrebujete `python3`
-   - Odporúčame `time` (nestačí bashová funkcia)
    - Potrebujete kompilátory C/C++ (kompilujeme pomocou `make`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
+   - _Odporúčame_ `time` (nestačí bashová funkcia)
 
 2. Nainštalujte cez `pip`:
 
@@ -65,6 +65,7 @@ Na **Linuxe** je to dosť jednoduché.
    # alebo
    git clone git@github.com:fezjo/input-tool.git
    pip install -e .
+   # nezabudnite mať inštalačný priečinok v PATH
    ```
 
    Aktualizuje sa pomocou:
