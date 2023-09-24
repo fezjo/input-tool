@@ -146,8 +146,8 @@ def create_checker(
     if len(checker_files) > 1:
         error(
             f"More than one checker found {checker_files}.\n"
-            + "Set explicitly with -d/--diffcmd (e.g. -d diff) "
-            + "or leave only one checker in the directory."
+            "Set explicitly with -d/--diffcmd (e.g. -d diff) "
+            "or leave only one checker in the directory."
         )
     return Checker(checker_files[0], show_diff_output)
 

@@ -56,8 +56,23 @@ def setup_config(args: ArgsGenerator) -> None:
         setattr(Config, key, getattr(args, key))
 
 
+def find_idf(directory: str) -> str:
+    idfs: list[str] = []
+    for de in os.scandir(directory):
+        if de.is_file() and de.name.startswith("idf"):
+            idfs.append(de.path)
+    if len(idfs) != 1:
+        error(
+            f"Found {len(idfs)} idf files {idfs} in directory '{directory}'.\n"
+            f"Please specify idf file manually."
+        )
+    return idfs[0]
+
+
 def get_recipe(file: Optional[str]) -> Recipe:
     if file is not None:
+        if os.path.isdir(file):
+            file = find_idf(file)
         with open(file, "r") as f:
             text = f.readlines()
     else:

@@ -38,6 +38,7 @@
 - **Plne paralelné kompilovanie a testovanie**
 - **Kompilovanie do samostatného priečinku** `test/prog/` (zmena pomocou prepínača `--progdir`)
 - **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
+- **Podpora priečinka ako argument pre `input-generator`** &ndash; automatické načítanie IDF
 - Generovanie vstupov predvolene pomocou `pypy3`
 - Zmodernizovaný a zrefaktorovaný kód
 - Začaté písanie testov
@@ -48,9 +49,9 @@
 ## Rýchlokurz
 
 ```bash
-# napíšeme si riešenia, generátor, idf.txt a potom:
+# napíšeme si riešenia, generátor, idf a potom:
 input-sample zadanie.md # nepovinné
-input-generator idf.txt
+input-generator .
 input-tester .
 
 # o pomoc požiadame `input-<program> -h`, napríklad:
@@ -117,7 +118,7 @@ Dávajte si pozor, aby bol vypísaný vstup korektný, žiadne medzery na koncoc
 
 ```bash
 # Odporúčané je použiť základný tvar:
-input-generator idf
+input-generator .
 ```
 
 ## IDF
