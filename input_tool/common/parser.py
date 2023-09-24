@@ -237,11 +237,11 @@ class Parser:
             },
         ),
         "rustime": (
-            ("--no-rustime",),
+            ("--rustime",),
             {
                 "dest": "rustime",
-                "action": "store_false",
-                "help": "Do not show Real/User/System time statistics",
+                "action": "store_true",
+                "help": "show Real/User/System time statistics",
             },
         ),
         # running options

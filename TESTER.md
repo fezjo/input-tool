@@ -74,4 +74,4 @@ Podporujeme viacero typov hodnotičov, ktoré ako argumenty berú názvy súboro
 - Na konci sa zobrazí pekná tabuľka so zhrnutím (vypnete pomocou `--no-statistics`).
 - Bežne sa výsledky zobrazujú farebne, dá sa to aj vypnúť (`--boring`).
 - Tiež pokiaľ vás otravujú veci, čo vypisujú kompilátory a programy na stderr a podobne, dá sa to schovať pomocou `--quiet`.
-- Ak máme na počítači nainštalovaný `time`, beh programov sa meria aj jednotlivo pre _Real/User/System_ čas a tento údaj sa zobrazuje pre každý beh (vieme to vypnúť pomocou `--no-rustime`)
+- Ak máme na počítači nainštalovaný `time`, beh programov sa meria aj jednotlivo pre _Real/User/System_ čas a tento údaj vieme zobraziť pre každý beh (zapneme pomocou `--rustime`)
