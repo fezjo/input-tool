@@ -187,10 +187,15 @@ class Logger:
     def infog(self, text: Any) -> None:
         self.colored(text, Color.infog)
 
+    def infod(self, text: Any) -> None:
+        """without newline"""
+        self.colored(text, Color.dim, "")
+
     def info(self, text: Any) -> None:
         self.write(f"{text}\n")
 
     def plain(self, text: Any) -> None:
+        """without newline"""
         self.write(text)
 
 
@@ -268,11 +273,17 @@ def infog(text: Any) -> None:
     _sew("%s%s%s\n" % (Color.infog, text, Color.normal))
 
 
+def infod(text: Any) -> None:
+    """without newline"""
+    _sew("%s%s%s" % (Color.dim, text, Color.normal))
+
+
 def info(text: Any) -> None:
     _sew(f"{text}\n")
 
 
 def plain(text: Any) -> None:
+    """without newline"""
     _sew(text)
 
 

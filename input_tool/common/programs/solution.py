@@ -194,7 +194,7 @@ class Solution(Program):
                 stderr=subprocess.PIPE,
             )
             if not self.quiet:
-                logger.colored(result.stderr.decode("utf-8"), Color.dim, "")
+                logger.infod(result.stderr.decode("utf-8"))
             status = self.translate_exit_code_to_status(result.returncode)
 
             run_times = self.get_times(timefile)
