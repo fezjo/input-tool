@@ -118,8 +118,8 @@ def get_relevant_prog_files_deeper(candidates: Sequence[str]) -> list[str]:
 
 
 def create_programs_from_files(
-    files: Sequence[str], checker: Optional[str], deduplicate: bool
-):
+    files: Sequence[str], deduplicate: bool
+) -> tuple[list[Solution | Validator], list[str]]:
     solutions: list[Solution | Validator] = []
     checker_files: list[str] = []
     if deduplicate:  # remove duplicate paths keeping order
@@ -131,6 +131,10 @@ def create_programs_from_files(
             checker_files.append(p)
         else:
             solutions.append(Solution(p))
+    return solutions, checker_files
+
+
+def create_checker(checker: Optional[str], checker_files: list[str]) -> Checker:
     if checker is not None:
         checker_files = [checker]
     if not checker_files:
@@ -141,10 +145,10 @@ def create_programs_from_files(
             + "Set explicitly with -d/--diffcmd (e.g. -d diff) "
             + "or leave only one checker in the directory."
         )
-    return solutions, Checker(checker_files[0])
+    return Checker(checker_files[0])
 
 
-def cleanup() -> None:
+def cleanup(programs: Sequence[Program]) -> None:
     for p in programs:
         p.clear_files()
     if Config.progdir is not None:
@@ -346,13 +350,14 @@ if args.colortest:
 setup_config(args)
 
 files = get_relevant_prog_files_deeper(args.programs)
-solutions, checker = create_programs_from_files(files, args.diffcmd, not args.dupprog)
+solutions, checker_files = create_programs_from_files(files, not args.dupprog)
+checker = create_checker(args.diffcmd, checker_files)
 if args.sort:
     solutions.sort()
 programs = [checker] + solutions
 
 if args.clearbin:
-    atexit.register(cleanup)
+    atexit.register(lambda p=programs: cleanup(p))
 
 prepare_programs(programs, max(4, args.threads))
 if not args.dupprog:  # multiple solutions can have same run command after compilation
