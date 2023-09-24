@@ -4,7 +4,7 @@ from __future__ import annotations
 from enum import Enum
 import sys
 import threading
-from typing import Any, Sequence, TextIO
+from typing import Any, Sequence, TextIO, TypeVar
 
 
 class Status(Enum):
@@ -336,3 +336,40 @@ def color_test() -> None:
     _sew("".join([s.colored() for s in Status]) + "\n")
     for i in range(11):
         _sew("%s%s/%s%s\n" % (Color.score_color(i, 10), i, 10, Color.normal))
+
+
+Concatable = TypeVar("Concatable", list[Any], tuple[Any, ...], str)
+
+
+def ellipsis(items: Concatable, max_length: int, indicator: Concatable) -> Concatable:
+    if len(items) <= max_length:
+        return items
+    assert max_length > len(indicator)
+    remaining = max_length - len(indicator)
+    half, asym = remaining // 2, remaining % 2
+    if half > 0:
+        return items[: half + asym] + indicator + items[-half:]
+    return items[:remaining] + indicator
+
+
+def fit_text_into_screen(text: str, height: int, width: int = 80) -> str:
+    lines = text.splitlines(True)
+    vertically_fit = ellipsis(lines, height, ["...\n"])
+    fit = (ellipsis(line, width, "...") for line in vertically_fit)
+    return "".join(fit)
+
+
+def side_by_side(text1: str, text2: str, height: int, width: int = 80) -> str:
+    half_width = (width - 3) // 2
+    lines1 = fit_text_into_screen(text1, height, half_width).splitlines()
+    lines2 = fit_text_into_screen(text2, height, half_width).splitlines()
+    res: list[str] = []
+    for i in range(max(len(lines1), len(lines2))):
+        line1 = lines1[i] if i < len(lines1) else " " * half_width
+        line2 = lines2[i] if i < len(lines2) else " " * half_width
+        # = if the same, ! if not the same, > if line1 is empty, < if line2 is empty
+        delim = (
+            "=" if line1 == line2 else "!" if line1 and line2 else ">" if line1 else "<"
+        )
+        res.append(f"{line1} {delim} {line2}")
+    return "\n".join(res)
