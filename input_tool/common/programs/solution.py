@@ -1,3 +1,5 @@
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 from collections import defaultdict
 from dataclasses import dataclass
 import os

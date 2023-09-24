@@ -1,3 +1,5 @@
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 import subprocess
 
 from input_tool.common.messages import Status

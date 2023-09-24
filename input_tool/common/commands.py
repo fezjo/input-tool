@@ -1,4 +1,5 @@
-# (c) 2014 jano <janoh@ksp.sk>
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 """
 Basic behaviour you need to understand if you want to use this.
 Don't use spaces in file names.

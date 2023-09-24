@@ -1,3 +1,5 @@
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 from __future__ import annotations
 import os
 import shutil

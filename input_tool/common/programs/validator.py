@@ -1,3 +1,5 @@
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 from typing import Optional
 
 from input_tool.common.commands import to_base_alnum

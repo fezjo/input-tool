@@ -1,3 +1,5 @@
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 from collections import defaultdict
 import subprocess
 from threading import Event

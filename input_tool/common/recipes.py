@@ -1,4 +1,5 @@
-# (c) 2014 jano <janoh@ksp.sk>
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 """
 Format of description files:
     One line - one input

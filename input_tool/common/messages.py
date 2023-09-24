@@ -1,4 +1,5 @@
-# (c) 2014 jano <janoh@ksp.sk>
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 # Various types of messages with colors
 from __future__ import annotations
 from enum import Enum

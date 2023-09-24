@@ -1,4 +1,5 @@
-# (c) 2014 jano <janoh@ksp.sk>
+# © 2014 jano <janoh@ksp.sk>
+# © 2022 fezjo
 import argparse
 from dataclasses import dataclass, field
 from typing import Any, Sequence, Type, TypedDict, TypeVar
