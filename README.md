@@ -1,7 +1,7 @@
 ## Zmeny voči jablkoj
 
 <details>
-<summary>Zmeny</summary>
+<summary>Mergnuté zmeny</summary>
 
 - **Podpora priečinkov v zozname programov** (automatické načítanie všetkých riešení, validátorov a checkera z priečinku)
 - Časovanie
@@ -19,16 +19,28 @@
   - **Kompilovanie C++ s optimalizáciami a novším štandardom**
   - Zvýšené limity pre pamäť a zásobník
   - Deduplikovanie programov na vstupe (vypnúť cez `--dupprog`)
-  - **Paralelné kompilovanie, generovanie vstupov a testovanie** (pomocou prepínača `-j`)
-  - Podpora alternatívnych Python interpreterov (**PyPy**) pomocou `--pythoncmd cmd` &ndash; generovanie vstupov predvolene pomocou `pypy3`
-- **Možnosť výpisať výstup hodnotiča pri WA**
-- **Kompilovanie do samostatného priečinku**, kompilovanie Java riešení v dočasnom priečinku
+  - **Paralelné generovanie vstupov a testovanie** (pomocou prepínača `-j`)
+- Podpora alternatívnych Python interpreterov (**PyPy**) pomocou `--pythoncmd cmd`
 - **Rozšírená funkcionalita IDF o vlastné premenné**
-- Informovanie o neúspešnom generovaní vstupov
 - Možnosť nemať nainštalovaný `time`
 - Zrušená podpora pre Python2
-- Sformátovaný, otypovaný, zmodernizovaný a zrefaktorizovaný kód
+- Kompilovanie Java riešení v dočasnom priečinku
+- Informovanie o neúspešnom generovaní vstupov
+- Sformátovaný a otypovaný kód
 - Prepísané README
+- Bugfixes
+
+</details>
+
+<details>
+<summary>Nemergnuté zmeny</summary>
+
+- **Plne paralelné kompilovanie a testovanie**
+- **Kompilovanie do samostatného priečinku** `test/prog/` (zmena pomocou prepínača `--progdir`)
+- **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
+- Generovanie vstupov predvolene pomocou `pypy3`
+- Zmodernizovaný a zrefaktorovaný kód
+- Začaté písanie testov
 - Bugfixes
 
 </details>
