@@ -19,6 +19,7 @@ options = [
     "warntimelimit",
     "memorylimit",
     "diffcmd",
+    "showdiffoutput",
     "compile",
     "execute",
     "sort",
@@ -134,7 +135,9 @@ def create_programs_from_files(
     return solutions, checker_files
 
 
-def create_checker(checker: Optional[str], checker_files: list[str]) -> Checker:
+def create_checker(
+    checker: Optional[str], checker_files: list[str], show_diff_output: bool
+) -> Checker:
     if checker is not None:
         checker_files = [checker]
     if not checker_files:
@@ -145,7 +148,7 @@ def create_checker(checker: Optional[str], checker_files: list[str]) -> Checker:
             + "Set explicitly with -d/--diffcmd (e.g. -d diff) "
             + "or leave only one checker in the directory."
         )
-    return Checker(checker_files[0])
+    return Checker(checker_files[0], show_diff_output)
 
 
 def cleanup(programs: Sequence[Program]) -> None:
@@ -351,7 +354,7 @@ setup_config(args)
 
 files = get_relevant_prog_files_deeper(args.programs)
 solutions, checker_files = create_programs_from_files(files, not args.dupprog)
-checker = create_checker(args.diffcmd, checker_files)
+checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
 if args.sort:
     solutions.sort()
 programs = [checker] + solutions

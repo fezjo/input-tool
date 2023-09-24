@@ -1,19 +1,22 @@
 from collections import defaultdict
 import subprocess
 from threading import Event
-from typing import DefaultDict, Optional
+from typing import Optional
 
 from input_tool.common.commands import to_base_alnum
-from input_tool.common.messages import default_logger, Logger
+from input_tool.common.messages import default_logger, Logger, fit_text_into_screen
 from input_tool.common.programs.program import Program
 
 
 class Checker(Program):
-    def __init__(self, name: str):
+    def __init__(self, name: str, show_output: bool = False):
         super().__init__(name)
-        self.output_ready: DefaultDict[str, Event] = defaultdict(Event)
+        self.output_ready: defaultdict[str, Event] = defaultdict(Event)
+        self.show_output = show_output
         if name == "diff":
-            self.run_cmd = "diff"
+            self.run_cmd = "diff " + (
+                "-y -W 80 --strip-trailing-cr" if show_output else "-q"
+            )
             self.compilecmd = None
             self.forceexecute = True
 
@@ -31,7 +34,7 @@ class Checker(Program):
 
     def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> str | None:
         diff_map = {
-            "diff": " %s %s > /dev/null" % (ofile, tfile),
+            "diff": " %s %s" % (ofile, tfile),
             "check": " %s %s %s > /dev/null" % (ifile, ofile, tfile),
             "chito": " %s %s %s > /dev/null" % (ifile, tfile, ofile),
             "test": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
@@ -49,9 +52,13 @@ class Checker(Program):
         if cmd is None:
             logger.error(f"Unsupported checker {self.name}")
             return -1
-        result = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE)
+        result = subprocess.run(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         if not self.quiet:
             logger.plain(result.stderr.decode("utf-8"))
         if not result.returncode in (0, 1):
             logger.warning(f"Checker exited with status {result}")
+        if self.show_output and result.returncode:
+            logger.infod(fit_text_into_screen(result.stdout.decode("utf-8"), 5, 80))
         return result.returncode

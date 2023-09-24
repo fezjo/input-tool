@@ -48,6 +48,7 @@ class ArgsTester:
     warntimelimit: str
     memorylimit: float
     diffcmd: str | None
+    showdiffoutput: bool
     fskip: bool
     dupprog: bool
     rustime: bool
@@ -205,6 +206,14 @@ class Parser:
                 + "       check $inp $our $theirs,"
                 + "       ch_ito $inp $theirs $our,"
                 + "       test $dir $name $i $o $t",
+            },
+        ),
+        "showdiffoutput": (
+            ("-D", "--show-diff-output",),
+            {
+                "dest": "showdiffoutput",
+                "action": "store_true",
+                "help": "show shortened diff output on WA",
             },
         ),
         "fskip": (

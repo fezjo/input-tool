@@ -21,6 +21,7 @@
   - Deduplikovanie programov na vstupe (vypnúť cez `--dupprog`)
   - **Paralelné kompilovanie, generovanie vstupov a testovanie** (pomocou prepínača `-j`)
   - Podpora alternatívnych Python interpreterov (**PyPy**) pomocou `--pythoncmd cmd` &ndash; generovanie vstupov predvolene pomocou `pypy3`
+- **Možnosť výpisať výstup hodnotiča pri WA**
 - **Kompilovanie do samostatného priečinku**, kompilovanie Java riešení v dočasnom priečinku
 - **Rozšírená funkcionalita IDF o vlastné premenné**
 - Informovanie o neúspešnom generovaní vstupov
@@ -168,6 +169,10 @@ Už existujú výstupy ale sú zlé? `-R` prepíše výstupy nanovo tým, čo vy
 
 Niektoré úlohy potrebujú na určenie správnosti hodnotič. Ten vie byť automaticky určený ak ako argument uvedieme priečinok v ktorom sa nachádza a hodnotič má štandardné meno. Ak tieto podmienky nie sú splnené, vieme ho manuálne určiť pomocou tohoto argumentu, napríklad `-d checker.py`.
 
+### `-D --show-diff-output`
+
+Ak je výsledkom testovania WA, vypíše sa skrátený výstup hodnotiča. Pri štandardnom `diff`e sa vypíše porovnanie riadkov vedľa seba.
+
 ### `--pythoncmd`
 
 Niekedy by sme boli radi, keby Python nebol taký pomalý. To sa dá väčšinou vyriešiť použitím _PyPy_ interpretera. Dokážeme to určiť pomocou tohoto argumentu, použitím `--pythoncmd pypy3`.
@@ -185,8 +190,8 @@ input-tester -h
 input-tester .
 # chceme spustiť iba vzorové riešenia
 input-tester sol-100*
-# chceme vidieť na ktorých všetkých vstupoch programy nefungujú, nielen na ktorých sadách a robíme to sériovo
-input-tester -F -j 1 .
+# chceme vidieť na ktorých všetkých vstupoch programy nefungujú (nielen na ktorých sadách), chceme vidieť ako sa líšia od vzorového výstupu a robíme to sériovo
+input-tester -FD -j 1 .
 # bežné použitie, ak si dáme všetky riešenia do priečinku `sols`
 input-tester -t "3,cpp=0.5,py=5" sols .
 ```
