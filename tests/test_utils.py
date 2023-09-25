@@ -44,9 +44,11 @@ Program sol-b.cpp   is ran as `./test/prog/sol-b`
 
 """
 
+
 def filter_out_ansi_escape_codes(text: str) -> str:
     # https://stackoverflow.com/a/14693789
     return re.sub(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", "", text)
+
 
 def line_to_stat(line: str) -> tuple[str, int, int, str, str]:
     """
@@ -107,6 +109,7 @@ def run(command: str, out_err_merge: bool = True) -> subprocess.CompletedProcess
         stderr=subprocess.STDOUT if out_err_merge else subprocess.PIPE,
     )
     return result
+
 
 if __name__ == "__main__":
     print(parse_statistics(text))

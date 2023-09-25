@@ -26,7 +26,7 @@ class Validator(Solution):
         if original == Status.valid:
             return new
         return original
-    
+
     def get_statistics_color_and_points(self) -> tuple[Color, str]:
         color = Color.score_color(self.statistics.result == Status.valid, 1)
         return color, ""

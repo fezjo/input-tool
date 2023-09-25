@@ -60,7 +60,7 @@ class Solution(Program):
             elif parts[1] == "wa":
                 score -= 100
         return (-1, -score, self.name)
-    
+
     def compute_time_statistics(self) -> None:
         for batch, _ in self.statistics.batchresults.items():
             times = [ts[0] for ts in self.statistics.times[batch] if ts]
@@ -77,7 +77,7 @@ class Solution(Program):
                 continue
             points += 1
         return points, maxpoints
-    
+
     def get_statistics_color_and_points(self) -> tuple[Color, str]:
         points, maxpoints = self.grade_results()
         color = Color.score_color(points, maxpoints)
