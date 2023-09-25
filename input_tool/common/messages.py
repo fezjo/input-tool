@@ -158,6 +158,9 @@ while _changed:
             _codemap[key] = _codemap[key2]
             _changed = True
 
+
+Color.setup(True)
+
 # {{{ ---------------------- messages ----------------------------
 
 

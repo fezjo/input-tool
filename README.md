@@ -35,6 +35,7 @@
 <details>
 <summary>Nemergnuté zmeny</summary>
 
+- **Kontrola aktualizácií pri spustení generátora**
 - **Plne paralelné kompilovanie a testovanie**
 - **Kompilovanie do samostatného priečinku** `test/prog/` (zmena pomocou prepínača `--progdir`)
 - **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
