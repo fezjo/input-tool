@@ -40,14 +40,14 @@ options = [
 ]
 
 import atexit
-from concurrent.futures import ThreadPoolExecutor
 import itertools
 import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-from input_tool.common.commands import Config, get_statistics_header, Langs
+from input_tool.common.commands import Config, Langs, get_statistics_header
 from input_tool.common.messages import *
-from input_tool.common.parser import Parser, ArgsTester
+from input_tool.common.parser import ArgsTester, Parser
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.programs.solution import Solution

@@ -23,7 +23,7 @@ import os
 import sys
 
 from input_tool.common.messages import *
-from input_tool.common.parser import Parser, ArgsSample
+from input_tool.common.parser import ArgsSample, Parser
 from input_tool.common.recipes import Input, Sample, prepare
 
 parser = Parser(description, options)

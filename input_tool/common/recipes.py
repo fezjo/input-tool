@@ -28,6 +28,7 @@ Format of description files:
 
 """
 from __future__ import annotations
+
 from random import randint
 from typing import Sequence
 

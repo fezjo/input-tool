@@ -2,9 +2,10 @@
 # © 2022 fezjo
 # Various types of messages with colors
 from __future__ import annotations
-from enum import Enum
+
 import sys
 import threading
+from enum import Enum
 from typing import Any, Sequence, TextIO, TypeVar
 
 

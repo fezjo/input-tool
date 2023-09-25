@@ -1,12 +1,12 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
-from collections import defaultdict
 import subprocess
+from collections import defaultdict
 from threading import Event
 from typing import Optional
 
 from input_tool.common.commands import to_base_alnum
-from input_tool.common.messages import default_logger, Logger, fit_text_into_screen
+from input_tool.common.messages import Logger, default_logger, fit_text_into_screen
 from input_tool.common.programs.program import Program
 
 

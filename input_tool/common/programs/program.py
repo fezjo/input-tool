@@ -1,13 +1,14 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 from __future__ import annotations
+
 import os
 import shutil
 import subprocess
 from typing import Optional
 
-from input_tool.common.commands import to_base_alnum, Config, Langs, is_file_newer
-from input_tool.common.messages import default_logger, Logger
+from input_tool.common.commands import Config, Langs, is_file_newer, to_base_alnum
+from input_tool.common.messages import Logger, default_logger
 
 
 class Program:

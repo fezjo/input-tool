@@ -3,9 +3,10 @@
 from typing import Optional
 
 from input_tool.common.commands import to_base_alnum
-from input_tool.common.messages import Color, default_logger, Logger, Status
+from input_tool.common.messages import Color, Logger, Status, default_logger
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.solution import Solution
+
 
 class Validator(Solution):
     def __init__(self, name: str):

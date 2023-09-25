@@ -1,14 +1,14 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
-from collections import defaultdict
-from dataclasses import dataclass
 import os
 import subprocess
 import tempfile
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
-from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
+from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 

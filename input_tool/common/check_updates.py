@@ -2,10 +2,11 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that checks if newer github release is available
-import requests
 from importlib.metadata import version
 
-from input_tool.common.messages import warning, Color
+import requests
+
+from input_tool.common.messages import Color, warning
 
 REPO_OWNER = "fezjo"
 REPO_NAME = "input-tool"
