@@ -16,7 +16,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="input-tool",
-    version="1.3.0",
+    version="1.4.0",
     author="jablkoj (Ján Hozza), fezjo (Jozef Číž)",
     description=DESCRIPTION,
     long_description=long_description,
