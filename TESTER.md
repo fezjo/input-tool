@@ -71,7 +71,12 @@ Podporujeme viacero typov hodnotičov, ktoré ako argumenty berú názvy súboro
 
 ### Zobrazovanie
 
-- Na konci sa zobrazí pekná tabuľka so zhrnutím (vypnete pomocou `--no-statistics`).
+- Na konci sa zobrazí pekná tabuľka so zhrnutím (vypnete pomocou `--no-statistics`):
+  - Časy behov riešenia zo sád ktoré nedostali `OK` sa nezapočítavajú
+  - Validátor môže mať status `OK` alebo `VALID`
+  - Riešenie môže mať status `OK`, `WA`, `EXC`, `TLE`
+  - Ak majú pred sebou `t` (napríklad `tOK`), znamená to, že riešenie tento výsledok dostalo po prekročení varovného (tesného) časového limitu (`--wtime` = predvolene tretina časového limitu)
+  - _Chceli by sme aby vzorové riešenie dostalo čisté `OK`, nech menej vyladené programy riešiteľov stále prejdú v časovom limite_
 - Bežne sa výsledky zobrazujú farebne, dá sa to aj vypnúť (`--boring`).
 - Tiež pokiaľ vás otravujú veci, čo vypisujú kompilátory a programy na stderr a podobne, dá sa to schovať pomocou `--quiet`.
 - Ak máme na počítači nainštalovaný `time`, beh programov sa meria aj jednotlivo pre _Real/User/System_ čas a tento údaj vieme zobraziť pre každý beh (zapneme pomocou `--rustime`)

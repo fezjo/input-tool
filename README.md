@@ -39,6 +39,7 @@
 - **Kompilovanie do samostatného priečinku** `test/prog/` (zmena pomocou prepínača `--progdir`)
 - **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
 - **Podpora priečinka ako argument pre `input-generator`** &ndash; automatické načítanie IDF
+- Automatický varovný timelimit tesných riešení
 - Generovanie vstupov predvolene pomocou `pypy3`
 - Zmodernizovaný a zrefaktorovaný kód
 - Začaté písanie testov
@@ -154,7 +155,7 @@ Cieľom tohto skriptu je otestovať všetky riešenia na vstupoch, overiť, či 
 
 `input-tester` sa používa veľmi jednoducho. Iba spustíte `input-tester <zoznam riešení>` a ono to porobí všetko samé.
 
-Odporúčame mať na konci `.bashrc` alebo pri spustení terminálu nastaviť kompilátory podobne ako sú na testovači, teda napríklad `export CXXFLAGS="-O2 -std=gnu++11 -Wno-unused-result -DDG=1"`.
+Odporúčame mať na konci `.bashrc` alebo pri spustení terminálu nastaviť kompilátory podobne ako sú na testovači, teda napríklad `export CXXFLAGS="-O2 -std=gnu++11 -Wno-unused-result -DDG=1"`, avšak `input-tester` má nastavené rozumné predvolené hodnoty.
 
 Riešenia pomenúvame s prefixom '`sol`' štýlom `sol-<hodnotenie>-<autor>-<algoritmus>-<zlozitost>.<pripona>`. Teda názov má podmnožinu týchto častí v tomto poradí, teda napríklad `sol-75-fero-zametanie-n2.cpp` alebo `sol-100-dezo.py`. Validátor má prefix '`val`', prípadný hodnotič '`check`'.
 

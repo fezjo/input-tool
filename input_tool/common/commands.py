@@ -87,11 +87,13 @@ class Langs:
 
 
 class Config:
+    Timelimit = dict[Langs.Lang | str, float]
+
     pythoncmd = "python3"
     fskip: bool
     rus_time: bool
-    timelimits: dict[Langs.Lang | str, float] = {Langs.Lang.unknown: 0}
-    warn_timelimits: dict[Langs.Lang | str, float] = {Langs.Lang.unknown: 0}
+    timelimits: Timelimit = {Langs.Lang.unknown: 0}
+    warn_timelimits: Timelimit = {Langs.Lang.unknown: 0}
     memorylimit: float
     quiet: bool
     compile: bool
@@ -108,6 +110,7 @@ def get_statistics_header(inputs: Iterable[str]) -> str:
     widths = [Config.cmd_maxlen, 8, 9, 6, 6]
     colnames = ["Solution", "Max time", "Times sum", f"Pt {pts:3}", "Status"]
     return table_header(colnames, widths, [-1, 1, 1, 1, 0])
+
 
 """
 # compile the wrapper if turned on

@@ -165,16 +165,17 @@ class Parser:
                 "default": "3,cpp=1,py=5",
                 "help": "set timelimit (default=3,cpp=1,py=5), "
                 + "can be set to unlimited using 0 and "
-                + 'optionally in per language format (e.g. "1.5,py=0,cpp=0.5)"',
+                + 'optionally in per language format (e.g. "1.5,py=0,cpp=0.5")',
             },
         ),
         "warntimelimit": (
             ("--wtime",),
             {
                 "dest": "warntimelimit",
-                "default": "0",
-                "help": "set warn timelimit (default=infinity) which issues warning but does not fail, "
-                + 'can be set in optional per language format (e.g. "1.5,py=5,cpp=0.5)',
+                "default": "auto",
+                "help": "set warning tight timelimit (default=auto), "
+                + "which issues warning but does not fail, "
+                + 'can be set in optional per language format (e.g. "0.5,py=1.5,cpp=0.15")',
             },
         ),
         "memorylimit": (
@@ -210,7 +211,10 @@ class Parser:
             },
         ),
         "showdiffoutput": (
-            ("-D", "--show-diff-output",),
+            (
+                "-D",
+                "--show-diff-output",
+            ),
             {
                 "dest": "showdiffoutput",
                 "action": "store_true",

@@ -120,7 +120,7 @@ class Solution(Program):
             )
         self.statistics.result = new_status
 
-    def get_timelimit(self, timelimits: dict[Langs.Lang | str, float]) -> float:
+    def get_timelimit(self, timelimits: Config.Timelimit) -> float:
         if self.ext in timelimits:
             return timelimits[self.ext]
         if self.lang in timelimits:
