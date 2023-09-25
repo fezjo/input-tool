@@ -1,5 +1,5 @@
 #define B_LIB
-#include "../b.cpp"
+#include "../sol-b.cpp"
 
 int main() {
     f(2);
