@@ -130,9 +130,9 @@ class Solution(Program):
     def get_exec_cmd(
         self, ifile: str, tfile: str, timelimit: float = 0.0, memorylimit: float = 0.0
     ) -> tuple[str, str]:
-        timefile = tempfile.NamedTemporaryFile(delete=False)
-        timefile.close()
-        timefile = timefile.name
+        f_timefile = tempfile.NamedTemporaryFile(delete=False)
+        f_timefile.close()
+        timefile = f_timefile.name
 
         str_memorylimit = int(memorylimit * 1024) if memorylimit else "unlimited"
         ulimit_cmd = "ulimit -m %s; ulimit -s %s" % (str_memorylimit, str_memorylimit)

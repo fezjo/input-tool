@@ -64,7 +64,7 @@ class Langs:
     lang_script = (Lang.python,)
     lang_all = lang_compiled + lang_script
 
-    ext = {
+    ext: dict[Lang, list[str]] = {
         Lang.unknown: [],
         Lang.c: ["c"],
         Lang.cpp: ["cpp", "cxx", "c++", "cp", "cc"],

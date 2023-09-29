@@ -61,10 +61,19 @@ status_reprs = {
 
 class Color:
     colorful = False
+    dim: Color
+    normal: Color
+    infog: Color
+    infob: Color
+    warning: Color
+    error: Color
+    table: Color
+    scores: list[Color]
+    status: dict[Status, Color]
 
     @staticmethod
     def setup(colorful: bool) -> None:
-        Color.colorful: bool = colorful
+        Color.colorful = colorful
         Color.dim = Color("dim")
         Color.normal = Color("normal")
         Color.infog = Color("good")
@@ -236,7 +245,7 @@ class BufferedLogger(Logger):
 
 
 class ParallelLoggerManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.sinks: list[BufferedLogger] = []
         self.last_open = 0
         self.closed_event = threading.Event()
@@ -249,7 +258,7 @@ class ParallelLoggerManager:
         for c in self.sinks:
             c.buffer.clear()
 
-    def read_closed(self):
+    def read_closed(self) -> str:
         res: list[str] = []
         while self.last_open < len(self.sinks):
             sink = self.sinks[self.last_open]
