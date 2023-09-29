@@ -2,6 +2,20 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that helps generating inputs for contests
+import atexit
+import os
+import shutil
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
+
+from input_tool.common.check_updates import check_for_updates
+from input_tool.common.commands import Config
+from input_tool.common.messages import Color, Status, error, info, infob, warning
+from input_tool.common.parser import ArgsGenerator, Parser
+from input_tool.common.programs.generator import Generator
+from input_tool.common.recipes import Input, Recipe
+
 description = """
 Input generator.
 Generate inputs based on input description file. Each line is provided as input to
@@ -22,20 +36,6 @@ options = [
     "clearbin",
     "description",
 ]
-
-import atexit
-import os
-import shutil
-import sys
-from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
-
-from input_tool.common.check_updates import check_for_updates
-from input_tool.common.commands import Config
-from input_tool.common.messages import *
-from input_tool.common.parser import ArgsGenerator, Parser
-from input_tool.common.programs.generator import Generator
-from input_tool.common.recipes import Input, Recipe
 
 
 def parse_args() -> ArgsGenerator:
@@ -133,7 +133,10 @@ def print_message_for_input(
 
 
 def generate_all(
-    recipe: Recipe, programs: dict[str, Generator], default_gencmd: str, args: ArgsGenerator
+    recipe: Recipe,
+    programs: dict[str, Generator],
+    default_gencmd: str,
+    args: ArgsGenerator,
 ) -> None:
     def submit_input(executor: ThreadPoolExecutor, input: Input):
         return executor.submit(
@@ -151,6 +154,7 @@ def generate_all(
             print_message_for_input(leftw, future.result(), input, prev, args)
             prev = input
     infob("Done")
+
 
 def main() -> None:
     args = parse_args()
@@ -173,6 +177,7 @@ def main() -> None:
     generate_all(recipe, programs, gencmd, args)
 
     check_for_updates()
+
 
 if __name__ == "__main__":
     main()

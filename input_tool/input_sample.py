@@ -2,6 +2,14 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that creates sample inputs from task statements or vice versa
+import os
+import sys
+from typing import Optional, Sequence
+
+from input_tool.common.messages import Color, error, infob, warning
+from input_tool.common.parser import ArgsSample, Parser
+from input_tool.common.recipes import Input, Sample, prepare_cumber
+
 description = """
 Input sample.
 Given task statement, create sample input and output files.
@@ -18,14 +26,6 @@ options = [
     "multi",
     "task",
 ]
-
-import os
-import sys
-from typing import Optional
-
-from input_tool.common.messages import *
-from input_tool.common.parser import ArgsSample, Parser
-from input_tool.common.recipes import Input, Sample, prepare_cumber
 
 
 def parse_args() -> ArgsSample:
@@ -91,10 +91,10 @@ def process_lines(lines: Sequence[str]) -> tuple[list[str], list[str]]:
             active_lines = ""
             continue
         if line.strip() == "```":
-            if active != None:
+            if active is not None:
                 active.append(active_lines)
             active = None
-        elif active != None:
+        elif active is not None:
             check_line(line)
             active_lines += line
     return samples_in, samples_out
