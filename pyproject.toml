@@ -37,6 +37,7 @@ ruff = "^0.0.291"
 black = "^23.9.1"
 mypy = "^1.5.1"
 types-requests = "^2.31.0.6"
+poethepoet = "^0.23.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.2"
@@ -44,6 +45,15 @@ pytest-black = "^0.3.12"
 pytest-mypy = "^0.10.3"
 pytest-sugar = "^0.9.7"
 pytest-ruff = "^0.1.1"
+
+[tool.poe.tasks]
+black = "black ."
+ruff = "ruff check ."
+mypy = "mypy ."
+test = "pytest ."
+lint = ["black", "ruff"]
+typecheck = ["mypy"]
+checkall = "pytest --black --ruff --mypy ."
 
 [tool.pytest.ini_options]
 cache_dir = ".cache/.pytest_cache"
