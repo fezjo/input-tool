@@ -45,6 +45,7 @@
 - Zmodernizovaný a zrefaktorovaný kód
 - Začaté písanie testov
 - Bugfixes
+- **Poetry manager**
 
 </details>
 
