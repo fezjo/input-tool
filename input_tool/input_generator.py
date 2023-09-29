@@ -55,6 +55,10 @@ def setup_pythoncmd(argcmd: str) -> None:
 def setup_config(args: ArgsGenerator) -> None:
     for key in ("progdir", "quiet", "compile", "execute"):
         setattr(Config, key, getattr(args, key))
+    if not Config.progdir:
+        Config.progdir = None
+    else:
+        os.makedirs(Config.progdir, exist_ok=True)
 
 
 def find_idf(directory: str) -> str:
