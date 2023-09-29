@@ -135,24 +135,29 @@ def prepare_dirs(dirs: Sequence[str]) -> None:
             os.makedirs(d)
 
 
-args = parse_args()
-Color.setup(args.colorful)
-prepare_cumber(args.batchname)
+def main() -> None:
+    args = parse_args()
+    Color.setup(args.colorful)
+    prepare_cumber(args.batchname)
 
-lines = read_recipe(args.task)
-if args.multi:
-    Input.maxid = 1
+    lines = read_recipe(args.task)
+    if args.multi:
+        Input.maxid = 1
 
-samples_in, samples_out = process_lines(lines)
-if len(samples_in) != len(samples_out):
-    error("Number of inputs and outputs must be the same.")
-if len(samples_in) == 0:
-    warning("No inputs found in task statements.")
+    samples_in, samples_out = process_lines(lines)
+    if len(samples_in) != len(samples_out):
+        error("Number of inputs and outputs must be the same.")
+    if len(samples_in) == 0:
+        warning("No inputs found in task statements.")
 
-samples = get_samples(samples_in, samples_out, args)
-prepare_samples(samples)
-print_tips()
+    samples = get_samples(samples_in, samples_out, args)
+    prepare_samples(samples)
+    print_tips()
 
-prepare_dirs((args.indir, args.outdir))
-for sample in samples:
-    sample.save()
+    prepare_dirs((args.indir, args.outdir))
+    for sample in samples:
+        sample.save()
+
+
+if __name__ == "__main__":
+    main()

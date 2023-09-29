@@ -203,7 +203,7 @@ def deduplicate_solutions(
     return l
 
 
-def print_solutions_run_commands(solutions: list[Solution | Validator]) -> None:
+def print_solutions_run_commands(solutions: Sequence[Solution | Validator]) -> None:
     infob("----- Run commands -----")
     for s in solutions:
         infob(f"Program {s.name:{Config.cmd_maxlen}}   is ran as `{s.run_cmd}`")
@@ -217,7 +217,7 @@ def get_inputs(args: ArgsTester) -> list[str]:
     return sorted(filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)))
 
 
-def get_outputs(args: ArgsTester) -> Optional[list[str]]:
+def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
     if args.outext != args.tempext and not args.reset:
         outputs = sorted(
             filter(lambda x: x.endswith(args.outext), os.listdir(args.outdir))
@@ -259,7 +259,7 @@ def get_output_creation_message(output_file: str) -> str:
 
 
 def general_run_sol(
-    sol: Solution, ifile: str, ofile: str, rfile: str, cleartemp: bool, *rargs: Any
+    sol: Solution, ifile: str, ofile: str, rfile: str, checker: Checker, cleartemp: bool, *rargs: Any
 ) -> None:
     try:
         sol.run(ifile, ofile, rfile, checker, *rargs)
@@ -271,6 +271,7 @@ def general_run_sol(
 
 def test_all(
     solutions: Sequence[Solution | Validator],
+    checker: Checker,
     inputs: Sequence[str],
     threads: int,
     args: ArgsTester,
@@ -309,8 +310,10 @@ def test_all(
                 *rargs: Any,
                 ifile: str = input_file,
                 ofile: str = output_file,
+                checker: Checker = checker,
+                cleartemp: bool = args.cleartemp,
             ) -> None:
-                general_run_sol(sol, ifile, ofile, rfile, args.cleartemp, *rargs)
+                general_run_sol(sol, ifile, ofile, rfile, checker, cleartemp, *rargs)
 
             output_ready = checker.output_ready[input_file]
             output_ready.clear()
@@ -357,36 +360,40 @@ def print_summary(solutions: Sequence[Solution | Validator], inputs: Sequence[st
 
 # --------------------- FLOW ---------------------
 
-args = parse_args()
-if args.colortest:
-    color_test()
-    quit()
-setup_config(args)
+def main() -> None:
+    args = parse_args()
+    if args.colortest:
+        color_test()
+        quit()
+    setup_config(args)
 
-files = get_relevant_prog_files_deeper(args.programs)
-solutions, checker_files = create_programs_from_files(files, not args.dupprog)
-checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
-if args.sort:
-    solutions.sort()
-programs = [checker] + solutions
+    files = get_relevant_prog_files_deeper(args.programs)
+    solutions, checker_files = create_programs_from_files(files, not args.dupprog)
+    checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
+    if args.sort:
+        solutions.sort()
+    programs = [checker] + solutions
 
-if args.clearbin:
-    atexit.register(lambda p=programs: cleanup(p))
+    if args.clearbin:
+        atexit.register(lambda p=programs: cleanup(p))
 
-prepare_programs(programs, max(4, args.threads))
-if not args.dupprog:  # multiple solutions can have same run command after compilation
-    solutions = deduplicate_solutions(solutions)
+    prepare_programs(programs, max(4, args.threads))
+    if not args.dupprog:  # multiple solutions can have same run command after compilation
+        solutions = deduplicate_solutions(solutions)
 
-for s in solutions:
-    Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
-Config.inside_oneline = len(solutions) <= 1
-print_solutions_run_commands(solutions)
+    for s in solutions:
+        Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
+    Config.inside_oneline = len(solutions) <= 1
+    print_solutions_run_commands(solutions)
 
-inputs = get_inputs(args)
-outputs = get_outputs(args)
-temp_clear(args)
-Config.inside_inputmaxlen = max(map(len, inputs))
+    inputs = get_inputs(args)
+    _outputs = get_outputs(inputs, args)
+    temp_clear(args)
+    Config.inside_inputmaxlen = max(map(len, inputs))
 
-test_all(solutions, inputs, args.threads, args)
-if args.stats:
-    print_summary(solutions, inputs)
+    test_all(solutions, checker, inputs, args.threads, args)
+    if args.stats:
+        print_summary(solutions, inputs)
+
+if __name__ == "__main__":
+    main()
