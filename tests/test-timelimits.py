@@ -1,4 +1,4 @@
-from test_utils import *
+from test_utils import init, parse_statistics, run
 
 init(cwd="timelimits")
 

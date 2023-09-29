@@ -105,7 +105,7 @@ class Config:
 
 
 def get_statistics_header(inputs: Iterable[str]) -> str:
-    batches = set([x.rsplit(".", 2)[0] for x in inputs if not "sample" in x])
+    batches = set([x.rsplit(".", 2)[0] for x in inputs if "sample" not in x])
     pts = len(batches)
     widths = [Config.cmd_maxlen, 8, 9, 6, 6]
     colnames = ["Solution", "Max time", "Times sum", f"Pt {pts:3}", "Status"]

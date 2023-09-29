@@ -164,13 +164,16 @@ class Solution(Program):
             return Status.exc
         return Status.err
 
-    def get_times(self, timefile: str):
+    def get_times(self, timefile: str, logger: Logger = default_logger):
         try:
             with open(timefile, "r") as tf:
                 ptime_start, *run_times, ptime_end = map(float, tf.read().split())
                 return [int((ptime_end - ptime_start) / 1e6)] + run_times
-        except:
-            return None
+        except OSError as e:
+            logger.warning(str(e))
+        except ValueError as e:
+            logger.warning(str(e))
+        return None
 
     def _run(
         self,
@@ -199,7 +202,7 @@ class Solution(Program):
                 logger.infod(result.stderr.decode("utf-8"))
             status = self.translate_exit_code_to_status(result.returncode)
 
-            run_times = self.get_times(timefile)
+            run_times = self.get_times(timefile, logger)
             if not run_times and status == Status.ok:
                 status = Status.exc
             if checker is not None and status == Status.ok:

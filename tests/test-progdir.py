@@ -1,4 +1,6 @@
-from test_utils import *
+import os
+
+from test_utils import init, parse_statistics, run
 
 init(cwd="progdir")
 

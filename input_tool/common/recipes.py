@@ -57,7 +57,7 @@ class Input:
 
     def __lt__(self, other: Input) -> bool:
         if self.batch != other.batch:
-            assert type(self.batch) == type(other.batch)
+            assert isinstance(self.batch, type(other.batch))
             return self.batch < other.batch  # type: ignore
         return self.name < other.name
 

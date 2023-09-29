@@ -59,7 +59,7 @@ class Checker(Program):
         )
         if not self.quiet:
             logger.plain(result.stderr.decode("utf-8"))
-        if not result.returncode in (0, 1):
+        if result.returncode not in (0, 1):
             logger.warning(f"Checker exited with status {result}")
         if self.show_output and result.returncode:
             logger.infod(fit_text_into_screen(result.stdout.decode("utf-8"), 5, 80))

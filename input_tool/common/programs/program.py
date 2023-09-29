@@ -42,7 +42,7 @@ class Program:
 
         # compute source, binary and extension
         # TODO: base self.name can have multiple sources
-        if not "." in self.name:
+        if "." not in self.name:
             valid: list[str] = []
             for ext_category in (Langs.lang_compiled, Langs.lang_script):
                 for ext in Langs.collect_exts(ext_category):
@@ -55,7 +55,8 @@ class Program:
                     valid.append("<noextension>")
             if len(valid) > 1:
                 default_logger.warning(
-                    f"Warning: multiple possible sources for {self.name}, using first {valid}"
+                    f"Warning: multiple possible sources for {self.name}, "
+                    f"using first {valid}"
                 )
         else:
             self.source = self.name
@@ -131,7 +132,7 @@ class Program:
 
     def prepare(self, logger: Optional[Logger] = None) -> None:
         logger = default_logger if logger is None else logger
-        if self.compilecmd != None:
+        if self.compilecmd is not None:
             logger.infob(f"Compiling: {self.compilecmd}")
             result = subprocess.run(
                 self.compilecmd,

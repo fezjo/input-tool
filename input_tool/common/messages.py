@@ -308,7 +308,7 @@ def table_row(
 ):
     columns = list(columns)
     for i in range(len(columns)):
-        if header == True:
+        if header:
             columns[i] = wide_str(widths[i], alignments[i]).format(columns[i])
         elif isinstance(columns[i], Status):
             status = columns[i]
