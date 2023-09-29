@@ -244,7 +244,7 @@ _cumberbatch = """\
 ~~~~~~::::,::,.,.....:::~~:~::,,,,,.....,,,,,,,,,,,,,,,,,:,:"""
 
 
-def prepare(batchname: str) -> None:
+def prepare_cumber(batchname: str) -> None:
     # lol ;)
     if batchname.lower() == "cumber":
         print(_cumberbatch)
