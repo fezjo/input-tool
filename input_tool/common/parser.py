@@ -174,8 +174,8 @@ class Parser:
                 "dest": "warntimelimit",
                 "default": "auto",
                 "help": "set warning tight timelimit (default=auto), "
-                + "which issues warning but does not fail, "
-                + 'can be set in optional per language format (e.g. "0.5,py=1.5,cpp=0.15")',
+                + "which issues warning but does not fail, can be set in "
+                + 'optional per language format (e.g. "0.5,py=1.5,cpp=0.15")',
             },
         ),
         "memorylimit": (
@@ -203,7 +203,7 @@ class Parser:
                 "dest": "diffcmd",
                 "default": None,
                 "help": "program which checks correctness of output (default=diff), "
-                + "arguments given to program depends of prefix: "
+                + "arguments given to program depends of prefix:"
                 + "       diff $our $theirs,"
                 + "       check $inp $our $theirs,"
                 + "       ch_ito $inp $theirs $our,"
@@ -229,7 +229,8 @@ class Parser:
             {
                 "dest": "fskip",
                 "action": "store_false",
-                "help": "dont skip the rest of input files in the same batch after first fail",
+                "help": "dont skip the rest of input files in the same batch "
+                + "after first fail",
             },
         ),
         "dupprog": (
@@ -266,7 +267,7 @@ class Parser:
             {
                 "dest": "execute",
                 "action": "store_true",
-                "help": "treat programs as bash commands. Dont try to do something smart "
+                "help": "treat programs as bash commands. Dont try to do "
                 + "as compiling",
             },
         ),
@@ -275,7 +276,8 @@ class Parser:
             {
                 "dest": "pythoncmd",
                 "default": "pypy3",
-                "help": "what command is used to execute python, e.g. `python3` or `pypy3` (default=pypy3)",
+                "help": "what command is used to execute python, "
+                + "e.g. `python3` or `pypy3` (default=pypy3)",
             },
         ),
         "pythoncmd_test": (
@@ -283,7 +285,8 @@ class Parser:
             {
                 "dest": "pythoncmd",
                 "default": "python3",
-                "help": "what command is used to execute python, e.g. `python3` or `pypy3` (default=python3)",
+                "help": "what command is used to execute python, "
+                + "e.g. `python3` or `pypy3` (default=python3)",
             },
         ),
         "threads_gen": (
@@ -400,7 +403,7 @@ class Parser:
         self.parser = argparse.ArgumentParser(description=description)
         for arg in arguments:
             args, kwargs = self.options.get(arg, (None, None))
-            if args == None or kwargs == None:
+            if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")
             self.parser.add_argument(*args, **kwargs)
 

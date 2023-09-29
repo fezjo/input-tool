@@ -2,6 +2,30 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Complex script that can test solutions
+import atexit
+import itertools
+import os
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Optional, Sequence
+
+from input_tool.common.commands import Config, Langs, get_statistics_header
+from input_tool.common.messages import (
+    BufferedLogger,
+    Color,
+    ParallelLoggerManager,
+    color_test,
+    error,
+    info,
+    infob,
+    plain,
+    warning,
+)
+from input_tool.common.parser import ArgsTester, Parser
+from input_tool.common.programs.checker import Checker
+from input_tool.common.programs.program import Program
+from input_tool.common.programs.solution import Solution
+from input_tool.common.programs.validator import Validator
+
 description = """
 Input tester.
 Test all given solutions on all inputs.
@@ -39,20 +63,6 @@ options = [
     "rustime",
 ]
 
-import atexit
-from concurrent.futures import ThreadPoolExecutor
-import itertools
-import os
-from typing import Optional
-
-from input_tool.common.commands import Config, get_statistics_header, Langs
-from input_tool.common.messages import *
-from input_tool.common.parser import Parser, ArgsTester
-from input_tool.common.programs.checker import Checker
-from input_tool.common.programs.program import Program
-from input_tool.common.programs.solution import Solution
-from input_tool.common.programs.validator import Validator
-
 # ----------------- configuration ----------------
 
 
@@ -64,8 +74,8 @@ def parse_args() -> ArgsTester:
 def parse_timelimit(timelimit: str) -> Config.Timelimit:
     res: Config.Timelimit = {}
     for p in timelimit.split(","):
-        ext, t = p.split("=") if "=" in p else ("", p)
-        t = float(t)
+        ext, str_t = p.split("=") if "=" in p else ("", p)
+        t = float(str_t)
         res[ext] = t
         res[Langs.from_ext(ext)] = t
     return res
@@ -189,7 +199,7 @@ def deduplicate_solutions(
     solutions: Sequence[Solution | Validator],
 ) -> list[Solution | Validator]:
     d: dict[str, Program] = {}
-    l: list[Solution | Validator] = []
+    res: list[Solution | Validator] = []
     for s in solutions:
         key = s.run_cmd
         if key in d:
@@ -199,11 +209,11 @@ def deduplicate_solutions(
             )
         else:
             d[key] = s
-            l.append(s)
-    return l
+            res.append(s)
+    return res
 
 
-def print_solutions_run_commands(solutions: list[Solution | Validator]) -> None:
+def print_solutions_run_commands(solutions: Sequence[Solution | Validator]) -> None:
     infob("----- Run commands -----")
     for s in solutions:
         infob(f"Program {s.name:{Config.cmd_maxlen}}   is ran as `{s.run_cmd}`")
@@ -217,7 +227,7 @@ def get_inputs(args: ArgsTester) -> list[str]:
     return sorted(filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)))
 
 
-def get_outputs(args: ArgsTester) -> Optional[list[str]]:
+def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
     if args.outext != args.tempext and not args.reset:
         outputs = sorted(
             filter(lambda x: x.endswith(args.outext), os.listdir(args.outdir))
@@ -259,7 +269,13 @@ def get_output_creation_message(output_file: str) -> str:
 
 
 def general_run_sol(
-    sol: Solution, ifile: str, ofile: str, rfile: str, cleartemp: bool, *rargs: Any
+    sol: Solution,
+    ifile: str,
+    ofile: str,
+    rfile: str,
+    checker: Checker,
+    cleartemp: bool,
+    *rargs: Any,
 ) -> None:
     try:
         sol.run(ifile, ofile, rfile, checker, *rargs)
@@ -271,6 +287,7 @@ def general_run_sol(
 
 def test_all(
     solutions: Sequence[Solution | Validator],
+    checker: Checker,
     inputs: Sequence[str],
     threads: int,
     args: ArgsTester,
@@ -309,8 +326,10 @@ def test_all(
                 *rargs: Any,
                 ifile: str = input_file,
                 ofile: str = output_file,
+                checker: Checker = checker,
+                cleartemp: bool = args.cleartemp,
             ) -> None:
-                general_run_sol(sol, ifile, ofile, rfile, args.cleartemp, *rargs)
+                general_run_sol(sol, ifile, ofile, rfile, checker, cleartemp, *rargs)
 
             output_ready = checker.output_ready[input_file]
             output_ready.clear()
@@ -336,7 +355,7 @@ def test_all(
                     generated_output = True
                     future.add_done_callback(lambda _, o=output_ready: o.set())
                 future.add_done_callback(
-                    lambda _, l=logger: logger_close_and_trigger(l)
+                    lambda _, log=logger: logger_close_and_trigger(log)
                 )
 
             if not generated_output:
@@ -357,36 +376,43 @@ def print_summary(solutions: Sequence[Solution | Validator], inputs: Sequence[st
 
 # --------------------- FLOW ---------------------
 
-args = parse_args()
-if args.colortest:
-    color_test()
-    quit()
-setup_config(args)
 
-files = get_relevant_prog_files_deeper(args.programs)
-solutions, checker_files = create_programs_from_files(files, not args.dupprog)
-checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
-if args.sort:
-    solutions.sort()
-programs = [checker] + solutions
+def main() -> None:
+    args = parse_args()
+    if args.colortest:
+        color_test()
+        quit()
+    setup_config(args)
 
-if args.clearbin:
-    atexit.register(lambda p=programs: cleanup(p))
+    files = get_relevant_prog_files_deeper(args.programs)
+    solutions, checker_files = create_programs_from_files(files, not args.dupprog)
+    checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
+    if args.sort:
+        solutions.sort()
+    programs = [checker] + solutions
 
-prepare_programs(programs, max(4, args.threads))
-if not args.dupprog:  # multiple solutions can have same run command after compilation
-    solutions = deduplicate_solutions(solutions)
+    if args.clearbin:
+        atexit.register(lambda p=programs: cleanup(p))
 
-for s in solutions:
-    Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
-Config.inside_oneline = len(solutions) <= 1
-print_solutions_run_commands(solutions)
+    prepare_programs(programs, max(4, args.threads))
+    # multiple solutions can have same run command after compilation
+    if not args.dupprog:
+        solutions = deduplicate_solutions(solutions)
 
-inputs = get_inputs(args)
-outputs = get_outputs(args)
-temp_clear(args)
-Config.inside_inputmaxlen = max(map(len, inputs))
+    for s in solutions:
+        Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
+    Config.inside_oneline = len(solutions) <= 1
+    print_solutions_run_commands(solutions)
 
-test_all(solutions, inputs, args.threads, args)
-if args.stats:
-    print_summary(solutions, inputs)
+    inputs = get_inputs(args)
+    _outputs = get_outputs(inputs, args)
+    temp_clear(args)
+    Config.inside_inputmaxlen = max(map(len, inputs))
+
+    test_all(solutions, checker, inputs, args.threads, args)
+    if args.stats:
+        print_summary(solutions, inputs)
+
+
+if __name__ == "__main__":
+    main()

@@ -2,10 +2,11 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that checks if newer github release is available
-import requests
 from importlib.metadata import version
 
-from input_tool.common.messages import warning, Color
+import requests
+
+from input_tool.common.messages import Color, warning
 
 REPO_OWNER = "fezjo"
 REPO_NAME = "input-tool"
@@ -36,7 +37,8 @@ def check_for_updates():
             effect, noeffect = Color("underlined"), Color("nounderlined")
             warning(
                 f"Current `input-tool` version {current_version} is different from\n"
-                f"the latest available version {latest_version}. You can upgrade by running\n"
+                f"the latest available version {latest_version}. "
+                f"You can upgrade by running\n"
                 f"{effect}{pip_command}{noeffect}\n"
                 f"or by downloading the latest version from\n"
                 f"{effect}{releases_url}{noeffect}"

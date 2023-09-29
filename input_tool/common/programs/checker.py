@@ -1,12 +1,12 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
-from collections import defaultdict
 import subprocess
+from collections import defaultdict
 from threading import Event
 from typing import Optional
 
 from input_tool.common.commands import to_base_alnum
-from input_tool.common.messages import default_logger, Logger, fit_text_into_screen
+from input_tool.common.messages import Logger, default_logger, fit_text_into_screen
 from input_tool.common.programs.program import Program
 
 
@@ -59,7 +59,7 @@ class Checker(Program):
         )
         if not self.quiet:
             logger.plain(result.stderr.decode("utf-8"))
-        if not result.returncode in (0, 1):
+        if result.returncode not in (0, 1):
             logger.warning(f"Checker exited with status {result}")
         if self.show_output and result.returncode:
             logger.infod(fit_text_into_screen(result.stdout.decode("utf-8"), 5, 80))

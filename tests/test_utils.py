@@ -3,6 +3,8 @@ import re
 import shutil
 import subprocess
 
+import pytest
+
 text = """
 Compiling: cd test/prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-a
 make: 'sol-a' is up to date.
@@ -44,9 +46,11 @@ Program sol-b.cpp   is ran as `./test/prog/sol-b`
 
 """
 
+
 def filter_out_ansi_escape_codes(text: str) -> str:
     # https://stackoverflow.com/a/14693789
     return re.sub(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])", "", text)
+
 
 def line_to_stat(line: str) -> tuple[str, int, int, str, str]:
     """
@@ -93,10 +97,14 @@ def clean():
     shutil.rmtree("test", ignore_errors=True)
 
 
-def init(cwd: str = ".", cleanup: bool = True):
-    os.chdir(cwd)
+@pytest.fixture
+def setup_directory(request: pytest.FixtureRequest, path: str, cleanup: bool = True):
+    # change to directory of the test
+    os.chdir(os.path.join(os.path.dirname(request.path), path))
     if cleanup:
         clean()
+    yield
+    os.chdir(request.config.invocation_params.dir)
 
 
 def run(command: str, out_err_merge: bool = True) -> subprocess.CompletedProcess[bytes]:
@@ -107,6 +115,7 @@ def run(command: str, out_err_merge: bool = True) -> subprocess.CompletedProcess
         stderr=subprocess.STDOUT if out_err_merge else subprocess.PIPE,
     )
     return result
+
 
 if __name__ == "__main__":
     print(parse_statistics(text))

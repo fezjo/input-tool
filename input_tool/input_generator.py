@@ -2,6 +2,20 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that helps generating inputs for contests
+import atexit
+import os
+import shutil
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
+
+from input_tool.common.check_updates import check_for_updates
+from input_tool.common.commands import Config
+from input_tool.common.messages import Color, Status, error, info, infob, warning
+from input_tool.common.parser import ArgsGenerator, Parser
+from input_tool.common.programs.generator import Generator
+from input_tool.common.recipes import Input, Recipe
+
 description = """
 Input generator.
 Generate inputs based on input description file. Each line is provided as input to
@@ -23,20 +37,6 @@ options = [
     "description",
 ]
 
-import atexit
-from concurrent.futures import ThreadPoolExecutor
-import os
-import shutil
-import sys
-from typing import Optional
-
-from input_tool.common.check_updates import check_for_updates
-from input_tool.common.commands import Config
-from input_tool.common.messages import *
-from input_tool.common.parser import Parser, ArgsGenerator
-from input_tool.common.programs.generator import Generator
-from input_tool.common.recipes import Input, Recipe
-
 
 def parse_args() -> ArgsGenerator:
     parser = Parser(description, options)
@@ -55,6 +55,10 @@ def setup_pythoncmd(argcmd: str) -> None:
 def setup_config(args: ArgsGenerator) -> None:
     for key in ("progdir", "quiet", "compile", "execute"):
         setattr(Config, key, getattr(args, key))
+    if not Config.progdir:
+        Config.progdir = None
+    else:
+        os.makedirs(Config.progdir, exist_ok=True)
 
 
 def find_idf(directory: str) -> str:
@@ -81,7 +85,7 @@ def get_recipe(file: Optional[str]) -> Recipe:
     return Recipe(text)
 
 
-def cleanup() -> None:
+def cleanup(programs: dict[str, Generator]) -> None:
     for p in programs:
         programs[p].clear_files()
 
@@ -115,7 +119,7 @@ def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> str:
 
 
 def print_message_for_input(
-    leftw: int, status: Status, input: Input, prev: Optional[Input] = None
+    leftw: int, status: Status, input: Input, prev: Optional[Input], args: ArgsGenerator
 ):
     short = ("{:>" + str(leftw) + "s}").format(get_ifile(input, args))
 
@@ -129,11 +133,14 @@ def print_message_for_input(
 
 
 def generate_all(
-    recipe: Recipe, programs: dict[str, Generator], args: ArgsGenerator
+    recipe: Recipe,
+    programs: dict[str, Generator],
+    default_gencmd: str,
+    args: ArgsGenerator,
 ) -> None:
     def submit_input(executor: ThreadPoolExecutor, input: Input):
         return executor.submit(
-            programs[input.generator or gencmd].generate,
+            programs[input.generator or default_gencmd].generate,
             get_ifile(input, args, True),
             input.get_generation_text(),
         )
@@ -144,28 +151,33 @@ def generate_all(
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = [(submit_input(executor, input), input) for input in recipe.inputs]
         for future, input in futures:
-            print_message_for_input(leftw, future.result(), input, prev)
+            print_message_for_input(leftw, future.result(), input, prev, args)
             prev = input
     infob("Done")
 
 
-args = parse_args()
-Color.setup(args.colorful)
-setup_pythoncmd(args.pythoncmd)
-setup_config(args)
+def main() -> None:
+    args = parse_args()
+    Color.setup(args.colorful)
+    setup_pythoncmd(args.pythoncmd)
+    setup_config(args)
 
-recipe = get_recipe(args.description)
-recipe.process()
-recipe.inputs.sort()
+    recipe = get_recipe(args.description)
+    recipe.process()
+    recipe.inputs.sort()
 
-programs = {x: Generator(x) for x in recipe.programs}
-gencmd = args.gencmd
-programs[gencmd] = Generator(gencmd)
-prepare_programs(programs)
-if args.clearbin:
-    atexit.register(cleanup)
+    programs = {x: Generator(x) for x in recipe.programs}
+    gencmd = args.gencmd
+    programs[gencmd] = Generator(gencmd)
+    prepare_programs(programs)
+    if args.clearbin:
+        atexit.register(lambda p=programs: cleanup(p))
 
-setup_indir(args.indir, args.inext, args.clearinput)
-generate_all(recipe, programs, args)
+    setup_indir(args.indir, args.inext, args.clearinput)
+    generate_all(recipe, programs, gencmd, args)
 
-check_for_updates()
+    check_for_updates()
+
+
+if __name__ == "__main__":
+    main()

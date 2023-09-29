@@ -205,10 +205,15 @@ input-tester -h
 input-tester .
 # chceme spustiť iba vzorové riešenia
 input-tester sol-100*
-# chceme vidieť na ktorých všetkých vstupoch programy nefungujú (nielen na ktorých sadách), chceme vidieť ako sa líšia od vzorového výstupu a robíme to sériovo
+# chceme vidieť na ktorých všetkých vstupoch programy nefungujú (nielen na ktorých
+# sadách), chceme vidieť ako sa líšia od vzorového výstupu a robíme to sériovo
 input-tester -FD -j 1 .
 # bežné použitie, ak si dáme všetky riešenia do priečinku `sols`
 input-tester -t "3,cpp=0.5,py=5" sols .
+# ak požívame názvoslovie ktoré input-tool nevie dobre rozpoznať, môžeme najprv
+# spustiť vzorové riešenie ktoré vygeneruje výstupy a následne použiť wildcardy
+input-tester -R vzorove-riesenie.py
+input-tester . vzor* ries* program2.cpp cokolvek.py
 ```
 
 # Pokročilé

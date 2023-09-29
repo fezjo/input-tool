@@ -1,14 +1,14 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
-from collections import defaultdict
-from dataclasses import dataclass
 import os
 import subprocess
 import tempfile
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
-from input_tool.common.messages import Color, default_logger, Logger, Status, table_row
+from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 
@@ -60,7 +60,7 @@ class Solution(Program):
             elif parts[1] == "wa":
                 score -= 100
         return (-1, -score, self.name)
-    
+
     def compute_time_statistics(self) -> None:
         for batch, _ in self.statistics.batchresults.items():
             times = [ts[0] for ts in self.statistics.times[batch] if ts]
@@ -77,7 +77,7 @@ class Solution(Program):
                 continue
             points += 1
         return points, maxpoints
-    
+
     def get_statistics_color_and_points(self) -> tuple[Color, str]:
         points, maxpoints = self.grade_results()
         color = Color.score_color(points, maxpoints)
@@ -130,9 +130,9 @@ class Solution(Program):
     def get_exec_cmd(
         self, ifile: str, tfile: str, timelimit: float = 0.0, memorylimit: float = 0.0
     ) -> tuple[str, str]:
-        timefile = tempfile.NamedTemporaryFile(delete=False)
-        timefile.close()
-        timefile = timefile.name
+        f_timefile = tempfile.NamedTemporaryFile(delete=False)
+        f_timefile.close()
+        timefile = f_timefile.name
 
         str_memorylimit = int(memorylimit * 1024) if memorylimit else "unlimited"
         ulimit_cmd = "ulimit -m %s; ulimit -s %s" % (str_memorylimit, str_memorylimit)
@@ -164,13 +164,16 @@ class Solution(Program):
             return Status.exc
         return Status.err
 
-    def get_times(self, timefile: str):
+    def get_times(self, timefile: str, logger: Logger = default_logger):
         try:
             with open(timefile, "r") as tf:
                 ptime_start, *run_times, ptime_end = map(float, tf.read().split())
                 return [int((ptime_end - ptime_start) / 1e6)] + run_times
-        except:
-            return None
+        except OSError as e:
+            logger.warning(str(e))
+        except ValueError as e:
+            logger.warning(str(e))
+        return None
 
     def _run(
         self,
@@ -199,7 +202,7 @@ class Solution(Program):
                 logger.infod(result.stderr.decode("utf-8"))
             status = self.translate_exit_code_to_status(result.returncode)
 
-            run_times = self.get_times(timefile)
+            run_times = self.get_times(timefile, logger)
             if not run_times and status == Status.ok:
                 status = Status.exc
             if checker is not None and status == Status.ok:

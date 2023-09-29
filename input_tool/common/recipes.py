@@ -28,8 +28,9 @@ Format of description files:
 
 """
 from __future__ import annotations
+
 from random import randint
-from typing import Sequence
+from typing import Optional, Sequence
 
 
 def _int_log(number: int, base: int) -> int:
@@ -55,23 +56,30 @@ class Input:
     MAXINT = 2**31
 
     def __lt__(self, other: Input) -> bool:
-        if self.batch != other.batch:
-            assert type(self.batch) == type(other.batch)
-            return self.batch < other.batch  # type: ignore
-        return self.name < other.name
+        if self.batch == other.batch:
+            return self.name < other.name
+        if self.batch is None:
+            return True
+        if other.batch is None:
+            return False
+        try:
+            return int(self.batch) < int(other.batch)
+        except ValueError:
+            return self.batch < other.batch
 
     def __init__(self, text: str, batchid: int, subid: int, inputid: int):
         self.text = text
         self.effects = True
         self.commands: dict[str, str] = {}
-        self.batch = batchid
+        self.batchid = batchid
+        self.batch: str | None = None
         self.subid = subid
         self.name: str = ""
         self.id = inputid
-        self.generator = None
+        self.generator: Optional[str] = None
+        self.compiled = False
         Input.maxbatch = max(Input.maxbatch, batchid)
         Input.maxid = max(Input.maxid, subid)
-        self.compiled = False
 
     def _apply_commands(self) -> None:
         if not self.effects:
@@ -98,8 +106,8 @@ class Input:
         if self.compiled:
             return
         self.compiled = True
-        if isinstance(self.batch, int):
-            self.batch = _create_name(self.batch, 10, _int_log(Input.maxbatch, 10))
+        if self.batch is None:
+            self.batch = _create_name(self.batchid, 10, _int_log(Input.maxbatch, 10))
         if Input.maxid > 0:
             self.name = _create_name(self.subid, 26, _int_log(Input.maxid, 26))
         self._apply_commands()
@@ -236,7 +244,7 @@ _cumberbatch = """\
 ~~~~~~::::,::,.,.....:::~~:~::,,,,,.....,,,,,,,,,,,,,,,,,:,:"""
 
 
-def prepare(batchname: str) -> None:
+def prepare_cumber(batchname: str) -> None:
     # lol ;)
     if batchname.lower() == "cumber":
         print(_cumberbatch)
