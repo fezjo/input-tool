@@ -4,6 +4,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+.cache/
 
 # Distribution / packaging
 *.egg-info/
@@ -14,7 +15,6 @@ poetry.lock
 dist/
 
 # Test generated files
-.*_cache
 tests/**/test/
 
 # VSCode

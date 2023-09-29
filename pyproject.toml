@@ -43,7 +43,14 @@ pytest-mypy = "^0.10.3"
 pytest-sugar = "^0.9.7"
 pytest-ruff = "^0.1.1"
 
+[tool.pytest.ini_options]
+cache_dir = ".cache/.pytest_cache"
+
+[tool.mypy]
+cache_dir = ".cache/.mypy_cache"
+
 [tool.ruff]
+cache-dir = ".cache/.ruff_cache"
 extend-select = ["I"]
 extend-exclude = []
 fix = true
