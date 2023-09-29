@@ -3,6 +3,8 @@ import re
 import shutil
 import subprocess
 
+import pytest
+
 text = """
 Compiling: cd test/prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-a
 make: 'sol-a' is up to date.
@@ -95,10 +97,14 @@ def clean():
     shutil.rmtree("test", ignore_errors=True)
 
 
-def init(cwd: str = ".", cleanup: bool = True):
-    os.chdir(cwd)
+@pytest.fixture
+def setup_directory(request: pytest.FixtureRequest, path: str, cleanup: bool = True):
+    # change to directory of the test
+    os.chdir(os.path.join(os.path.dirname(request.path), path))
     if cleanup:
         clean()
+    yield
+    os.chdir(request.config.invocation_params.dir)
 
 
 def run(command: str, out_err_merge: bool = True) -> subprocess.CompletedProcess[bytes]:
