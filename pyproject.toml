@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "input-tool"
-version = "1.4.1"
+version = "1.5.0"
 description = "Tool which simplifies creating and testing inputs for programming contests."
 license = "MIT"
 authors = ["jablkoj (Ján Hozza)"]
@@ -31,6 +31,7 @@ input-tester = "input_tool.input_tester:main"
 [tool.poetry.dependencies]
 python = "^3.11"
 requests = "^2.31.0"
+pyyaml = "^6.0.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.291"
@@ -38,6 +39,7 @@ black = "^23.9.1"
 mypy = "^1.5.1"
 types-requests = "^2.31.0.6"
 poethepoet = "^0.23.0"
+types-pyyaml = "^6.0.12.12"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.2"

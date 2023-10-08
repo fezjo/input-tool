@@ -70,8 +70,8 @@ Vyrobí postupne vstupy `1.a.in`, `1.b.in`, `1.c.in`, `2.a.in`, `2.b.in`. V tomt
 - `{name}` &ndash; označenie vstupu v sade
 - `{id}` &ndash; poradie vstupu od začiatku IDF
 - `{rand}` &ndash; pseudonáhodné číslo z [0, 2\*\*31)
-- **`{nazov_premennej}` &ndash; hodnota premennej (vieme si vytvárať vlastné premenné pomocou `$+ nazov_premennej=<hodnota>`)**
-- `{{nazov_premennej}}` &ndash; text '`{nazov_premennej}`'
+- **`{nazov_premennej}` &ndash; hodnota premennej (vieme si vytvárať vlastné premenné v YAML formáte**
+- `{{nazov_premennej}}` &ndash; priamy text '`{nazov_premennej}`'
 
 Ak chcete svojmu generátoru povedať, aký vstup vyrába, nie je problém. Nasledujúci IDF:
 
@@ -101,12 +101,12 @@ Vyrobí vstupy podľa:
 
 - Riadky začínajúce '`#`' sú ignorované (čiže sú to komentáre).
 - Riadky začínajúce znakom '`~`' majú tento znak odstránený so začiatku a ďalej sú immúnne voči špeciálnym efektom, s výjnimkou '`\`' na konci riadku.
-- Riadok začínajúci '`$`' nie je chápaný ako popis vstupu, ale ako konfigurácia pre nasledujúce vstupy. Môžeme napríklad nastaviť `$ name=xyz batch=abc` a všetky nasledujúce vstupy sa budú volať `abc.xyz.in`.
+- Riadok začínajúci '`$`' nie je chápaný ako popis vstupu, ale ako konfigurácia pre nasledujúce vstupy. Môžeme napríklad nastaviť `$ name: xyz, batch: abc` a všetky nasledujúce vstupy sa budú volať `abc.xyz.in`.
 - Riadky **končiace** '`\`' majú nasledujúci riadok ako súčasť toho istého vstupu
 
 ### Konfigurácia pomocou '`$`'
 
-Konfigurácia platí až po najbližší riadok začínajúci `$`.
+Konfigurácia platí až po najbližší riadok začínajúci `$`. Ak sa riadok začína `$+`, tak sa pridáva do konfigurácie, ak sa začína iba `$`, tak sa konfigurácia resetuje.
 
 Ak sa viacero vstupov volá rovnako, jednoducho sa premažú, preto treba používať tieto konfigurátory s rozumom.
 
@@ -116,7 +116,11 @@ Konfigurovať vieme:
 - názov vstupu v sade (`name`)
 - prefix pre názov vstupu (`class`)
 - generátor (`gen`)
-- ľubovoľnú vlastnú premennú
+- ľubovoľé vlastné premenné v YAML formáte, príklady:
+  - formát `$ key1: value1, key2: value2, ...` &ndash; teda oddeľovač parametrov je `,`, za `:` musí byť medzera
+  - `$ premenna: 5`
+  - `$ p1: abc, p2: 5, p3: 0b101, p4: 1e9, p5: !eval 2 ** 10 - 1`
+  - `$ zverina: !eval "import random; " ".join(map(str, [random.randint(0, 2**16-1) for x in range(10)]))"`
 
 Keďže whitespace-y slúžia na oddeľovanie parametrov, nepoužívajte ich v hodnotách parametrov.
 
@@ -124,11 +128,11 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
 
 - Mám Bujov generátor a Janov generátor, každý má svoj IDF. Chcem aby neboli kolízie medzi názvami vstupov.  
    _Riešenie:_
-  Na začiatku Bujovho IDF dáme `$class=b` a na začiatku Janovho `$class=j`. Pustím `input-generator -g gen-buj idf-buj && input-generator -g gen-jano idf-jano -k` a vygeneruje mi to vstupy s disjunktnými názvami (napr. `1.ba.in` a `1.ja.in`). Všimnite si `-k` v druhom spustení, ktoré spôsobí, aby sa nezmazali Bujove vstupy.
+  Na začiatku Bujovho IDF dáme `$ class: b` a na začiatku Janovho `$ class: j`. Pustím `input-generator -g gen-buj idf-buj && input-generator -g gen-jano idf-jano -k` a vygeneruje mi to vstupy s disjunktnými názvami (napr. `1.ba.in` a `1.ja.in`). Všimnite si `-k` v druhom spustení, ktoré spôsobí, aby sa nezmazali Bujove vstupy.
 - Mám tri generátory, a chcem mať len jeden IDF.  
-  _Riešenie:_ Použijem `$gen=nazovgeneratora`, na správnych miestach.
+  _Riešenie:_ Použijem `$ gen: nazovgeneratora`, na správnych miestach.
 - Chcem vygenerovať aj sample.  
-  _Riešenie:_ Na koniec IDF pridám `$batch=00.sample` a za to parametre sample vstupov. Pozor, sample dávame na koniec, aby sa nám nepokazilo číslovanie ostatných sád.
+  _Riešenie:_ Na koniec IDF pridám `$ batch: 00.sample` a za to parametre sample vstupov. Pozor, sample dávame na koniec, aby sa nám nepokazilo číslovanie ostatných sád.
 
 ### Príklady správania konfigurátorov
 
@@ -137,18 +141,18 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
   ```
   10
   20
-  $class=prvocislo-
+  $ class: prvocislo-
   37
   47
-  $name=odpoved
-  # všimnime si, že s predošlým riadkom prestalo platiť class=prvocislo-
+  $ name: odpoved
+  # všimnime si, že s predošlým riadkom prestalo platiť class: prvocislo-
   42
 
-  $batch=0.sample
+  $ batch: 0.sample
   1
   2
 
-  $name=este-som-zabudol-jeden
+  $ name: este-som-zabudol-jeden
   8
   ```
 
@@ -179,7 +183,7 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
   ~# ak chcem začat mriežkou, použijem ~
   platia efekty {{name}} {name}
   ~neplatia efekty {{name}} {name}
-  $name=z
+  $ name: z
   konfigurátor sa vzťahuje aj na premenné: {name}
   ```
 
@@ -201,7 +205,7 @@ Ak chcete, dať svojmu generátoru viac riadkový vstup, použite '`\`'. Ak riad
 Príklad:
 
 ```
-$gen=cat batch=0.sample
+$ gen: cat, batch: 0.sample
 4\
 1 2 3 4
 3\

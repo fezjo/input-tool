@@ -35,6 +35,7 @@
 <details>
 <summary>Nemergnuté zmeny</summary>
 
+- **Rozšírená funkcionalita IDF o podporu YAML a `!eval`**
 - **Kontrola aktualizácií pri spustení generátora**
 - **Plne paralelné kompilovanie a testovanie**
 - **Kompilovanie do samostatného priečinku** `test/prog/` (zmena pomocou prepínača `--progdir`)
@@ -140,7 +141,7 @@ Príklad IDF
 {id} 30 1000 3
 
 # 2.sada
-$ hran=1000000
+$ hran: !eval 1e6
 {id} 1000 {hran} 1
 {id} 1000 {hran} 2
 ```

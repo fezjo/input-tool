@@ -30,7 +30,31 @@ Format of description files:
 from __future__ import annotations
 
 from random import randint
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence, TextIO
+
+import yaml
+
+from input_tool.common.messages import warning
+
+
+class EvalLoader(yaml.SafeLoader):
+    """custom loader to allow !eval tag"""
+    def __init__(self, stream: TextIO) -> None:
+        super().__init__(stream)
+        self.add_constructor(tag="!eval", constructor=self.evaluate)
+
+    @staticmethod
+    def evaluate(loader: yaml.Loader, node: yaml.Node) -> Any:
+        # this may fail and raise an exception, this is intended
+        res: Any = loader.construct_scalar(node) # type: ignore
+        try:
+            res = eval(res)
+            if res == int(res):
+                res = int(res)
+        except Exception:
+            pass
+        return res
+
 
 
 def _int_log(number: int, base: int) -> int:
@@ -146,19 +170,24 @@ class Recipe:
         self.inputs: list[Input] = []
 
     def _parse_commands(self, line: str) -> dict[str, str]:
-        commands: dict[str, str] = {}
-        parts = line.split()
-        for part in parts:
-            if "=" in part:
-                k, v = part.split("=", 1)
-                commands[k] = v
-                if k == "gen":
-                    self.programs.append(v)
-        return commands
+        line = f"{{{line}}}"
+        try:
+            yres = yaml.load(line, EvalLoader)
+        except Exception as e:
+            warning(f"Error parsing commands as YAML\n\tCommands: {line}\n\tError: {e}")
+            return {}
+        try:
+            dres = dict(yres)
+            if None in dres.values():
+                warning(f"None value in commands\n\tCommands: {line}\n\tYAML: {yres}")
+            return dres
+        except Exception as e:
+            warning(f"Error parsing YAML output as dict\n\tYAML: {yres}\n\tError: {e}")
+            return {}
 
     def _parse_recipe(self) -> None:
         continuingline = False
-        over_commands = {}
+        over_commands: dict[str, str] = {}
         batchid, subid, inputid = 1, 0, 1
 
         for line in self.recipe:
@@ -180,7 +209,8 @@ class Recipe:
             if line.startswith("#"):  # comment
                 continue
             if line.startswith("$+"):
-                over_commands.update(self._parse_commands(line[2:]))
+                new_commands = self._parse_commands(line[2:])
+                over_commands = dict(over_commands, **new_commands)
                 continue
             if line.startswith("$"):
                 over_commands = self._parse_commands(line[1:])
