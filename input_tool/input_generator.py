@@ -42,6 +42,7 @@ options = [
     "colorful",
     "quiet",
     "clearinput",
+    "noclearbin",
     "clearbin",
     "description",
 ]

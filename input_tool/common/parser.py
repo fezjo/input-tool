@@ -254,8 +254,8 @@ class Parser:
             ("--no-compile",),
             {"dest": "compile", "action": "store_false", "help": "dont try to compile"},
         ),
-        "sort": (
-            ("--no-sort",),
+        "nosort": (
+            ("-S", "--no-sort",),
             {
                 "dest": "sort",
                 "action": "store_false",
@@ -337,7 +337,7 @@ class Parser:
             {
                 "dest": "deprecated",
                 "action": "append_const",
-                "const": "statistics",
+                "const": "statistics (-s --statistics)",
                 "help": "print statistics (deprecated)",
             },
         ),
@@ -352,6 +352,15 @@ class Parser:
                 "dest": "cleartemp",
                 "action": "store_false",
                 "help": "dont remove temporary files after finishing",
+            },
+        ),
+        "noclearbin": (
+            ("-K", "--keep-bin"),
+            {
+                "dest": "deprecated",
+                "action": "append_const",
+                "const": "noclearbin (-K --keep-bin)",
+                "help": "dont remove binary files after finishing (deprecated)",
             },
         ),
         "clearbin": (
