@@ -11,7 +11,7 @@ from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
 from input_tool.common.commands import Config
-from input_tool.common.messages import Color, Status, error, info, infob, warning
+from input_tool.common.messages import Color, Status, error, fatal, info, infob, warning
 from input_tool.common.parser import ArgsGenerator, Parser
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
@@ -67,7 +67,7 @@ def find_idf(directory: str) -> str:
         if de.is_file() and de.name.startswith("idf"):
             idfs.append(de.path)
     if len(idfs) != 1:
-        error(
+        fatal(
             f"Found {len(idfs)} idf files {idfs} in directory '{directory}'.\n"
             f"Please specify idf file manually."
         )
@@ -128,8 +128,10 @@ def print_message_for_input(
 
     msg = "  {}  <  {}".format(short, input.get_info_text(len(short) + 4))
     if status != Status.ok:
-        msg += "\t!Generator encountered an error!"
-    print(Color.colorize(status, msg))
+        msg = msg.ljust(50) + " Generator encountered an error!"
+        error(Color.status_colorize(status, msg))
+    else:
+        info(Color.status_colorize(status, msg))
 
 
 def generate_all(

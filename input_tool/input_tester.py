@@ -14,7 +14,7 @@ from input_tool.common.messages import (
     Color,
     ParallelLoggerManager,
     color_test,
-    error,
+    fatal,
     info,
     infob,
     plain,
@@ -164,7 +164,7 @@ def create_checker(
     if not checker_files:
         checker_files.append("diff")
     if len(checker_files) > 1:
-        error(
+        fatal(
             f"More than one checker found {checker_files}.\n"
             "Set explicitly with -d/--diffcmd (e.g. -d diff) "
             "or leave only one checker in the directory."
@@ -282,7 +282,7 @@ def general_run_sol(
         if cleartemp and ofile != rfile and os.path.exists(rfile):
             os.remove(rfile)
     except Exception as err:
-        error(err)
+        fatal(err)
 
 
 def test_all(

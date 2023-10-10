@@ -123,6 +123,5 @@ if args.wrapper != False:
         wrapper_source = f"{path}/wrapper-mj-x86.c"
     wrapper_binary = f"{path}/wrapper"
     if os.system(f"gcc -O2 -o {wrapper_binary} {wrapper_source}"):
-        error("Wrapper compile failed.")
-        quit(1)
+        fatal("Wrapper compile failed.")
 """

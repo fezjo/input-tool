@@ -52,7 +52,7 @@ class Checker(Program):
         logger = default_logger if logger is None else logger
         cmd = self.diff_cmd(ifile, ofile, tfile)
         if cmd is None:
-            logger.error(f"Unsupported checker {self.name}")
+            logger.fatal(f"Unsupported checker {self.name}")
             return -1
         result = subprocess.run(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE

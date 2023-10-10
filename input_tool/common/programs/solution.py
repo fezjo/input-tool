@@ -185,7 +185,7 @@ class Solution(Program):
         logger: Logger,
     ):
         if not self.ready:
-            logger.error(f"{self.name} not prepared for execution")
+            logger.fatal(f"{self.name} not prepared for execution")
 
         run_times: Optional[list[float]] = None
         timelimit = self.get_timelimit(Config.timelimits)
@@ -239,11 +239,11 @@ class Solution(Program):
             summary = "    {}  {}".format(run_cmd, time)
 
         logger.plain(
-            "{} {}\n".format(Color.colorize(status, summary), status.colored())
+            "{} {}\n".format(Color.status_colorize(status, summary), status.colored())
         )
 
         if status == Status.err:
-            logger.error("Internal error. Testing will not continue", doquit=True)
+            logger.fatal("Internal error. Testing will not continue")
 
     def run(
         self,

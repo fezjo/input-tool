@@ -143,7 +143,7 @@ class Program:
             if not self.quiet:
                 logger.plain(result.stdout.decode("utf-8"))
             if result.returncode:
-                logger.error("Compilation failed.")
+                logger.fatal("Compilation failed.")
 
         assert self.run_cmd
         if (

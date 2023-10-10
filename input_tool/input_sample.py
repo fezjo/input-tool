@@ -6,7 +6,7 @@ import os
 import sys
 from typing import Optional, Sequence
 
-from input_tool.common.messages import Color, error, infob, warning
+from input_tool.common.messages import Color, fatal, infob, warning
 from input_tool.common.parser import ArgsSample, Parser
 from input_tool.common.recipes import Input, Sample, prepare_cumber
 
@@ -36,7 +36,7 @@ def parse_args() -> ArgsSample:
 def read_recipe(filename: Optional[str]) -> list[str]:
     if filename:
         if not os.path.exists(filename):
-            error(f"File '{filename}' does not exist.")
+            fatal(f"File '{filename}' does not exist.")
         return open(filename, "r").readlines()
     return sys.stdin.readlines()
 
@@ -146,7 +146,7 @@ def main() -> None:
 
     samples_in, samples_out = process_lines(lines)
     if len(samples_in) != len(samples_out):
-        error("Number of inputs and outputs must be the same.")
+        fatal("Number of inputs and outputs must be the same.")
     if len(samples_in) == 0:
         warning("No inputs found in task statements.")
 

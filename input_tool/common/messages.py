@@ -103,13 +103,13 @@ class Color:
         return Color.scores[p]
 
     @staticmethod
-    def colorize(status: Status, text: Any, end: Color | None = None) -> str:
-        index = status in (Status.ok, Status.valid)
-        return "%s%s%s" % (
-            (Color.warning, Color.infog)[index],
-            text,
-            end or Color.normal,
-        )
+    def status_colorize(status: Status, text: Any, end: Color | None = None) -> str:
+        color = Color.infog if status in (Status.ok, Status.valid) else Color.warning
+        return Color.colorize(text, color, end)
+
+    @staticmethod
+    def colorize(text: Any, color: Color, end: Color | None = None) -> str:
+        return "%s%s%s" % (color, text, end or Color.normal)
 
 
 _sow = sys.stdout.write
@@ -178,60 +178,63 @@ class Logger:
     def __init__(self, file: TextIO = sys.stderr):
         self.file = file
 
-    def write(self, text: Any) -> None:
-        self.file.write(text)
+    def write(self, text: Any, end: str = "\n") -> None:
+        self.file.write(text + end)
 
-    def colored(self, text: Any, color: Color, end: Any = "\n") -> None:
-        self.write("%s%s%s%s" % (color, text, Color.normal, end))
+    def fatal(self, text: Any) -> None:
+        self.error(text)
+        quit(1)
 
-    def error(self, text: Any, *, doquit: bool = True) -> None:
-        message = "%s%s%s\n" % (Color.error, text, Color.normal)
-        self.write(message)
-        if doquit:
-            quit(1)
+    def error(self, text: Any) -> None:
+        self.write(Color.colorize(text, Color.error))
 
     def warning(self, text: Any) -> None:
-        self.colored(text, Color.warning)
+        self.write(Color.colorize(text, Color.warning))
 
     # blue
     def infob(self, text: Any) -> None:
-        self.colored(text, Color.infob)
+        self.write(Color.colorize(text, Color.infob))
 
     # green
     def infog(self, text: Any) -> None:
-        self.colored(text, Color.infog)
+        self.write(Color.colorize(text, Color.infog))
 
     def infod(self, text: Any) -> None:
         """without newline"""
-        self.colored(text, Color.dim, "")
+        self.write(Color.colorize(text, Color.dim), "")
 
     def info(self, text: Any) -> None:
-        self.write(f"{text}\n")
+        self.write(text)
 
     def plain(self, text: Any) -> None:
         """without newline"""
-        self.write(text)
+        self.write(text, "")
 
 
 default_logger = Logger()
+fatal = default_logger.fatal
+error = default_logger.error
+warning = default_logger.warning
+infob = default_logger.infob
+infog = default_logger.infog
+infod = default_logger.infod
+info = default_logger.info
+plain = default_logger.plain
 
 
 class BufferedLogger(Logger):
     def __init__(self, file: TextIO = sys.stderr):
-        self.file = file
+        super().__init__(file)
         self.buffer: list[str] = []
         self.open = True
 
-    def error(self, text: Any, *, doquit: bool = True, flush: bool = True) -> None:
-        message = "%s%s%s\n" % (Color.error, text, Color.normal)
-        self.write(message)
+    def error(self, text: Any, *, flush: bool = True) -> None:
+        super().error(text)
         if flush:
             self.flush()
-        if doquit:
-            quit(1)
 
-    def write(self, text: Any) -> None:
-        self.buffer.append(text)
+    def write(self, text: Any, end: str = "\n") -> None:
+        self.buffer.append(text + end)
 
     def read(self) -> str:
         return "".join(self.buffer)
@@ -268,37 +271,6 @@ class ParallelLoggerManager:
             self.last_open += 1
         return "".join(res)
 
-
-def error(text: Any, doquit: bool = True) -> None:
-    _sew("%s%s%s\n" % (Color.error, text, Color.normal))
-    if doquit:
-        quit(1)
-
-
-def warning(text: Any) -> None:
-    _sew("%s%s%s\n" % (Color.warning, text, Color.normal))
-
-
-def infob(text: Any) -> None:
-    _sew("%s%s%s\n" % (Color.infob, text, Color.normal))
-
-
-def infog(text: Any) -> None:
-    _sew("%s%s%s\n" % (Color.infog, text, Color.normal))
-
-
-def infod(text: Any) -> None:
-    """without newline"""
-    _sew("%s%s%s" % (Color.dim, text, Color.normal))
-
-
-def info(text: Any) -> None:
-    _sew(f"{text}\n")
-
-
-def plain(text: Any) -> None:
-    """without newline"""
-    _sew(text)
 
 
 # }}}
@@ -346,7 +318,7 @@ def color_test() -> None:
     infob("blue")
     infog("green")
     warning("warning")
-    error("error", doquit=False)
+    error("error")
     _sew("".join([s.colored() for s in Status]) + "\n")
     for i in range(11):
         _sew("%s%s/%s%s\n" % (Color.score_color(i, 10), i, 10, Color.normal))
