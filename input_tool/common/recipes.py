@@ -39,6 +39,7 @@ from input_tool.common.messages import warning
 
 class EvalLoader(yaml.SafeLoader):
     """custom loader to allow !eval tag"""
+
     def __init__(self, stream: TextIO) -> None:
         super().__init__(stream)
         self.add_constructor(tag="!eval", constructor=self.evaluate)
@@ -46,7 +47,7 @@ class EvalLoader(yaml.SafeLoader):
     @staticmethod
     def evaluate(loader: yaml.Loader, node: yaml.Node) -> Any:
         # this may fail and raise an exception, this is intended
-        res: Any = loader.construct_scalar(node) # type: ignore
+        res: Any = loader.construct_scalar(node)  # type: ignore
         try:
             res = eval(res)
             if res == int(res):
@@ -54,7 +55,6 @@ class EvalLoader(yaml.SafeLoader):
         except Exception:
             pass
         return res
-
 
 
 def _int_log(number: int, base: int) -> int:

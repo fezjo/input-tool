@@ -14,6 +14,7 @@ from input_tool.common.messages import (
     Color,
     ParallelLoggerManager,
     color_test,
+    default_logger,
     fatal,
     info,
     infob,
@@ -193,6 +194,7 @@ def prepare_programs(programs: Sequence[Program], threads: int) -> None:
             future.result()
             plain(logger.read())
         parallel_logger_manager.clear_buffers()
+    default_logger.statistics += parallel_logger_manager.statistics
 
 
 def deduplicate_solutions(
@@ -367,6 +369,8 @@ def test_all(
             parallel_logger_manager.closed_event.clear()
             plain(parallel_logger_manager.read_closed())
 
+    default_logger.statistics += parallel_logger_manager.statistics
+
 
 def print_summary(solutions: Sequence[Solution | Validator], inputs: Sequence[str]):
     print(get_statistics_header(inputs))
@@ -412,6 +416,7 @@ def main() -> None:
     test_all(solutions, checker, inputs, args.threads, args)
     if args.stats:
         print_summary(solutions, inputs)
+    info(str(default_logger.statistics))
 
 
 if __name__ == "__main__":

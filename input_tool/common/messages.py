@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import sys
 import threading
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Sequence, TextIO, TypeVar
 
@@ -174,9 +175,39 @@ Color.setup(True)
 # {{{ ---------------------- messages ----------------------------
 
 
+def plural(n: int, s: str) -> str:
+    return f"{n} {s}" if n == 1 else f"{n} {s}s"
+
+
+@dataclass
+class LoggerStatistics:
+    warnings: int = 0
+    errors: int = 0
+
+    def __str__(self) -> str:
+        info_color = Color("normal", "blue" if self.warnings + self.errors else "green")
+        error_msg = Color.colorize(
+            plural(self.errors, "error"), Color.error, info_color
+        )
+        warning_msg = Color.colorize(
+            plural(self.warnings, "warning"), Color.warning, info_color
+        )
+        msg = Color.colorize(
+            f"During execution there were {error_msg} and {warning_msg}.", info_color
+        )
+        return msg
+
+    def __add__(self, other: LoggerStatistics) -> LoggerStatistics:
+        return LoggerStatistics(
+            warnings=self.warnings + other.warnings,
+            errors=self.errors + other.errors,
+        )
+
+
 class Logger:
     def __init__(self, file: TextIO = sys.stderr):
         self.file = file
+        self.statistics = LoggerStatistics()
 
     def write(self, text: Any, end: str = "\n") -> None:
         self.file.write(text + end)
@@ -186,9 +217,11 @@ class Logger:
         quit(1)
 
     def error(self, text: Any) -> None:
+        self.statistics.errors += 1
         self.write(Color.colorize(text, Color.error))
 
     def warning(self, text: Any) -> None:
+        self.statistics.warnings += 1
         self.write(Color.colorize(text, Color.warning))
 
     # blue
@@ -252,6 +285,7 @@ class ParallelLoggerManager:
         self.sinks: list[BufferedLogger] = []
         self.last_open = 0
         self.closed_event = threading.Event()
+        self.statistics = LoggerStatistics()
 
     def get_sink(self) -> BufferedLogger:
         self.sinks.append(BufferedLogger())
@@ -268,9 +302,9 @@ class ParallelLoggerManager:
             if sink.open:
                 break
             res.append(sink.read())
+            self.statistics += sink.statistics
             self.last_open += 1
         return "".join(res)
-
 
 
 # }}}

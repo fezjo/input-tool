@@ -6,7 +6,7 @@ from importlib.metadata import version
 
 import requests
 
-from input_tool.common.messages import Color, warning
+from input_tool.common.messages import Color, default_logger, info, warning
 
 REPO_OWNER = "fezjo"
 REPO_NAME = "input-tool"
@@ -49,3 +49,4 @@ def check_for_updates():
 
 if __name__ == "__main__":
     check_for_updates()
+    info(str(default_logger.statistics))

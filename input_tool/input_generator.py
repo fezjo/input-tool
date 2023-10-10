@@ -11,7 +11,16 @@ from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
 from input_tool.common.commands import Config
-from input_tool.common.messages import Color, Status, error, fatal, info, infob, warning
+from input_tool.common.messages import (
+    Color,
+    Status,
+    default_logger,
+    error,
+    fatal,
+    info,
+    infob,
+    warning,
+)
 from input_tool.common.parser import ArgsGenerator, Parser
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
@@ -179,6 +188,7 @@ def main() -> None:
     generate_all(recipe, programs, gencmd, args)
 
     check_for_updates()
+    info(str(default_logger.statistics))
 
 
 if __name__ == "__main__":

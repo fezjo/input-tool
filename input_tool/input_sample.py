@@ -6,7 +6,14 @@ import os
 import sys
 from typing import Optional, Sequence
 
-from input_tool.common.messages import Color, fatal, infob, warning
+from input_tool.common.messages import (
+    Color,
+    default_logger,
+    fatal,
+    info,
+    infob,
+    warning,
+)
 from input_tool.common.parser import ArgsSample, Parser
 from input_tool.common.recipes import Input, Sample, prepare_cumber
 
@@ -157,6 +164,8 @@ def main() -> None:
     prepare_dirs((args.indir, args.outdir))
     for sample in samples:
         sample.save()
+
+    info(str(default_logger.statistics))
 
 
 if __name__ == "__main__":
