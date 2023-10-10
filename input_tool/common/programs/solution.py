@@ -169,10 +169,8 @@ class Solution(Program):
             with open(timefile, "r") as tf:
                 ptime_start, *run_times, ptime_end = map(float, tf.read().split())
                 return [int((ptime_end - ptime_start) / 1e6)] + run_times
-        except OSError as e:
-            logger.warning(str(e))
-        except ValueError as e:
-            logger.warning(str(e))
+        except (OSError, ValueError) as e:
+            logger.warning(e)
         return None
 
     def _run(
@@ -212,7 +210,7 @@ class Solution(Program):
                     status = Status.wa
         except Exception as e:
             status = Status.err
-            logger.warning(str(e))
+            logger.warning(e)
         finally:
             if os.path.exists(timefile):
                 os.remove(timefile)
