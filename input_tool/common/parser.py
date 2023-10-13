@@ -255,7 +255,10 @@ class Parser:
             {"dest": "compile", "action": "store_false", "help": "dont try to compile"},
         ),
         "nosort": (
-            ("-S", "--no-sort",),
+            (
+                "-S",
+                "--no-sort",
+            ),
             {
                 "dest": "sort",
                 "action": "store_false",

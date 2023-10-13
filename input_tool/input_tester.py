@@ -412,7 +412,7 @@ def main() -> None:
     inputs = get_inputs(args)
     _outputs = get_outputs(inputs, args)
     temp_clear(args)
-    Config.inside_inputmaxlen = max(map(len, inputs))
+    Config.inside_inputmaxlen = max(map(len, inputs)) if inputs else 0
 
     test_all(solutions, checker, inputs, args.threads, args)
     if args.stats:

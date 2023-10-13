@@ -187,10 +187,14 @@ class LoggerStatistics:
     def __str__(self) -> str:
         info_color = Color("normal", "blue" if self.warnings + self.errors else "green")
         error_msg = Color.colorize(
-            plural(self.errors, "error"), Color.error, info_color
+            plural(self.errors, "error"),
+            Color.error if self.errors else info_color,
+            info_color,
         )
         warning_msg = Color.colorize(
-            plural(self.warnings, "warning"), Color.warning, info_color
+            plural(self.warnings, "warning"),
+            Color.warning if self.warnings else info_color,
+            info_color,
         )
         msg = Color.colorize(
             f"During execution there were {error_msg} and {warning_msg}.", info_color

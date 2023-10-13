@@ -55,7 +55,8 @@ mypy = "mypy ."
 test = "pytest ."
 lint = ["black", "ruff"]
 typecheck = ["mypy"]
-checkall = "pytest --black --ruff --mypy ."
+checkall = ["lint", "typecheck"]
+testall = "pytest --black --ruff --mypy ."
 
 [tool.pytest.ini_options]
 cache_dir = ".cache/.pytest_cache"
