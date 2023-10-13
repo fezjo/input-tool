@@ -104,8 +104,8 @@ class Parser:
             ("-p", "--progdir"),
             {
                 "dest": "progdir",
-                "default": "test/prog",
-                "help": "directory where programs compile to (default=test/prog), "
+                "default": "prog",
+                "help": "directory where programs compile to (default=prog), "
                 'compile next to source file if set to ""',
             },
         ),

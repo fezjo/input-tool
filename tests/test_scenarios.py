@@ -23,7 +23,7 @@ def test_progdir(setup_directory: None):
     result_test = run("input-tester sol-a.cpp ./sol-b.cpp cdir/sol-c.cpp")
     print(result_test.stdout.decode("utf-8"))
 
-    assert sorted(os.listdir("test/prog")) == ["sol-a", "sol-b", "sol-c"]
+    assert sorted(os.listdir("prog")) == ["sol-a", "sol-b", "sol-c"]
 
     statistics = parse_statistics(result_test.stdout.decode("utf-8"))
     assert len(statistics) == 3
@@ -78,7 +78,7 @@ def test_sidebyside(setup_directory: None):
 
     result_text = filter_out_ansi_escape_codes(result_test.stdout.decode("utf-8"))
     result_lines = normalize_whitespace(result_text)
-    offset = 6
+    offset = 7
     last_diff_lines_real = result_lines[
         -len(last_diff_lines_expected) - offset : -offset
     ]

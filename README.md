@@ -38,7 +38,7 @@
 - **Rozšírená funkcionalita IDF o podporu YAML a `!eval`**
 - **Kontrola aktualizácií pri spustení generátora**
 - **Plne paralelné kompilovanie a testovanie**
-- **Kompilovanie do samostatného priečinku** `test/prog/` (zmena pomocou prepínača `--progdir`)
+- **Kompilovanie do samostatného priečinku** `prog/` (zmena pomocou prepínača `--progdir`)
 - **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
 - **Podpora priečinka ako argument pre `input-generator`** &ndash; automatické načítanie IDF
 - Automatický varovný timelimit tesných riešení

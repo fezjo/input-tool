@@ -6,13 +6,13 @@ import subprocess
 import pytest
 
 text = """
-Compiling: cd test/prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-a
+Compiling: cd prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-a
 make: 'sol-a' is up to date.
-Compiling: cd test/prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-b
+Compiling: cd prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-b
 make: 'sol-b' is up to date.
 ----- Run commands -----
-Program sol-a.cpp   is ran as `./test/prog/sol-a`
-Program sol-b.cpp   is ran as `./test/prog/sol-b`
+Program sol-a.cpp   is ran as `./prog/sol-a`
+Program sol-b.cpp   is ran as `./prog/sol-b`
 ------------------------
 1.a.in >
     sol-a.cpp       5ms OK

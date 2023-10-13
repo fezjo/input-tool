@@ -16,6 +16,7 @@ dist/
 
 # Test generated files
 tests/**/test/
+tests/**/prog/
 
 # VSCode
 .vscode/
