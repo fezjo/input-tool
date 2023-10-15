@@ -347,7 +347,7 @@ def main() -> None:
             "execute",
         ),
     )
-    Config.rus_time = args.rustime and bool(shutil.which("/usr/bin/time"))
+    Config.rus_time = args.rustime and bool(shutil.which(Config.os_config.cmd_time))
     Config.timelimits.update(parse_timelimit(args.timelimit))
     Config.warn_timelimits.update(
         parse_warntimelimit(args.warntimelimit, Config.timelimits)

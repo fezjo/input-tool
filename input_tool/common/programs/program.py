@@ -81,7 +81,7 @@ class Program:
             )
         )
 
-        def setup_compile_by_make(options: str) -> None:
+        def setup_compile_by_make(options: list[str]) -> None:
             """
             self.run_cmd and Config.progdir can be:
             /dir/exe, ~/dir/exe, ../dir/exe, ./dir/exe, dir/exe, exe,
@@ -97,19 +97,30 @@ class Program:
                     os.path.abspath(path),
                     key=len,
                 )
+                option_str = " ".join(filter(bool, options))
                 self.compilecmd = (
-                    f"cd {Config.progdir}; make VPATH='{path}' {options} {exe}"
+                    f'cd {Config.progdir}; make VPATH="{path}" {option_str} {exe}'
                 )
                 self.run_cmd = f"{Config.progdir}/{exe}"
             self.filestoclear.append(self.run_cmd)
 
         if docompile:
             if self.lang is Langs.Lang.c:
-                setup_compile_by_make('CFLAGS="-O2 -std=c17 $CFLAGS"')
+                compiler = Config.os_config.cmd_cpp_compiler
+                option_list = [
+                    f'CC="{compiler}"' if compiler else "",
+                    'CFLAGS="-O2 -std=c17 $CFLAGS"',
+                ]
+                setup_compile_by_make(option_list)
             elif self.lang is Langs.Lang.cpp:
-                setup_compile_by_make('CXXFLAGS="-O2 -std=c++20 $CXXFLAGS"')
+                compiler = Config.os_config.cmd_cpp_compiler
+                option_list = [
+                    f'CXX="{compiler}"' if compiler else "",
+                    'CXXFLAGS="-O2 -std=c++20 $CXXFLAGS"',
+                ]
+                setup_compile_by_make(option_list)
             elif self.lang is Langs.Lang.pascal:
-                setup_compile_by_make('PFLAGS="-O2 $FFLAGS"')
+                setup_compile_by_make(['PFLAGS="-O2 $PFLAGS"'])
             elif self.lang is Langs.Lang.java:
                 class_dir = "{}/.classdir-{}-{}.tmp".format(
                     Config.progdir, to_base_alnum(self.name), os.getpid()
@@ -126,7 +137,7 @@ class Program:
 
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
-                self.run_cmd = f"{Config.pythoncmd} {self.source}"
+                self.run_cmd = f"{Config.os_config.cmd_python} {self.source}"
             if self.lang is Langs.Lang.java:
                 self.run_cmd = "java -Xss256m " + self.run_cmd
 

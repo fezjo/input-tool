@@ -68,28 +68,31 @@ Nástroj, ktorý výrazne zjednodušuje vytváranie a testovanie vstupov pre sú
 
 ## Inštalácia
 
-Na **Linuxe** je to dosť jednoduché.
+
+Na **Linuxe** je to dosť jednoduché. Na **MacOS** je to niekedy problematické, ale vporiadku. **Windows nie je podporovaný**.
 
 1. Prerekvizity:
 
-   - Potrebujete `python3`
-   - Potrebujete kompilátory C/C++ (kompilujeme pomocou `make`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
-   - _Odporúčame_ `time` (nestačí bashová funkcia)
+   - Potrebujete `python3` a `make`
+   - Potrebujete kompilátory C/C++ (`gcc/clang/...`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
+   - Na **MacOS** potrebujete nainštalovať `coreutils` a `gcc`
+     - všetko potrebné napríklad pomocou `brew install coreutils gcc make python3`
+   - _Nepovinne_ `time` (Linux) / `gnu-time` (MacOS)  (nestačí bashová funkcia) ak chceme _Real/User/System_ časy
 
 2. Nainštalujte cez `pip`:
 
    ```bash
-   pip install git+https://github.com/fezjo/input-tool.git
+   pip3 install git+https://github.com/fezjo/input-tool.git
    # alebo
    git clone git@github.com:fezjo/input-tool.git
-   pip install -e .
+   pip3 install -e .
    # nezabudnite mať inštalačný priečinok v PATH
    ```
 
    Aktualizuje sa pomocou:
 
    ```bash
-   pip install -U git+https://github.com/fezjo/input-tool.git
+   pip3 install -U git+https://github.com/fezjo/input-tool.git
    # alebo
    git pull
    ```

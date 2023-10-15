@@ -134,21 +134,24 @@ class Solution(Program):
         f_timefile.close()
         timefile = f_timefile.name
 
-        str_memorylimit = int(memorylimit * 1024) if memorylimit else "unlimited"
-        ulimit_cmd = "ulimit -m %s; ulimit -s %s" % (str_memorylimit, str_memorylimit)
-        timelimit_cmd = "timeout %s" % timelimit if timelimit else ""
-        time_cmd = ["", '/usr/bin/time -f "%s" -a -o %s -q' % ("%e %U %S", timefile)][
-            Config.rus_time
-        ]
-        date_cmd = "date +%%s%%N >>%s" % timefile
-        prog_cmd = "%s %s <%s >%s" % (self.run_cmd, self.run_args(ifile), ifile, tfile)
-        cmd = "%s; %s; %s %s %s; rc=$?; %s; exit $rc" % (
-            ulimit_cmd,
-            date_cmd,
-            time_cmd,
-            timelimit_cmd,
-            prog_cmd,
-            date_cmd,
+        osc = Config.os_config
+        str_memorylimit = int(memorylimit * 1024) if memorylimit else osc.mem_unlimited
+        ulimit_cmd = (
+            f"{osc.cmd_ulimit} -m {str_memorylimit}; "
+            f"{osc.cmd_ulimit} -s {str_memorylimit}"
+        )
+        timelimit_cmd = f"{osc.cmd_timeout} {timelimit}" if timelimit else ""
+        time_cmd = (
+            f'{osc.cmd_time} -f "%e %U %S" -a -o {timefile} -q'
+            if Config.rus_time
+            else ""
+        )
+        date_cmd = f"{osc.cmd_date} +%s%N >> {timefile}"
+        prog_cmd = f"{self.run_cmd} {self.run_args(ifile)} < {ifile} > {tfile}"
+        cmd = (
+            f"{ulimit_cmd}; {date_cmd}; "
+            f"{time_cmd} {timelimit_cmd} {prog_cmd}; "
+            f"rc=$?; {date_cmd}; exit $rc"
         )
         return timefile, cmd
 

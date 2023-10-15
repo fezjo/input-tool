@@ -37,6 +37,7 @@ from enum import Enum
 from typing import Iterable, Optional
 
 from input_tool.common.messages import table_header
+from input_tool.common.os_config import OsConfig
 
 
 def is_file_newer(file1: str, file2: str) -> bool | None:
@@ -89,7 +90,6 @@ class Langs:
 class Config:
     Timelimit = dict[Langs.Lang | str, float]
 
-    pythoncmd = "python3"
     fskip: bool
     rus_time: bool
     timelimits: Timelimit = {Langs.Lang.unknown: 0}
@@ -102,6 +102,7 @@ class Config:
     inside_inputmaxlen: int
     progdir: Optional[str]
     cmd_maxlen: int = len("Solution")
+    os_config: OsConfig
 
 
 def get_statistics_header(inputs: Iterable[str]) -> str:
