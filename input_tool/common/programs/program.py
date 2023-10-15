@@ -141,7 +141,32 @@ class Program:
             if self.lang is Langs.Lang.java:
                 self.run_cmd = "java -Xss256m " + self.run_cmd
 
+    @staticmethod
+    def get_possible_locations_of_executable(run_cmd: str, source: str) -> list[str]:
+        source_dir, source_basename = os.path.split(source)
+        source_name, _source_ext = os.path.splitext(source_basename)
+        _run_cmd_dir, run_cmd_basename = os.path.split(run_cmd)
+        possibilities = [
+            run_cmd,
+            os.path.join(source_dir, run_cmd_basename),
+            os.path.join(source_dir, source_name),
+            os.path.join(source_dir, source_basename),
+            run_cmd_basename,
+            source_name,
+            source_basename,
+        ]
+        # keep unique in original order
+        return list(dict.fromkeys(possibilities))
+
+    @staticmethod
+    def try_possible_locations_of_executable(possibilities: list[str]) -> Optional[str]:
+        for cmd in possibilities:
+            if os.access(cmd, os.X_OK):
+                return cmd
+        return None
+
     def prepare(self, logger: Optional[Logger] = None) -> None:
+        assert self.run_cmd is not None
         logger = default_logger if logger is None else logger
         if self.compilecmd is not None:
             logger.infob(f"Compiling: {self.compilecmd}")
@@ -156,7 +181,18 @@ class Program:
             if result.returncode:
                 logger.fatal("Compilation failed.")
 
-        assert self.run_cmd
+            possible_cmds = self.get_possible_locations_of_executable(
+                self.run_cmd, self.name
+            )
+            found_cmd = self.try_possible_locations_of_executable(possible_cmds)
+            if found_cmd is None:
+                logger.fatal(f"Error: No executable found for {self.name}")
+            elif found_cmd != self.run_cmd:
+                logger.warning(
+                    f"Warning: {self.run_cmd} not found, using {found_cmd} instead."
+                )
+                self.run_cmd = found_cmd
+
         if (
             not self.forceexecute
             and os.access(self.run_cmd, os.X_OK)
