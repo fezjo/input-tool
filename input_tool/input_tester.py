@@ -5,13 +5,13 @@
 import atexit
 import itertools
 import os
+import shutil
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, get_statistics_header
 from input_tool.common.messages import (
     BufferedLogger,
-    Color,
     ParallelLoggerManager,
     color_test,
     default_logger,
@@ -26,6 +26,7 @@ from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.programs.solution import Solution
 from input_tool.common.programs.validator import Validator
+from input_tool.common.tools_common import cleanup, prepare_programs, setup_config
 
 description = """
 Input tester.
@@ -91,35 +92,6 @@ def parse_warntimelimit(
     return parse_timelimit(warntimelimit)
 
 
-def setup_config(args: ArgsTester) -> None:
-    Color.setup(args.colorful)
-
-    if args.deprecated:
-        for option in args.deprecated:
-            warning(f"Option '{option}' is deprecated.")
-
-    for key in (
-        "progdir",
-        "pythoncmd",
-        "fskip",
-        "memorylimit",
-        "quiet",
-        "compile",
-        "execute",
-    ):
-        setattr(Config, key, getattr(args, key))
-    Config.rus_time = os.access("/usr/bin/time", os.X_OK) and args.rustime
-    if not Config.progdir:
-        Config.progdir = None
-    else:
-        os.makedirs(Config.progdir, exist_ok=True)
-
-    Config.timelimits.update(parse_timelimit(args.timelimit))
-    Config.warn_timelimits.update(
-        parse_warntimelimit(args.warntimelimit, Config.timelimits)
-    )
-
-
 # --------------- prepare programs ---------------
 
 
@@ -172,30 +144,6 @@ def create_checker(
             "or leave only one checker in the directory."
         )
     return Checker(checker_files[0], show_diff_output)
-
-
-def cleanup(programs: Sequence[Program]) -> None:
-    for p in programs:
-        p.clear_files()
-    if Config.progdir is not None:
-        try:
-            os.removedirs(Config.progdir)
-        except OSError:
-            warning(f"Program directory not empty {os.listdir(Config.progdir)}")
-
-
-def prepare_programs(programs: Sequence[Program], threads: int) -> None:
-    parallel_logger_manager = ParallelLoggerManager()
-    with ThreadPoolExecutor(max_workers=threads) as executor:
-        futures = [
-            executor.submit(p.prepare, parallel_logger_manager.get_sink())
-            for p in programs
-        ]
-        for future, logger in zip(futures, parallel_logger_manager.sinks):
-            future.result()
-            plain(logger.read())
-        parallel_logger_manager.clear_buffers()
-    default_logger.statistics += parallel_logger_manager.statistics
 
 
 def deduplicate_solutions(
@@ -387,7 +335,23 @@ def main() -> None:
     if args.colortest:
         color_test()
         quit()
-    setup_config(args)
+    setup_config(
+        args,
+        (
+            "progdir",
+            "pythoncmd",
+            "fskip",
+            "memorylimit",
+            "quiet",
+            "compile",
+            "execute",
+        ),
+    )
+    Config.rus_time = args.rustime and bool(shutil.which("/usr/bin/time"))
+    Config.timelimits.update(parse_timelimit(args.timelimit))
+    Config.warn_timelimits.update(
+        parse_warntimelimit(args.warntimelimit, Config.timelimits)
+    )
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, not args.dupprog)

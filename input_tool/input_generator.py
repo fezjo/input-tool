@@ -4,13 +4,11 @@
 # Script that helps generating inputs for contests
 import atexit
 import os
-import shutil
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
-from input_tool.common.commands import Config
 from input_tool.common.messages import (
     Color,
     Status,
@@ -19,11 +17,11 @@ from input_tool.common.messages import (
     fatal,
     info,
     infob,
-    warning,
 )
 from input_tool.common.parser import ArgsGenerator, Parser
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
+from input_tool.common.tools_common import cleanup, prepare_programs, setup_config
 
 description = """
 Input generator.
@@ -53,24 +51,6 @@ def parse_args() -> ArgsGenerator:
     return parser.parse(ArgsGenerator)
 
 
-def setup_pythoncmd(argcmd: str) -> None:
-    pythoncmds = [argcmd, "pypy3", "python3", "python"]
-    Config.pythoncmd = next(
-        (x for x in pythoncmds if shutil.which(x)), "NO_PYTHON_INTERPRETER_FOUND"
-    )
-    if Config.pythoncmd != argcmd:
-        warning(f"Python interpreter '{argcmd}' not found, using '{Config.pythoncmd}'")
-
-
-def setup_config(args: ArgsGenerator) -> None:
-    for key in ("progdir", "quiet", "compile", "execute"):
-        setattr(Config, key, getattr(args, key))
-    if not Config.progdir:
-        Config.progdir = None
-    else:
-        os.makedirs(Config.progdir, exist_ok=True)
-
-
 def find_idf(directory: str) -> str:
     idfs: list[str] = []
     for de in os.scandir(directory):
@@ -93,16 +73,6 @@ def get_recipe(file: Optional[str]) -> Recipe:
     else:
         text = sys.stdin.readlines()
     return Recipe(text)
-
-
-def cleanup(programs: dict[str, Generator]) -> None:
-    for p in programs:
-        programs[p].clear_files()
-
-
-def prepare_programs(programs: dict[str, Generator]) -> None:
-    for p in sorted(programs):
-        programs[p].prepare()
 
 
 def setup_indir(indir: str, inext: str, clear_input: bool):
@@ -170,9 +140,7 @@ def generate_all(
 
 def main() -> None:
     args = parse_args()
-    Color.setup(args.colorful)
-    setup_pythoncmd(args.pythoncmd)
-    setup_config(args)
+    setup_config(args, ("progdir", "quiet", "compile", "execute"))
 
     recipe = get_recipe(args.description)
     recipe.process()
@@ -181,7 +149,7 @@ def main() -> None:
     programs = {x: Generator(x) for x in recipe.programs}
     gencmd = args.gencmd
     programs[gencmd] = Generator(gencmd)
-    prepare_programs(programs)
+    prepare_programs(programs.values(), max(4, args.threads))
     if args.clearbin:
         atexit.register(lambda p=programs: cleanup(p))
 
