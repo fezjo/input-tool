@@ -35,18 +35,20 @@
 <details>
 <summary>Nemergnuté zmeny</summary>
 
+- **Podpora MacOS**
+- Rôzne malé vylepšenia, refaktorovanie, bugfixy
 - **Rozšírená funkcionalita IDF o podporu YAML a `!eval`**
-- **Kontrola aktualizácií pri spustení generátora**
-- **Plne paralelné kompilovanie a testovanie**
-- **Kompilovanie do samostatného priečinku** `prog/` (zmena pomocou prepínača `--progdir`)
-- **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
-- **Podpora priečinka ako argument pre `input-generator`** &ndash; automatické načítanie IDF
+- **Poetry manager**
+- Kontrola aktualizácií pri spustení generátora
+- Podpora priečinka ako argument pre `input-generator` &ndash; automatické načítanie IDF
 - Automatický varovný timelimit tesných riešení
+- **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
+- **Kompilovanie do samostatného priečinku** `prog/` (zmena pomocou prepínača `--progdir`)
+- Začaté písanie testov
+- **Plne paralelné kompilovanie a testovanie**
 - Generovanie vstupov predvolene pomocou `pypy3`
 - Zmodernizovaný a zrefaktorovaný kód
-- Začaté písanie testov
 - Bugfixes
-- **Poetry manager**
 
 </details>
 
@@ -69,7 +71,7 @@ Nástroj, ktorý výrazne zjednodušuje vytváranie a testovanie vstupov pre sú
 ## Inštalácia
 
 
-Na **Linuxe** je to dosť jednoduché. Na **MacOS** je to niekedy problematické, ale vporiadku. **Windows nie je podporovaný**.
+Na **Linuxe** a **MacOS** je to dosť jednoduché. **Windows nie je podporovaný**.
 
 1. Prerekvizity:
 
