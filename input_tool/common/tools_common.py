@@ -1,3 +1,4 @@
+# © 2023 fezjo
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, Sequence

@@ -1,3 +1,4 @@
+# © 2023 fezjo
 import os
 import re
 import shutil
