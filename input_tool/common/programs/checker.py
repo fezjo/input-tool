@@ -25,7 +25,7 @@ class Checker(Program):
     @staticmethod
     def filename_befits(filename: str) -> str | None:
         filename = to_base_alnum(filename)
-        prefixes = ["diff", "check", "chito", "test"]
+        prefixes = ["diff", "check", "chito", "tester"]
         for prefix in prefixes:
             if filename.startswith(prefix):
                 return prefix
@@ -40,6 +40,7 @@ class Checker(Program):
             "check": " %s %s %s > /dev/null" % (ifile, ofile, tfile),
             "chito": " %s %s %s > /dev/null" % (ifile, tfile, ofile),
             "test": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
+            "tester": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
         }
         prefix = self.filename_befits(self.name)
         if prefix:
