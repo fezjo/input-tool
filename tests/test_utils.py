@@ -7,9 +7,9 @@ import subprocess
 import pytest
 
 text = """
-Compiling: cd prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-a
+Compiling: cd prog; make VPATH='../..' CXXFLAGS="-O2 -g -std=c++20 $CXXFLAGS" sol-a
 make: 'sol-a' is up to date.
-Compiling: cd prog; make VPATH='../..' CXXFLAGS="-O2 -std=c++20 $CXXFLAGS" sol-b
+Compiling: cd prog; make VPATH='../..' CXXFLAGS="-O2 -g -std=c++20 $CXXFLAGS" sol-b
 make: 'sol-b' is up to date.
 ----- Run commands -----
 Program sol-a.cpp   is ran as `./prog/sol-a`
