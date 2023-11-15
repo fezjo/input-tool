@@ -178,6 +178,8 @@ class Recipe:
             return {}
         try:
             dres = dict(yres)
+            if "gen" in dres:
+                self.programs.append(dres["gen"])
             if None in dres.values():
                 warning(f"None value in commands\n\tCommands: {line}\n\tYAML: {yres}")
             return dres
