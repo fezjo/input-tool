@@ -26,7 +26,8 @@ def check_for_updates():
         current_version = version("input_tool")
 
         # Send a GET request to the GitHub API
-        response = requests.get(GITHUB_API_URL_TEMPLATE.format(REPO_OWNER, REPO_NAME))
+        version_url = GITHUB_API_URL_TEMPLATE.format(REPO_OWNER, REPO_NAME)
+        response = requests.get(version_url, timeout=2)
         response.raise_for_status()
         latest_version = response.json()["tag_name"].lstrip("v")
 
