@@ -1,4 +1,5 @@
 # © 2023 fezjo
+import atexit
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, Sequence
@@ -36,14 +37,21 @@ def setup_config(args: ArgsTester | ArgsGenerator, config_keys: Iterable[str]) -
         os.makedirs(Config.progdir, exist_ok=True)
 
 
+@atexit.register
+def cleanup_progdir(warn: bool = False) -> None:
+    if Config.progdir is None:
+        return
+    try:
+        os.removedirs(Config.progdir)
+    except OSError:
+        if warn:
+            warning(f"Program directory not empty {os.listdir(Config.progdir)}")
+
+
 def cleanup(programs: Sequence[Program]) -> None:
     for p in programs:
         p.clear_files()
-    if Config.progdir is not None:
-        try:
-            os.removedirs(Config.progdir)
-        except OSError:
-            warning(f"Program directory not empty {os.listdir(Config.progdir)}")
+    cleanup_progdir(True)
 
 
 def prepare_programs(programs: Iterable[Program], threads: int) -> None:
