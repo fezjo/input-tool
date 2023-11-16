@@ -92,7 +92,7 @@ class Config:
 
     fskip: bool
     rus_time: bool
-    timelimits: Timelimit = {Langs.Lang.unknown: 0}
+    timelimits: Timelimit = {Langs.Lang.unknown: 3}
     warn_timelimits: Timelimit = {Langs.Lang.unknown: 0}
     memorylimit: float
     quiet: bool
@@ -100,7 +100,7 @@ class Config:
     execute: bool
     inside_oneline: bool
     inside_inputmaxlen: int
-    progdir: Optional[str]
+    progdir: Optional[str] = None
     cmd_maxlen: int = len("Solution")
     os_config: OsConfig
 
