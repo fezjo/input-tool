@@ -62,7 +62,9 @@ class Solution(Program):
         return (-1, -score, self.name)
 
     def compute_time_statistics(self) -> None:
-        for batch, _ in self.statistics.batchresults.items():
+        for batch, result in self.statistics.batchresults.items():
+            if result != Status.ok:
+                continue
             times = [ts[0] for ts in self.statistics.times[batch] if ts]
             self.statistics.maxtime = max(self.statistics.maxtime, max(times))
             self.statistics.sumtime += sum(times)
@@ -73,9 +75,7 @@ class Solution(Program):
             if "sample" in batch:
                 continue
             maxpoints += 1
-            if result != Status.ok:
-                continue
-            points += 1
+            points += result == Status.ok
         return points, maxpoints
 
     def get_statistics_color_and_points(self) -> tuple[Color, str]:
