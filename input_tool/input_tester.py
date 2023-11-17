@@ -55,6 +55,7 @@ options = [
     "quiet",
     "stats",
     "nostats",
+    "json",
     "cleartemp",
     "noclearbin",
     "clearbin",
