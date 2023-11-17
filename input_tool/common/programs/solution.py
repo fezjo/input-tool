@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
@@ -62,6 +62,7 @@ class Solution(Program):
         return (-1, -score, self.name)
 
     def compute_time_statistics(self) -> None:
+        self.statistics.sumtime = 0
         for batch, result in self.statistics.batchresults.items():
             if result != Status.ok:
                 continue
@@ -95,6 +96,20 @@ class Solution(Program):
             self.statistics.result,
         ]
         return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
+
+    def get_json(self) -> dict[str, Any]:
+        self.compute_time_statistics()
+        _color, points = self.get_statistics_color_and_points()
+        return {
+            "name": self.name,
+            "maxtime": self.statistics.maxtime,
+            "sumtime": self.statistics.sumtime,
+            "points": points,
+            "result": self.statistics.result,
+            "batchresults": self.statistics.batchresults,
+            "times": self.statistics.times,
+            "failedbatches": self.statistics.failedbatches,
+        }
 
     @staticmethod
     def parse_batch(ifile: str):

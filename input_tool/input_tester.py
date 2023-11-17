@@ -4,6 +4,7 @@
 # Complex script that can test solutions
 import atexit
 import itertools
+import json
 import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor
@@ -19,6 +20,7 @@ from input_tool.common.messages import (
     info,
     infob,
     plain,
+    serialize_for_json,
     warning,
 )
 from input_tool.common.parser import ArgsTester, Parser
@@ -383,6 +385,13 @@ def main() -> None:
     if args.stats:
         print_summary(solutions, inputs)
     info(str(default_logger.statistics))
+
+    if args.json:
+        output = []
+        for sol in solutions:
+            output.append(sol.get_json())
+        with open(args.json, "w") as f:
+            json.dump(output, f, default=serialize_for_json)
 
 
 if __name__ == "__main__":

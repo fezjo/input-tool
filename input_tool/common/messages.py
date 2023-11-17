@@ -397,3 +397,13 @@ def side_by_side(text1: str, text2: str, height: int, width: int = 80) -> str:
         )
         res.append(f"{line1} {delim} {line2}")
     return "\n".join(res)
+
+
+def serialize_for_json(obj) -> Any:
+    if isinstance(obj, (list, tuple, set)):
+        return [serialize_for_json(o) for o in obj]
+    if isinstance(obj, dict):
+        return {serialize_for_json(k): serialize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    return str(obj)
