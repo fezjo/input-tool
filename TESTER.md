@@ -24,6 +24,8 @@ input-tester:
     dont let subprograms print stuff
   -j THREADS, --threads THREADS
     how many threads to use (default=4)
+  --json JSON
+    also write output in json format to file
 ```
 
 ### Paralelizácia

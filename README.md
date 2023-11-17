@@ -48,6 +48,7 @@
 - **Plne paralelné kompilovanie a testovanie**
 - Generovanie vstupov predvolene pomocou `pypy3`
 - Zmodernizovaný a zrefaktorovaný kód
+- JSON výstup testera
 - Bugfixes
 
 </details>

@@ -62,6 +62,7 @@ class ArgsTester:
     colortest: bool
     quiet: bool
     stats: bool
+    json: str | None
     cleartemp: bool
     clearbin: bool
     programs: list[str]
@@ -347,6 +348,14 @@ class Parser:
         "nostats": (
             ("--no-statistics",),
             {"dest": "stats", "action": "store_false", "help": "dont print statistics"},
+        ),
+        "json": (
+            ("--json",),
+            {
+                "dest": "json",
+                "default": None,
+                "help": "also write output in json format to file",
+            },
         ),
         # cleanup
         "cleartemp": (
