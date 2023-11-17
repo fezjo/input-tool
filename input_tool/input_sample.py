@@ -40,11 +40,21 @@ def parse_args() -> ArgsSample:
     return parser.parse(ArgsSample)
 
 
-def read_recipe(filename: Optional[str]) -> list[str]:
-    if filename:
-        if not os.path.exists(filename):
-            fatal(f"File '{filename}' does not exist.")
-        return open(filename, "r").readlines()
+def read_recipe(path: Optional[str]) -> list[str]:
+    if path:
+        if not os.path.exists(path):
+            fatal(f"Path '{path}' does not exist.")
+        elif os.path.isdir(path):
+            consider = [f for f in os.listdir(path) if f.lower() == "zadanie.md"]
+            if len(consider) == 0:
+                fatal(f"Path '{path}' does not contain `zadanie.md`.")
+            elif len(consider) > 1:
+                fatal(
+                    f"Path '{path}' contains more than one `zadanie.md`."
+                    f"Specify which one to use {consider}."
+                )
+            path = os.path.join(path, consider[0])
+        return open(path, "r").readlines()
     return sys.stdin.readlines()
 
 

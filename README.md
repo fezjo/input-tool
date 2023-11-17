@@ -40,7 +40,7 @@
 - **Rozšírená funkcionalita IDF o podporu YAML a `!eval`**
 - **Poetry manager**
 - Kontrola aktualizácií pri spustení generátora
-- Podpora priečinka ako argument pre `input-generator` &ndash; automatické načítanie IDF
+- Podpora priečinka ako argument pre `input-generator` a `input-sample` &ndash; automatické načítanie IDF a zadania
 - Automatický varovný timelimit tesných riešení
 - **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
 - **Kompilovanie do samostatného priečinku** `prog/` (zmena pomocou prepínača `--progdir`)
@@ -56,7 +56,7 @@
 
 ```bash
 # napíšeme si riešenia, generátor, idf a potom:
-input-sample zadanie.md # nepovinné
+input-sample . # priečinok so zadanie.md
 input-generator .
 input-tester .
 
