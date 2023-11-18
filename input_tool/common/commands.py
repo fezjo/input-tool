@@ -76,6 +76,11 @@ class Langs:
     }
 
     @staticmethod
+    def from_filename(filename: str) -> Lang:
+        ext = filename.rsplit(".", 1)[-1]
+        return Langs.from_ext(ext)
+
+    @staticmethod
     def from_ext(ext: str | None) -> Lang:
         for lang in Langs.Lang:
             if ext in Langs.ext[lang]:
@@ -103,6 +108,16 @@ class Config:
     progdir: Optional[str] = None
     cmd_maxlen: int = len("Solution")
     os_config: OsConfig
+
+    @staticmethod
+    def get_timelimit(
+        timelimits: Timelimit, ext: Optional[str], lang: Optional[Langs.Lang]
+    ) -> float:
+        if ext in timelimits:
+            return timelimits[ext]
+        if lang in timelimits:
+            return timelimits[lang]
+        return timelimits[Langs.Lang.unknown]
 
 
 def get_statistics_header(inputs: Iterable[str]) -> str:

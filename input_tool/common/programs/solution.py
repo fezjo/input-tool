@@ -7,7 +7,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from input_tool.common.commands import Config, Langs, to_base_alnum
+from input_tool.common.commands import Config, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
@@ -121,11 +121,7 @@ class Solution(Program):
         self.statistics.result = new_status
 
     def get_timelimit(self, timelimits: Config.Timelimit) -> float:
-        if self.ext in timelimits:
-            return timelimits[self.ext]
-        if self.lang in timelimits:
-            return timelimits[self.lang]
-        return timelimits[Langs.Lang.unknown]
+        return Config.get_timelimit(timelimits, self.ext, self.lang)
 
     def get_exec_cmd(
         self, ifile: str, tfile: str, timelimit: float = 0.0, memorylimit: float = 0.0
