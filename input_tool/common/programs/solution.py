@@ -11,6 +11,7 @@ from input_tool.common.commands import Config, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
+from input_tool.common.task_history import TASK_HISTORY
 
 
 class Solution(Program):
@@ -270,10 +271,12 @@ class Solution(Program):
         if Config.fskip and batch in self.statistics.failedbatches:
             return
 
+        TASK_HISTORY.start(self.name, batch, ifile)
         logger = default_logger if logger is None else logger
         run_times, status = self._run(
             ifile, ofile, tfile, checker, is_output_generator, logger
         )
+        TASK_HISTORY.end(self.name, batch, ifile)
 
         if status is not Status.ok:
             self.statistics.failedbatches.add(batch)

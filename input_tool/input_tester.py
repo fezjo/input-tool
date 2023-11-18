@@ -28,6 +28,8 @@ from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.programs.solution import Solution
 from input_tool.common.programs.validator import Validator
+from input_tool.common.task_history import TASK_HISTORY
+from input_tool.common.task_queue import TaskItem, TaskQueue
 from input_tool.common.tools_common import cleanup, prepare_programs, setup_config
 
 description = """
@@ -264,6 +266,7 @@ def test_all(
         parallel_logger_manager.closed_event.set()
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
+        executor._work_queue = TaskQueue(TASK_HISTORY)
         for input in inputs:
             input_file = args.indir + "/" + input
             prefix = args.outdir + "/" + input.rsplit(".", 1)[0]
@@ -301,8 +304,10 @@ def test_all(
 
                 is_generator = result_file == output_file
                 logger = parallel_logger_manager.get_sink()
+                batch = Solution.parse_batch(input)
+                task_item = TaskItem(sol.name, batch, input, run_sol)
                 future = executor.submit(
-                    run_sol, sol, result_file, is_generator, logger
+                    task_item, sol, result_file, is_generator, logger
                 )
                 if is_generator:
                     testcase_logger.infob(get_output_creation_message(output_file))
