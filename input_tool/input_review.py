@@ -54,17 +54,15 @@ options = [
 # res: 4s
 
 import json
-import os
 import subprocess
 from typing import Sequence
+
 from input_tool.common.commands import Langs
 from input_tool.common.programs.solution import Solution
 from input_tool.common.programs.validator import Validator
-from input_tool.common.tools_common import setup_config
 from input_tool.input_tester import (
-    parse_args,
-    get_relevant_prog_files_deeper,
     create_programs_from_files,
+    get_relevant_prog_files_deeper,
 )
 
 
@@ -100,11 +98,12 @@ def find_timelimits_lowerbound(
         res[lang] = sol_stat["maxtime"]
     return res
 
-def run_all(timelimit_lowerbound: dict[Langs.Lang, float]) -> dict:
-    timelimit_upperbound = {lang: max(1000, t * 15) for lang, t in timelimit_lowerbound.items()}
-    timelimit_str = ",".join(f"{lang}={t / 1000}" for lang, t in timelimit_upperbound.items())
-    print(timelimit_lowerbound)
-    print(timelimit_upperbound)
+
+def run_all(timelimit_lb: dict[Langs.Lang, float]) -> dict:
+    timelimit_ub = {lang: max(1000, t * 10) for lang, t in timelimit_lb.items()}
+    timelimit_str = ",".join(f"{lang}={t / 1000}" for lang, t in timelimit_ub.items())
+    print(timelimit_lb)
+    print(timelimit_ub)
     print(timelimit_str)
     json_file = "stats.json"
     command = ["input-tester", "-t", timelimit_str, "--json", json_file, "."]
@@ -113,6 +112,7 @@ def run_all(timelimit_lowerbound: dict[Langs.Lang, float]) -> dict:
         stats = json.load(f)
     # os.remove(json_file)
     return stats
+
 
 OUTPUT = """
 [{"name": "val.cpp", "maxtime": 104, "sumtime": 1356, "points": "", "result":
@@ -192,12 +192,13 @@ OUTPUT = """
 [21306]]}, "failedbatches": ["8", "3", "5", "4", "6", "2", "7"]}]
 """
 
+
 def calculate_best_timelimit(stats: dict) -> dict[Langs.Lang, float]:
     for sol_stat in stats:
-        name = sol_stat["name"]
-        lang = Langs.from_ext(name.rsplit(".", 1)[1])
-        print(name, lang, sol_stat["maxtime"], sol_stat["points"])
+        lang = Langs.from_filename(sol_stat["name"])
+        print(sol_stat["name"], lang, sol_stat["maxtime"], sol_stat["points"])
     return {}
+
 
 def main():
     # args = parse_args()
@@ -222,6 +223,7 @@ def main():
     stats = json.loads(OUTPUT)
     best_timelimits = calculate_best_timelimit(stats)
     print(best_timelimits)
+
 
 if __name__ == "__main__":
     main()
