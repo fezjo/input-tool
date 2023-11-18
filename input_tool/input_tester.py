@@ -26,8 +26,9 @@ from input_tool.common.messages import (
 from input_tool.common.parser import ArgsTester, Parser
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
-from input_tool.common.programs.solution import TASK_HISTORY, Solution
+from input_tool.common.programs.solution import Solution
 from input_tool.common.programs.validator import Validator
+from input_tool.common.task_history import TASK_HISTORY
 from input_tool.common.task_queue import TaskItem, TaskQueue
 from input_tool.common.tools_common import cleanup, prepare_programs, setup_config
 

@@ -9,11 +9,11 @@ class TaskHistory:
     Thread safe
     """
 
+    # dict {program: {(batch, task): (start_time, end_time), ...}, ...}
     task_dict_t = dict[str, dict[tuple[str, str], tuple[float, Optional[float]]]]
 
     def __init__(self) -> None:
         self.lock = threading.Lock()
-        # dict (program) -> {(batch, task): (start_time, end_time), ...}
         self.tasks: TaskHistory.task_dict_t = {}
 
     def start(
@@ -69,3 +69,6 @@ class TaskHistory:
                     continue
                 result.append((program,) + key + self.tasks[program][key])
         return result
+
+
+TASK_HISTORY = TaskHistory()

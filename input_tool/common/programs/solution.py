@@ -11,9 +11,7 @@ from input_tool.common.commands import Config, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
-from input_tool.common.task_history import TaskHistory
-
-TASK_HISTORY = TaskHistory()
+from input_tool.common.task_history import TASK_HISTORY
 
 
 class Solution(Program):
