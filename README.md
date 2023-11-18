@@ -72,7 +72,7 @@ Nástroj, ktorý výrazne zjednodušuje vytváranie a testovanie vstupov pre sú
 ## Inštalácia
 
 
-Na **Linuxe** a **MacOS** je to dosť jednoduché. **Windows nie je podporovaný**.
+Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, ale pod **WSL** by to malo ísť bez problémov.
 
 1. Prerekvizity:
 
