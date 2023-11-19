@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from typing import Any, Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, get_statistics_header
@@ -83,7 +84,7 @@ def parse_timelimit(timelimit: str) -> Config.Timelimit:
     res: Config.Timelimit = {}
     for p in timelimit.split(","):
         ext, str_t = p.split("=") if "=" in p else ("", p)
-        t = float(str_t)
+        t = timedelta(seconds=float(str_t))
         res[ext] = t
         res[Langs.from_ext(ext)] = t
     return res

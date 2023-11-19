@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Optional, Sequence
 
 from input_tool.common.commands import Config, to_base_alnum
@@ -17,18 +18,18 @@ from input_tool.common.task_history import TASK_HISTORY
 class Solution(Program):
     @dataclass
     class Statistics:
-        maxtime: float
-        sumtime: float
+        maxtime: timedelta
+        sumtime: timedelta
         batchresults: dict[str, Status]
         result: Status
-        times: defaultdict[str, list[Optional[tuple[float, ...]]]]
+        times: defaultdict[str, list[Optional[tuple[timedelta, ...]]]]
         failedbatches: set[str]
 
     def __init__(self, name: str):
         super().__init__(name)
         self.statistics = Solution.Statistics(
-            maxtime=-1,
-            sumtime=0,
+            maxtime=timedelta(milliseconds=-1),
+            sumtime=timedelta(),
             batchresults={},
             result=Status.ok,
             times=defaultdict(list),
@@ -63,13 +64,13 @@ class Solution(Program):
         return (-1, -score, self.name)
 
     def compute_time_statistics(self) -> None:
-        self.statistics.sumtime = 0
+        self.statistics.sumtime = timedelta()
         for batch, result in self.statistics.batchresults.items():
             if result != Status.ok:
                 continue
             times = [ts[0] for ts in self.statistics.times[batch] if ts]
             self.statistics.maxtime = max(self.statistics.maxtime, max(times))
-            self.statistics.sumtime += sum(times)
+            self.statistics.sumtime += sum(times, timedelta())
 
     def grade_results(self) -> tuple[int, int]:
         points, maxpoints = 0, 0
@@ -86,13 +87,16 @@ class Solution(Program):
         return color, str(points)
 
     def get_statistics(self) -> str:
+        def to_miliseconds(t: timedelta) -> int:
+            return round(t.total_seconds() * 1000)
+
         self.compute_time_statistics()
         color, points = self.get_statistics_color_and_points()
         widths = (Config.cmd_maxlen, 8, 9, 6, 6)
         colnames = [
             self.name,
-            self.statistics.maxtime,
-            self.statistics.sumtime,
+            to_miliseconds(self.statistics.maxtime),
+            to_miliseconds(self.statistics.sumtime),
             points,
             self.statistics.result,
         ]
@@ -119,7 +123,7 @@ class Solution(Program):
         return input if input.endswith("sample") else input.rsplit(".", 1)[0]
 
     def record(
-        self, ifile: str, status: Status, times: Optional[Sequence[float]]
+        self, ifile: str, status: Status, times: Optional[Sequence[timedelta]]
     ) -> None:
         batch = self.parse_batch(ifile)
         batchresults = self.statistics.batchresults
@@ -136,11 +140,15 @@ class Solution(Program):
             )
         self.statistics.result = new_status
 
-    def get_timelimit(self, timelimits: Config.Timelimit) -> float:
+    def get_timelimit(self, timelimits: Config.Timelimit) -> timedelta:
         return Config.get_timelimit(timelimits, self.ext, self.lang)
 
     def get_exec_cmd(
-        self, ifile: str, tfile: str, timelimit: float = 0.0, memorylimit: float = 0.0
+        self,
+        ifile: str,
+        tfile: str,
+        timelimit: timedelta = timedelta(0),
+        memorylimit: float = 0.0,
     ) -> tuple[str, str]:
         f_timefile = tempfile.NamedTemporaryFile(delete=False)
         f_timefile.close()
@@ -152,7 +160,9 @@ class Solution(Program):
             f"{osc.cmd_ulimit} -m {str_memorylimit}; "
             f"{osc.cmd_ulimit} -s {str_memorylimit}"
         )
-        timelimit_cmd = f"{osc.cmd_timeout} {timelimit}" if timelimit else ""
+        timelimit_cmd = (
+            f"{osc.cmd_timeout} {timelimit.total_seconds()}" if timelimit else ""
+        )
         time_cmd = (
             f'{osc.cmd_time} -f "%e %U %S" -a -o {timefile} -q'
             if Config.rus_time
@@ -179,11 +189,16 @@ class Solution(Program):
             return Status.exc
         return Status.err
 
-    def get_times(self, timefile: str, logger: Logger = default_logger):
+    def get_times(
+        self, timefile: str, logger: Logger = default_logger
+    ) -> Optional[list[timedelta]]:
         try:
             with open(timefile, "r") as tf:
-                ptime_start, *run_times, ptime_end = map(float, tf.read().split())
-                return [int((ptime_end - ptime_start) / 1e6)] + run_times
+                ptime_start, *rus_times, ptime_end = map(float, tf.read().split())
+                run_times = [timedelta(seconds=(ptime_end - ptime_start) / 1e9)] + [
+                    timedelta(seconds=t) for t in rus_times
+                ]
+                return run_times
         except (OSError, ValueError) as e:
             logger.warning(e)
         return None
@@ -196,11 +211,11 @@ class Solution(Program):
         checker: Optional[Checker],
         is_output_generator: bool,
         logger: Logger,
-    ):
+    ) -> tuple[Optional[list[timedelta]], Status]:
         if not self.ready:
             logger.fatal(f"{self.name} not prepared for execution")
 
-        run_times: Optional[list[float]] = None
+        run_times: Optional[list[timedelta]] = None
         timelimit = self.get_timelimit(Config.timelimits)
         memorylimit = float(Config.memorylimit)
         timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
@@ -236,12 +251,16 @@ class Solution(Program):
         self,
         ifile: str,
         status: Status,
-        run_times: Optional[Sequence[float]],
+        run_times: Optional[Sequence[timedelta]],
         logger: Logger,
     ) -> None:
         run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.name)
         time_format = ["{:6d}ms", "{:6d}ms [{:6.2f}={:6.2f}+{:6.2f}]"][Config.rus_time]
-        time = "err" if run_times is None else time_format.format(*run_times)
+        if run_times is None:
+            time = "err"
+        else:
+            seconds = [round(t.total_seconds(), 3) for t in run_times]
+            time = time_format.format(int(seconds[0] * 1000), *seconds[1:])
 
         if Config.inside_oneline:
             input = ("{:" + str(Config.inside_inputmaxlen) + "s}").format(
@@ -281,7 +300,7 @@ class Solution(Program):
         if status is not Status.ok:
             self.statistics.failedbatches.add(batch)
 
-        warntle = self.get_timelimit(Config.warn_timelimits) * 1000
+        warntle = self.get_timelimit(Config.warn_timelimits)
         status = status.set_warntle(
             warntle != 0 and run_times is not None and run_times[0] >= warntle
         )

@@ -33,6 +33,7 @@ program.ext      -- If .pyX, run as 'pythonX program.ext. py = py3
 """
 
 import os
+from datetime import timedelta
 from enum import Enum
 from typing import Iterable, Optional
 
@@ -93,12 +94,12 @@ class Langs:
 
 
 class Config:
-    Timelimit = dict[Langs.Lang | str, float]
+    Timelimit = dict[Langs.Lang | str, timedelta]
 
     fskip: bool
     rus_time: bool
-    timelimits: Timelimit = {Langs.Lang.unknown: 3}
-    warn_timelimits: Timelimit = {Langs.Lang.unknown: 0}
+    timelimits: Timelimit = {Langs.Lang.unknown: timedelta(seconds=3)}
+    warn_timelimits: Timelimit = {Langs.Lang.unknown: timedelta(0)}
     memorylimit: float
     quiet: bool
     compile: bool
@@ -112,7 +113,7 @@ class Config:
     @staticmethod
     def get_timelimit(
         timelimits: Timelimit, ext: Optional[str], lang: Optional[Langs.Lang]
-    ) -> float:
+    ) -> timedelta:
         if ext in timelimits:
             return timelimits[ext]
         if lang in timelimits:
