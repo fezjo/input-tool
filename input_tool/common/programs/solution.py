@@ -12,7 +12,7 @@ from input_tool.common.commands import Config, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
-from input_tool.common.task_history import TASK_HISTORY
+from input_tool.common.task_history import TASK_HISTORY, TaskHistory
 
 
 class Solution(Program):
@@ -211,24 +211,35 @@ class Solution(Program):
         checker: Optional[Checker],
         is_output_generator: bool,
         logger: Logger,
+        callbacks: TaskHistory.callbacks_t,
     ) -> tuple[Optional[list[timedelta]], Status]:
         if not self.ready:
             logger.fatal(f"{self.name} not prepared for execution")
+        cb_set_process, cb_was_killed, cb_kill_siblings = callbacks
 
         run_times: Optional[list[timedelta]] = None
         timelimit = self.get_timelimit(Config.timelimits)
         memorylimit = float(Config.memorylimit)
         timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
         try:
-            result = subprocess.run(
+            if cb_was_killed():
+                return None, Status.tle
+            process = subprocess.Popen(
                 cmd,
                 shell=True,
                 stdout=subprocess.PIPE,  # stdout goes to file anyway
                 stderr=subprocess.PIPE,
             )
-            if not self.quiet:
-                logger.infod(result.stderr.decode("utf-8"))
-            status = self.translate_exit_code_to_status(result.returncode)
+            cb_set_process(process)
+            process.wait()
+            if cb_was_killed():
+                return None, Status.tle
+            TASK_HISTORY.end(self.name, self.parse_batch(ifile), ifile)
+            if not self.quiet and process.stderr:
+                logger.infod(process.stderr.read().decode("utf-8"))
+            status = self.translate_exit_code_to_status(process.returncode)
+            if status == Status.tle:
+                cb_kill_siblings()
 
             run_times = self.get_times(timefile, logger)
             if not run_times and status == Status.ok:
@@ -257,7 +268,7 @@ class Solution(Program):
         run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.name)
         time_format = ["{:6d}ms", "{:6d}ms [{:6.2f}={:6.2f}+{:6.2f}]"][Config.rus_time]
         if run_times is None:
-            time = "err"
+            time = " NO DATA".ljust(len(time_format.format(0, 0, 0, 0)))
         else:
             seconds = [round(t.total_seconds(), 3) for t in run_times]
             time = time_format.format(int(seconds[0] * 1000), *seconds[1:])
@@ -287,15 +298,16 @@ class Solution(Program):
         logger: Optional[Logger] = None,
     ) -> None:
         batch = self.parse_batch(ifile)
+        TASK_HISTORY.start(self.name, batch, ifile)
         if Config.fskip and batch in self.statistics.failedbatches:
+            TASK_HISTORY.end(self.name, batch, ifile, True)
             return
 
-        TASK_HISTORY.start(self.name, batch, ifile)
+        callbacks = TASK_HISTORY.get_callbacks(self.name, batch, ifile)
         logger = default_logger if logger is None else logger
         run_times, status = self._run(
-            ifile, ofile, tfile, checker, is_output_generator, logger
+            ifile, ofile, tfile, checker, is_output_generator, logger, callbacks
         )
-        TASK_HISTORY.end(self.name, batch, ifile)
 
         if status is not Status.ok:
             self.statistics.failedbatches.add(batch)

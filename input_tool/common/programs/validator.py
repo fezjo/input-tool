@@ -44,8 +44,9 @@ class Validator(Solution):
         logger: Optional[Logger] = None,
     ) -> None:
         logger = default_logger if logger is None else logger
+        callbacks = (lambda _: None, lambda: False, lambda: None)
         run_times, status = self._run(
-            ifile, ofile, tfile, None, is_output_generator, logger
+            ifile, ofile, tfile, None, is_output_generator, logger, callbacks
         )
 
         if status is not Status.ok:
