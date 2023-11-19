@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+from typing import Iterator
 
 import pytest
 
@@ -94,12 +95,14 @@ def parse_statistics(output: str) -> list[tuple[str, int, int, str, str]]:
     return [line_to_stat(row) for row in rows if row.strip()]
 
 
-def clean():
+def clean() -> None:
     shutil.rmtree("test", ignore_errors=True)
 
 
 @pytest.fixture
-def setup_directory(request: pytest.FixtureRequest, path: str, cleanup: bool = True):
+def setup_directory(
+    request: pytest.FixtureRequest, path: str, cleanup: bool = True
+) -> Iterator[None]:
     # change to directory of the test
     os.chdir(os.path.join(os.path.dirname(request.path), path))
     if cleanup:

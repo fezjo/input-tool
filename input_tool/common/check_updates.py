@@ -21,7 +21,7 @@ PIP_UPDATE_TEMPLATE = (
 )
 
 
-def check_for_updates():
+def check_for_updates() -> None:
     try:
         current_version = version("input_tool")
 

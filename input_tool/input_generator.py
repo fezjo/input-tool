@@ -5,7 +5,7 @@
 import atexit
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
@@ -75,7 +75,7 @@ def get_recipe(file: Optional[str]) -> Recipe:
     return Recipe(text)
 
 
-def setup_indir(indir: str, inext: str, clear_input: bool):
+def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
     if not os.path.exists(indir):
         infob(f"Creating directory '{indir}'")
         os.makedirs(indir)
@@ -100,7 +100,7 @@ def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> str:
 
 def print_message_for_input(
     leftw: int, status: Status, input: Input, prev: Optional[Input], args: ArgsGenerator
-):
+) -> None:
     short = ("{:>" + str(leftw) + "s}").format(get_ifile(input, args))
 
     if prev and prev.batch != input.batch:
@@ -120,7 +120,7 @@ def generate_all(
     default_gencmd: str,
     args: ArgsGenerator,
 ) -> None:
-    def submit_input(executor: ThreadPoolExecutor, input: Input):
+    def submit_input(executor: ThreadPoolExecutor, input: Input) -> Future:
         return executor.submit(
             programs[input.generator or default_gencmd].generate,
             get_ifile(input, args, True),

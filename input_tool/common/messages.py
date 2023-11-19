@@ -324,7 +324,7 @@ def table_row(
     widths: Sequence[int],
     alignments: Sequence[int],
     header: bool = False,
-):
+) -> str:
     columns = list(columns)
     for i in range(len(columns)):
         if header:
@@ -341,7 +341,7 @@ def table_row(
 
 def table_header(
     columns: Sequence[Any], widths: Sequence[int], alignments: Sequence[int]
-):
+) -> str:
     first_row = table_row(Color.table, columns, widths, alignments, True)
     second_row = "|".join(
         [str(Color.table)] + ["-" * (w + 2) for w in widths] + [str(Color.normal)]
@@ -399,7 +399,7 @@ def side_by_side(text1: str, text2: str, height: int, width: int = 80) -> str:
     return "\n".join(res)
 
 
-def serialize_for_json(obj) -> Any:
+def serialize_for_json(obj: Any) -> Any:
     if isinstance(obj, (list, tuple, set)):
         return [serialize_for_json(o) for o in obj]
     if isinstance(obj, dict):

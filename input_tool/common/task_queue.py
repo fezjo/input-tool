@@ -19,7 +19,7 @@ class TaskItem:
         self.task = task
         self.func = func
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"TaskItem({self.program!r}, {self.batch!r}, {self.task!r}, {self.func!r})"
         )

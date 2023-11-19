@@ -211,7 +211,7 @@ def temp_clear(args: ArgsTester) -> None:
 
 def get_result_file(
     out_file: str, temp_file: str, isvalidator: bool, force: str = "none"
-):
+) -> str:
     if isvalidator or force == "temp":
         return temp_file
     if not os.path.exists(out_file) or force == "out":
@@ -329,7 +329,9 @@ def test_all(
     default_logger.statistics += parallel_logger_manager.statistics
 
 
-def print_summary(solutions: Sequence[Solution | Validator], inputs: Sequence[str]):
+def print_summary(
+    solutions: Sequence[Solution | Validator], inputs: Sequence[str]
+) -> None:
     print(get_statistics_header(inputs))
     for s in solutions:
         print(s.get_statistics())

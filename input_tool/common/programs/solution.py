@@ -113,7 +113,7 @@ class Solution(Program):
         }
 
     @staticmethod
-    def parse_batch(ifile: str):
+    def parse_batch(ifile: str) -> str:
         name = os.path.basename(ifile)
         input, _ext = os.path.splitext(name)
         return input if input.endswith("sample") else input.rsplit(".", 1)[0]

@@ -12,7 +12,7 @@ setup_directory = setup_directory
 
 
 @pytest.mark.parametrize("path", ["progdir"])
-def test_progdir(setup_directory: None):
+def test_progdir(setup_directory: None) -> None:
     """
     test if solutions compile into progdir
     TODO test if recompilation is skipped
@@ -31,7 +31,7 @@ def test_progdir(setup_directory: None):
 
 
 @pytest.mark.parametrize("path", ["timelimits"])
-def test_timelimits(setup_directory: None):
+def test_timelimits(setup_directory: None) -> None:
     """test if timelimits, warntimelimits and language limits are respected"""
     result_gen = run("input-generator . -g cat")
     print(result_gen.stdout.decode("utf-8"))
@@ -54,7 +54,7 @@ def test_timelimits(setup_directory: None):
 
 
 @pytest.mark.parametrize("path", ["sidebyside"])
-def test_sidebyside(setup_directory: None):
+def test_sidebyside(setup_directory: None) -> None:
     """test if diff is displayed correctly"""
     result_gen = run("input-generator . -g cat")
     print(result_gen.stdout.decode("utf-8"))
@@ -87,14 +87,14 @@ def test_sidebyside(setup_directory: None):
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["nameconflict"])
-def test_nameconflict(setup_directory: None):
+def test_nameconflict(setup_directory: None) -> None:
     """TODO test if name conflict is detected and how it is resolved"""
     pass
 
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["allcomponents"])
-def test_allcomponents(setup_directory: None):
+def test_allcomponents(setup_directory: None) -> None:
     """TODO test if a typical usecase with all components:
     - input-sample
     - compiled input-generator
@@ -109,7 +109,7 @@ def test_allcomponents(setup_directory: None):
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["idf"])
-def test_idf(setup_directory: None):
+def test_idf(setup_directory: None) -> None:
     """TODO test if various idf options work:
     - comments `#`
     - custom variables `$`
@@ -126,7 +126,7 @@ def test_idf(setup_directory: None):
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["parallel"])
-def test_parallel(setup_directory: None):
+def test_parallel(setup_directory: None) -> None:
     """TODO test if parallelization work - compare speedups"""
     # ! be sure to take into account the time of compilation
     pass
@@ -134,13 +134,13 @@ def test_parallel(setup_directory: None):
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["slowgenerator"])
-def test_slowgenerator(setup_directory: None):
+def test_slowgenerator(setup_directory: None) -> None:
     """TODO test if parallel output generation waits for slow model solution"""
     pass
 
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["bigmess"])
-def test_bigmess(setup_directory: None):
+def test_bigmess(setup_directory: None) -> None:
     """TODO test if a big mess of inputs, solutions and threads works"""
     pass
