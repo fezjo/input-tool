@@ -22,6 +22,7 @@ from input_tool.common.messages import (
     info,
     infob,
     plain,
+    register_quit_signal,
     serialize_for_json,
     warning,
 )
@@ -32,7 +33,12 @@ from input_tool.common.programs.solution import Solution
 from input_tool.common.programs.validator import Validator
 from input_tool.common.task_history import TASK_HISTORY
 from input_tool.common.task_queue import TaskItem, TaskQueue
-from input_tool.common.tools_common import cleanup, prepare_programs, setup_config
+from input_tool.common.tools_common import (
+    cleanup,
+    prepare_programs,
+    register_quit_with_executor,
+    setup_config,
+)
 
 description = """
 Input tester.
@@ -269,6 +275,7 @@ def test_all(
         parallel_logger_manager.closed_event.set()
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
+        register_quit_with_executor(executor)
         executor._work_queue = TaskQueue(TASK_HISTORY)
         for input in inputs:
             input_file = args.indir + "/" + input
@@ -329,6 +336,7 @@ def test_all(
             parallel_logger_manager.closed_event.clear()
             plain(parallel_logger_manager.read_closed())
 
+    register_quit_signal()
     default_logger.statistics += parallel_logger_manager.statistics
 
 

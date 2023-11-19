@@ -1,7 +1,9 @@
 # © 2023 fezjo
 import atexit
 import os
-from concurrent.futures import ThreadPoolExecutor
+import signal
+import sys
+from concurrent.futures import Executor, ThreadPoolExecutor
 from typing import Iterable, Sequence
 
 from input_tool.common import os_config
@@ -15,6 +17,17 @@ from input_tool.common.messages import (
 )
 from input_tool.common.parser import ArgsGenerator, ArgsTester
 from input_tool.common.programs.program import Program
+
+
+def register_quit_with_executor(executor: Executor) -> None:
+    def quit_with_executor(code: int) -> None:
+        try:
+            executor.shutdown(wait=False, cancel_futures=True)
+        except Exception as err:
+            warning(f"Exception while shutting down executor: {err!r}")
+        sys.exit(code)
+
+    signal.signal(signal.SIGUSR1, lambda *_: quit_with_executor(1))
 
 
 def setup_config(args: ArgsTester | ArgsGenerator, config_keys: Iterable[str]) -> None:

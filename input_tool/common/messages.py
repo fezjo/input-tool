@@ -4,11 +4,19 @@
 from __future__ import annotations
 
 import os
+import signal
 import sys
 import threading
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Sequence, TextIO, TypeVar
+
+
+def register_quit_signal() -> None:
+    signal.signal(signal.SIGUSR1, lambda *_: sys.exit(1))
+
+
+register_quit_signal()
 
 
 class Status(Enum):
@@ -219,7 +227,8 @@ class Logger:
 
     def fatal(self, text: Any) -> None:
         self.error(text)
-        os._exit(1)
+        os.kill(os.getpid(), signal.SIGUSR1)
+        # quit(1)
 
     def error(self, text: Any) -> None:
         self.statistics.errors += 1
