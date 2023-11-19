@@ -7,6 +7,7 @@ import itertools
 import json
 import os
 import shutil
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Any, Optional, Sequence
@@ -239,6 +240,7 @@ def general_run_sol(
         if cleartemp and ofile != rfile and os.path.exists(rfile):
             os.remove(rfile)
     except Exception as err:
+        traceback.print_exc()
         fatal(repr(err))
 
 

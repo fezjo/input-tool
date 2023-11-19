@@ -3,6 +3,7 @@
 # Various types of messages with colors
 from __future__ import annotations
 
+import os
 import sys
 import threading
 from dataclasses import dataclass
@@ -218,7 +219,7 @@ class Logger:
 
     def fatal(self, text: Any) -> None:
         self.error(text)
-        quit(1)
+        os._exit(1)
 
     def error(self, text: Any) -> None:
         self.statistics.errors += 1
