@@ -174,7 +174,9 @@ class Recipe:
         try:
             yres = yaml.load(line, EvalLoader)
         except Exception as e:
-            warning(f"Error parsing commands as YAML\n\tCommands: {line}\n\tError: {e}")
+            warning(
+                f"Error parsing commands as YAML\n\tCommands: {line}\n\tError: {e!r}"
+            )
             return {}
         try:
             dres = dict(yres)
@@ -184,7 +186,9 @@ class Recipe:
                 warning(f"None value in commands\n\tCommands: {line}\n\tYAML: {yres}")
             return dres
         except Exception as e:
-            warning(f"Error parsing YAML output as dict\n\tYAML: {yres}\n\tError: {e}")
+            warning(
+                f"Error parsing YAML output as dict\n\tYAML: {yres}\n\tError: {e!r}"
+            )
             return {}
 
     def _parse_recipe(self) -> None:

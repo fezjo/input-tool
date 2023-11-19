@@ -239,7 +239,7 @@ def general_run_sol(
         if cleartemp and ofile != rfile and os.path.exists(rfile):
             os.remove(rfile)
     except Exception as err:
-        fatal(err)
+        fatal(repr(err))
 
 
 def test_all(

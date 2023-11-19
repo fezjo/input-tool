@@ -200,7 +200,7 @@ class Solution(Program):
                 ]
                 return run_times
         except (OSError, ValueError) as e:
-            logger.warning(e)
+            logger.warning(repr(e))
         return None
 
     def _run(
@@ -240,7 +240,7 @@ class Solution(Program):
                     status = Status.wa
         except Exception as e:
             status = Status.err
-            logger.warning(e)
+            logger.warning(repr(e))
         finally:
             if os.path.exists(timefile):
                 os.remove(timefile)

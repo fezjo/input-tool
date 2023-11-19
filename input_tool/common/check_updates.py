@@ -45,7 +45,7 @@ def check_for_updates() -> None:
                 f"{effect}{releases_url}{noeffect}"
             )
     except Exception as e:
-        warning(f"Could not check for updates! An error occurred:\n{e}")
+        warning(f"Could not check for updates! An error occurred:\n{e!r}")
 
 
 if __name__ == "__main__":
