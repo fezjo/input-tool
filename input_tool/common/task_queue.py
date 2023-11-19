@@ -1,7 +1,8 @@
 import threading
 from collections import deque
+from concurrent.futures.thread import _WorkItem
 from queue import SimpleQueue
-from typing import Callable
+from typing import Callable, Optional
 
 from input_tool.common.commands import Config, Langs
 from input_tool.common.task_history import TaskHistory
@@ -53,51 +54,63 @@ class TaskQueue(SimpleQueue):
 
     def __init__(self, task_history: TaskHistory):
         self._lock = threading.Lock()
-        self._queue: deque[TaskItem | None] = deque()
+        self._queue: deque[_WorkItem | None] = deque()
         self._count = threading.Semaphore(0)
         self._task_history = task_history
 
     def __repr__(self) -> str:
         return f"TaskQueue({self._lock!r}, {self._count!r}, {len(self._queue)!r})"
 
-    def put(self, item, block=True, timeout=None):
+    def put(
+        self, item: _WorkItem, block: bool = True, timeout: Optional[float] = None
+    ) -> None:
         with self._lock:
             self._queue.append(item)
         self._count.release()
 
-    def get(self, block=True, timeout=None):
+    def _tidy(self, lock: bool = True) -> None:
+        if lock:
+            self._lock.acquire()
+        while self._queue and self._queue[0] is None:
+            self._queue.popleft()
+        if lock:
+            self._lock.release()
+
+    def get(
+        self, block: bool = True, timeout: Optional[float] = None
+    ) -> Optional[_WorkItem]:
         if timeout is not None and timeout < 0:
             raise ValueError("'timeout' must be a non-negative number")
-        res = None
-        with self._lock:
-            while self._queue and self._queue[0] is None:
-                self._queue.popleft()
         if not self._count.acquire(block, timeout):
             raise Empty
-        # TODO maybe it was corrupted in the meantime, fix later
+        res = None
         with self._lock:
+            self._tidy(lock=False)
             for i, work_item in enumerate(self._queue):
                 if work_item is None:
                     continue
-                if not self.skip(work_item.fn, self._task_history):
-                    if i:
-                        res = work_item
-                        self._queue[i] = None
+                if not self.skip(work_item.fn, self._task_history):  # type: ignore
+                    res = work_item
+                    self._queue[i] = None
                     break
-            if res is None:
+            if res is None and self._queue:
                 res = self._queue.popleft()
+            self._tidy(lock=False)
+        # `res` may be `None` if weird concurrent stuff happens
+        # when `_count` is 0:
+        # before `if _count` the queue was empty and after `if _count` it was `[None]`
         return res
 
-    def put_nowait(self, item):
+    def put_nowait(self, item: _WorkItem) -> None:
         return self.put(item, block=False)
 
-    def get_nowait(self):
+    def get_nowait(self) -> Optional[_WorkItem]:
         return self.get(block=False)
 
-    def empty(self):
+    def empty(self) -> bool:
         """Return True if the queue is empty, False otherwise (not reliable!)."""
         return len(self._queue) == 0
 
-    def qsize(self):
+    def qsize(self) -> int:
         """Return the approximate size of the queue (not reliable! use self._lock)."""
         return len(self._queue)

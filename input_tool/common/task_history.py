@@ -64,7 +64,6 @@ class TaskHistory:
                 if task is not None and key[1] != task:
                     continue
                 times = self.tasks[program][key]
-                # print(running, times[1] is None)
                 if running is not None and running != (times[1] is None):
                     continue
                 result.append((program,) + key + self.tasks[program][key])
