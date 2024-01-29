@@ -85,6 +85,9 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
 2. Nainštalujte cez `pip`:
 
    ```bash
+   pip3 install input-tool
+
+   # alebo
    pip3 install git+https://github.com/fezjo/input-tool.git
    # alebo
    git clone git@github.com:fezjo/input-tool.git

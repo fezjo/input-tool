@@ -16,7 +16,7 @@ classifiers = [
     "Environment :: Console",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Benchmark",
@@ -30,7 +30,7 @@ input-generator = "input_tool.input_generator:main"
 input-tester = "input_tool.input_tester:main"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 requests = "^2.31.0"
 pyyaml = "^6.0.1"
 

@@ -1,8 +1,8 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 import subprocess
-from input_tool.common.commands import Config
 
+from input_tool.common.commands import Config
 from input_tool.common.messages import Status
 from input_tool.common.programs.program import Program
 

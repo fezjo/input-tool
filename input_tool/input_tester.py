@@ -374,6 +374,8 @@ def main() -> None:
         parse_warntimelimit(args.warntimelimit, Config.timelimits)
     )
 
+    os.system(f"{Config.os_config.cmd_python} --version")
+
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, not args.dupprog)
     checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
