@@ -16,6 +16,7 @@ from input_tool.common.commands import Config, Langs, get_statistics_header
 from input_tool.common.messages import (
     BufferedLogger,
     ParallelLoggerManager,
+    Status,
     color_test,
     default_logger,
     fatal,
@@ -349,6 +350,21 @@ def print_summary(
         print(s.get_statistics())
 
 
+def check_too_long_tests(
+    solutions: Sequence[Solution | Validator], timelitmit: timedelta
+) -> None:
+    accepted = [s for s in solutions if s.statistics.result == Status.ok]
+    if not accepted:
+        return
+    fastest = min(s.statistics.maxtime for s in accepted)
+    if fastest > timelitmit:
+        seconds = round(fastest.total_seconds(), 2)
+        warning(
+            f"Fastest solution took {seconds}/{timelitmit.total_seconds()}s. "
+            "Consider making smaller tests."
+        )
+
+
 # --------------------- FLOW ---------------------
 
 
@@ -406,7 +422,9 @@ def main() -> None:
     if args.stats:
         print_summary(solutions, inputs)
 
+    print()
     check_data_folder_size(args.outdir)
+    check_too_long_tests(solutions, timedelta(seconds=1))
     info(str(default_logger.statistics))
 
     if args.json:
