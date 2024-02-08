@@ -13,12 +13,9 @@ REPO_NAME = "input-tool"
 GITHUB_API_URL_TEMPLATE = (
     f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases/latest"
 )
-GITHUB_RELEASES_URL_TEMPLATE = (
-    f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/latest"
-)
-PIP_UPDATE_TEMPLATE = (
-    f"pip install -U git+https://github.com/{REPO_OWNER}/{REPO_NAME}.git"
-)
+GITHUB_HOME_URL_TEMPLATE = f"https://github.com/{REPO_OWNER}/{REPO_NAME}"
+PIPX_UPDATE_COMMAND = f"pipx upgrade {REPO_NAME}"
+PIP_UPDATE_COMMAND = f"pip install -U --break-system-packages {REPO_NAME}"
 
 
 def check_for_updates() -> None:
@@ -33,16 +30,17 @@ def check_for_updates() -> None:
 
         # Compare the versions
         if latest_version != current_version:
-            pip_command = PIP_UPDATE_TEMPLATE.format(REPO_OWNER, REPO_NAME)
-            releases_url = GITHUB_RELEASES_URL_TEMPLATE.format(REPO_OWNER, REPO_NAME)
+            home_url = GITHUB_HOME_URL_TEMPLATE.format(REPO_OWNER, REPO_NAME)
             effect, noeffect = Color("underlined"), Color("nounderlined")
             warning(
                 f"Current `input-tool` version {current_version} is different from\n"
                 f"the latest available version {latest_version}. "
                 f"You can upgrade by running\n"
-                f"{effect}{pip_command}{noeffect}\n"
-                f"or by downloading the latest version from\n"
-                f"{effect}{releases_url}{noeffect}"
+                f"{effect}{PIPX_UPDATE_COMMAND}{noeffect}\n"
+                "or by running\n"
+                f"{effect}{PIP_UPDATE_COMMAND}{noeffect}\n"
+                f"or find more information at\n"
+                f"{effect}{home_url}{noeffect}"
             )
     except Exception as e:
         warning(f"Could not check for updates! An error occurred:\n{e!r}")
