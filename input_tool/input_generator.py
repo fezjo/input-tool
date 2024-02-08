@@ -21,7 +21,12 @@ from input_tool.common.messages import (
 from input_tool.common.parser import ArgsGenerator, Parser
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
-from input_tool.common.tools_common import cleanup, prepare_programs, setup_config
+from input_tool.common.tools_common import (
+    check_data_folder_size,
+    cleanup,
+    prepare_programs,
+    setup_config,
+)
 
 description = """
 Input generator.
@@ -156,6 +161,7 @@ def main() -> None:
     setup_indir(args.indir, args.inext, args.clearinput)
     generate_all(recipe, programs, gencmd, args)
 
+    check_data_folder_size(args.indir)
     check_for_updates()
     info(str(default_logger.statistics))
 

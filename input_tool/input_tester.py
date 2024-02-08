@@ -34,6 +34,7 @@ from input_tool.common.programs.validator import Validator
 from input_tool.common.task_history import TASK_HISTORY
 from input_tool.common.task_queue import TaskItem, TaskQueue
 from input_tool.common.tools_common import (
+    check_data_folder_size,
     cleanup,
     prepare_programs,
     register_quit_with_executor,
@@ -404,6 +405,8 @@ def main() -> None:
     test_all(solutions, checker, inputs, args.threads, args)
     if args.stats:
         print_summary(solutions, inputs)
+
+    check_data_folder_size(args.outdir)
     info(str(default_logger.statistics))
 
     if args.json:

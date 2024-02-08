@@ -79,3 +79,20 @@ def prepare_programs(programs: Iterable[Program], threads: int) -> None:
             plain(logger.read())
         parallel_logger_manager.clear_buffers()
     default_logger.statistics += parallel_logger_manager.statistics
+
+
+def check_data_folder_size(path: str, max_size_mb: int = 42) -> None:
+    if not os.path.exists(path):
+        return
+    # get total size of all files in the directory recursively
+    total_size_b = 0
+    for dirpath, _, filenames in os.walk(path):
+        for f in filenames:  # includes links
+            fp = os.path.join(dirpath, f)
+            total_size_b += os.path.getsize(fp)
+    total_size_mb = round(total_size_b / 1024**2, 2)
+    if total_size_mb > max_size_mb:
+        warning(
+            f"Data folder '{path}' exceeds maximum recommended size: "
+            f"{total_size_mb}/{max_size_mb}MB"
+        )
