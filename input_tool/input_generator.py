@@ -151,7 +151,7 @@ def main() -> None:
     programs[gencmd] = Generator(gencmd)
     prepare_programs(programs.values(), max(4, args.threads))
     if args.clearbin:
-        atexit.register(lambda p=programs: cleanup(p))
+        atexit.register(lambda p=programs: cleanup(tuple(p.values())))
 
     setup_indir(args.indir, args.inext, args.clearinput)
     generate_all(recipe, programs, gencmd, args)
