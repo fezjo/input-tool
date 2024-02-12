@@ -345,9 +345,9 @@ def test_all(
 def print_summary(
     solutions: Sequence[Solution | Validator], inputs: Sequence[str]
 ) -> None:
-    print(get_statistics_header(inputs))
+    info(get_statistics_header(inputs))
     for s in solutions:
-        print(s.get_statistics())
+        info(s.get_statistics())
 
 
 def check_too_long_tests(
@@ -422,7 +422,7 @@ def main() -> None:
     if args.stats:
         print_summary(solutions, inputs)
 
-    print()
+    info("")
     check_data_folder_size(args.outdir)
     check_too_long_tests(solutions, timedelta(seconds=1))
     info(str(default_logger.statistics))

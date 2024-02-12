@@ -109,7 +109,7 @@ def print_message_for_input(
     short = ("{:>" + str(leftw) + "s}").format(get_ifile(input, args))
 
     if prev and prev.batch != input.batch:
-        print(" " * (leftw + 4) + ".")
+        info(" " * (leftw + 4) + ".")
 
     msg = "  {}  <  {}".format(short, input.get_info_text(len(short) + 4))
     if status != Status.ok:
