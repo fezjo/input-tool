@@ -122,9 +122,6 @@ class Color:
         return "%s%s%s" % (color, text, end or Color.normal)
 
 
-_sow = sys.stdout.write
-_sew = sys.stderr.write
-
 _codemap: dict[str, str | int] = {
     "OK": "green",
     "tOK": "green",
@@ -324,39 +321,30 @@ class ParallelLoggerManager:
 # }}}
 
 
-def wide_str(width: int, side: int) -> str:
-    return "{:%s%ss}" % (("", ">", "<")[side], width)
-
-
 def table_row(
-    color: Color,
+    row_color: Color,
     columns: Sequence[Any],
     widths: Sequence[int],
-    alignments: Sequence[int],
-    header: bool = False,
+    alignments: Sequence[str],
 ) -> str:
+    assert len(columns) == len(widths) == len(alignments)
     columns = list(columns)
     for i in range(len(columns)):
-        if header:
-            columns[i] = wide_str(widths[i], alignments[i]).format(columns[i])
-        elif isinstance(columns[i], Status):
-            status = columns[i]
-            columns[i] = status.colored() + " " * (widths[i] - len(str(status)))
-            columns[i] += str(Color.table)
-        else:
-            columns[i] = wide_str(widths[i], alignments[i]).format(str(columns[i]))
-            columns[i] = str(color) + columns[i] + str(Color.table)
-    return "%s| %s |%s" % (str(Color.table), " | ".join(columns), str(Color.normal))
+        width, align, value = widths[i], alignments[i], columns[i]
+        color = Color.status[value] if isinstance(value, Status) else row_color
+        text = f"{value:{align}{width}}"
+        columns[i] = Color.colorize(text, color, Color.table)
+    return Color.colorize("| %s |" % " | ".join(columns), Color.table)
 
 
 def table_header(
-    columns: Sequence[Any], widths: Sequence[int], alignments: Sequence[int]
+    columns: Sequence[Any], widths: Sequence[int], alignments: Sequence[str]
 ) -> str:
-    first_row = table_row(Color.table, columns, widths, alignments, True)
+    first_row = table_row(Color.table, columns, widths, alignments)
     second_row = "|".join(
         [str(Color.table)] + ["-" * (w + 2) for w in widths] + [str(Color.normal)]
     )
-    return "\n%s\n%s" % (first_row, second_row)
+    return f"{first_row}\n{second_row}"
 
 
 def color_test() -> None:
@@ -367,9 +355,9 @@ def color_test() -> None:
     infog("green")
     warning("warning")
     error("error")
-    _sew("".join([s.colored() for s in Status]) + "\n")
+    sys.stderr.write(" ".join([s.colored() for s in Status]) + "\n")
     for i in range(11):
-        _sew("%s%s/%s%s\n" % (Color.score_color(i, 10), i, 10, Color.normal))
+        sys.stderr.write(Color.colorize(f"{i}/10\n", Color.score_color(i, 10)))
 
 
 Concatable = TypeVar("Concatable", list[Any], tuple[Any, ...], str)

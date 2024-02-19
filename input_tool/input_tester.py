@@ -345,6 +345,7 @@ def test_all(
 def print_summary(
     solutions: Sequence[Solution | Validator], inputs: Sequence[str]
 ) -> None:
+    info("")
     info(get_statistics_header(inputs))
     for s in solutions:
         info(s.get_statistics())

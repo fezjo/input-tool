@@ -126,7 +126,7 @@ def get_statistics_header(inputs: Iterable[str]) -> str:
     pts = len(batches)
     widths = [Config.cmd_maxlen, 8, 9, 6, 6]
     colnames = ["Solution", "Max time", "Times sum", f"Pt {pts:3}", "Status"]
-    return table_header(colnames, widths, [-1, 1, 1, 1, 0])
+    return table_header(colnames, widths, "<>>>>")
 
 
 """

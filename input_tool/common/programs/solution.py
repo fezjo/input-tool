@@ -100,7 +100,7 @@ class Solution(Program):
             points,
             self.statistics.result,
         ]
-        return table_row(color, colnames, widths, [-1, 1, 1, 1, 0])
+        return table_row(color, colnames, widths, "<>>>>")
 
     def get_json(self) -> dict[str, Any]:
         self.compute_time_statistics()
