@@ -198,6 +198,27 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
   konfigurátor sa vzťahuje aj na premenné: z
   ```
 
+### IDF príklad 3
+
+Máme vstupy prebraté z inej súťaže, ale chceme si spraviť aj nejaké vlastné:
+
+``` 
+# najprv vygenerujeme prvú sadu z prebratých vstupov
+$ gen: sh
+cat sutazne-vstupy/01.a.in
+cat sutazne-vstupy/01.b.in
+# teraz si zresetujeme generátor na defaultný a vygenerujeme si vlastné vstupy
+$
+{id} 1000
+
+# a rovnako aj druhú sadu
+$ gen: sh
+cat sutazne-vstupy/02.a.in
+$
+{id} 1000000
+{id} 1000000
+```
+
 ## Viacriadkové vstupy
 
 Ak chcete, dať svojmu generátoru viac riadkový vstup, použite '`\`'. Ak riadok končí znakom '`\`', nasledujúci riadok bude tiež súčasťou tohto vstupu. Prípadné efekty znakov '`#`', '`$`', '`~`', na začiatku ďalšieho riadku sa nevykonávajú.
