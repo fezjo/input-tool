@@ -65,6 +65,7 @@ class ArgsTester:
     json: str | None
     cleartemp: bool
     clearbin: bool
+    recompile: bool
     programs: list[str]
     inside_oneline: bool = field(default=False)
     inside_inputmaxlen: int = field(default=0)
@@ -416,6 +417,14 @@ class Parser:
             {
                 "nargs": "?",
                 "help": "task statement. If not provided, read it from stdin.",
+            },
+        ),
+        "recompile": (
+            ("--recompile",),
+            {
+                "dest": "recompile",
+                "action": "store_true",
+                "help": "recompile programs and don't test",
             },
         ),
     }

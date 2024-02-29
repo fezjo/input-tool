@@ -79,6 +79,7 @@ options = [
     "pythoncmd_test",
     "threads_test",
     "rustime",
+    "recompile",
 ]
 
 # ----------------- configuration ----------------
@@ -413,6 +414,9 @@ def main() -> None:
         Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
     Config.inside_oneline = len(solutions) <= 1
     print_solutions_run_commands(solutions)
+
+    if args.recompile:
+        quit()
 
     inputs = get_inputs(args)
     _outputs = get_outputs(inputs, args)
