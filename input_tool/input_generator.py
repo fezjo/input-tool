@@ -48,6 +48,7 @@ options = [
     "noclearbin",
     "clearbin",
     "description",
+    "idf_version",
 ]
 
 
@@ -69,7 +70,7 @@ def find_idf(directory: str) -> str:
     return idfs[0]
 
 
-def get_recipe(file: Optional[str]) -> Recipe:
+def get_recipe(file: Optional[str], idf_version: int) -> Recipe:
     if file is not None:
         if os.path.isdir(file):
             file = find_idf(file)
@@ -77,7 +78,7 @@ def get_recipe(file: Optional[str]) -> Recipe:
             text = f.readlines()
     else:
         text = sys.stdin.readlines()
-    return Recipe(text)
+    return Recipe(text, idf_version)
 
 
 def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
@@ -147,7 +148,7 @@ def main() -> None:
     args = parse_args()
     setup_config(args, ("progdir", "quiet", "compile", "execute"))
 
-    recipe = get_recipe(args.description)
+    recipe = get_recipe(args.description, args.idf_version)
     recipe.process()
     recipe.inputs.sort()
 

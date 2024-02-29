@@ -33,6 +33,7 @@ class ArgsGenerator:
     description: str
     gencmd: str
     threads: int
+    idf_version: int
     deprecated: list[Any] = field(default_factory=list)
 
 
@@ -425,6 +426,15 @@ class Parser:
                 "dest": "recompile",
                 "action": "store_true",
                 "help": "recompile programs and don't test",
+            },
+        ),
+        "idf_version": (
+            ("--idf-version",),
+            {
+                "dest": "idf_version",
+                "default": 2,
+                "help": "idf version [1 or 2] to use (default=2)",
+                "type": int,
             },
         ),
     }

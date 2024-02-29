@@ -164,12 +164,30 @@ class Sample(Input):
 
 
 class Recipe:
-    def __init__(self, recipe: Sequence[str]):
+    def __init__(self, recipe: Sequence[str], idf_version: int = -1):
         self.recipe = recipe
         self.programs: list[str] = []
         self.inputs: list[Input] = []
+        self.idf_version = idf_version
+        self._parse_commands_versions = [
+            None,
+            self._parse_commands_v1,
+            self._parse_commands_v2,
+        ]
+        self._parse_commands = self._parse_commands_versions[idf_version]
 
-    def _parse_commands(self, line: str) -> dict[str, str]:
+    def _parse_commands_v1(self, line: str) -> dict[str, str]:
+        commands: dict[str, str] = {}
+        parts = line.split()
+        for part in parts:
+            if "=" in part:
+                k, v = part.split("=", 1)
+                commands[k] = v
+                if k == "gen":
+                    self.programs.append(v)
+        return commands
+
+    def _parse_commands_v2(self, line: str) -> dict[str, str]:
         line = f"{{{line}}}"
         try:
             yres = yaml.load(line, EvalLoader)
