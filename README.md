@@ -35,6 +35,9 @@
 <details>
 <summary>Nemergnuté zmeny</summary>
 
+- **Zjednodušené CLI parametre, BREAKING CHANGE**
+- **Podpora starého formátu IDF**
+- **Varovania pre dlhé behy a objemné vstupno-výstupné dáta**
 - **Podpora MacOS**
 - Rôzne malé vylepšenia, refaktorovanie, bugfixy
 - **Rozšírená funkcionalita IDF o podporu YAML a `!eval`**
