@@ -6,6 +6,8 @@
 input-tester:
   -h, --help
     show this help message and exit
+  --help-all
+    show help message with all the available options and exit
   -q, --quiet
     dont let subprograms print stuff
   -R, --Reset

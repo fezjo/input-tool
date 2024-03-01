@@ -4,7 +4,32 @@ import argparse
 from dataclasses import dataclass, field
 from typing import Any, Sequence, Type, TypedDict, TypeVar
 
+
+class MyHelpFormatter(argparse.HelpFormatter):
+    # options with help message starting with this prefix are considered secondary
+    # secondary options are only printed in full help mode
+    # primary options in full help mode are printed in bold
+    mode_prefix = "[?]"
+    full_mode = False
+
+    def _format_action(self, action):
+        if action.help is None:
+            return super()._format_action(action)
+        orig_help = action.help
+        issecondary = action.help.startswith(self.mode_prefix)
+        if issecondary:
+            action.help = action.help.removeprefix(self.mode_prefix).strip()
+        res = ""
+        if self.full_mode or not issecondary:
+            res = super()._format_action(action)
+        action.help = orig_help
+        if self.full_mode and not issecondary:
+            res = f"\033[1m{res}\033[0m"
+        return res
+
+
 sample_options = [
+    "full_help",
     "indir",
     "outdir",
     "inext",
@@ -18,6 +43,7 @@ sample_options = [
 
 @dataclass
 class ArgsSample:
+    full_help: bool
     indir: str
     outdir: str
     inext: str
@@ -30,6 +56,7 @@ class ArgsSample:
 
 
 generator_options = [
+    "full_help",
     "indir",
     "progdir",
     "inext",
@@ -49,6 +76,7 @@ generator_options = [
 
 @dataclass
 class ArgsGenerator:
+    full_help: bool
     indir: str
     progdir: str
     inext: str
@@ -67,6 +95,9 @@ class ArgsGenerator:
 
 
 tester_options = [
+    "full_help",
+    "colortest",
+    "recompile",
     "indir",
     "outdir",
     "progdir",
@@ -94,13 +125,14 @@ tester_options = [
     "pythoncmd_test",
     "threads_test",
     "programs",
-    "colortest",
-    "recompile",
 ]
 
 
 @dataclass
 class ArgsTester:
+    full_help: bool
+    colortest: bool
+    recompile: bool
     indir: str
     outdir: str
     progdir: str
@@ -128,8 +160,6 @@ class ArgsTester:
     pythoncmd: str
     threads: int
     programs: list[str]
-    colortest: bool
-    recompile: bool
     deprecated: list[Any] = field(default_factory=list)
 
 
@@ -146,13 +176,38 @@ class ParserOptions(TypedDict, total=False):
 
 class Parser:
     options: dict[str, tuple[tuple[str, ...], ParserOptions]] = {
+        # actions
+        "full_help": (
+            ("--help-all",),
+            {
+                "dest": "full_help",
+                "action": "store_true",
+                "help": "show help message with all the available options and exit",
+            },
+        ),
+        "colortest": (
+            ("--colortest",),
+            {
+                "dest": "colortest",
+                "action": "store_true",
+                "help": "[?] test colors and exit",
+            },
+        ),
+        "recompile": (
+            ("--recompile",),
+            {
+                "dest": "recompile",
+                "action": "store_true",
+                "help": "recompile programs and exit",
+            },
+        ),
         # file names
         "indir": (
             ("--input",),
             {
                 "dest": "indir",
                 "default": "test",
-                "help": "directory with input files (default={})",
+                "help": "[?] directory with input files (default: {})",
             },
         ),
         "outdir": (
@@ -160,7 +215,7 @@ class Parser:
             {
                 "dest": "outdir",
                 "default": "test",
-                "help": "directory for output and temporary files (default={})",
+                "help": "[?] directory for output and temporary files (default: {})",
             },
         ),
         "progdir": (
@@ -168,8 +223,8 @@ class Parser:
             {
                 "dest": "progdir",
                 "default": "prog",
-                "help": "directory where programs compile to, "
-                'compile next to source file if set to "" (default={})',
+                "help": "[?] directory where programs compile to, "
+                'compile next to source file if set to "" (default: {})',
             },
         ),
         "inext": (
@@ -177,7 +232,7 @@ class Parser:
             {
                 "dest": "inext",
                 "default": "in",
-                "help": "extension of input files (default={})",
+                "help": "[?] extension of input files (default: {})",
             },
         ),
         "outext": (
@@ -185,7 +240,7 @@ class Parser:
             {
                 "dest": "outext",
                 "default": "out",
-                "help": "extension of output files (default={})",
+                "help": "[?] extension of output files (default: {})",
             },
         ),
         "tempext": (
@@ -193,7 +248,7 @@ class Parser:
             {
                 "dest": "tempext",
                 "default": "temp",
-                "help": "extension of temporary files (default={})",
+                "help": "[?] extension of temporary files (default: {})",
             },
         ),
         "multi": (
@@ -209,7 +264,7 @@ class Parser:
             {
                 "dest": "batchname",
                 "default": "00.sample",
-                "help": "batch name (default={})",
+                "help": "[?] batch name (default: {})",
             },
         ),
         # prepare options
@@ -218,7 +273,7 @@ class Parser:
             {
                 "dest": "compile",
                 "action": "store_false",
-                "help": "don't try to compile",
+                "help": "[?] don't try to compile",
             },
         ),
         "nosort": (
@@ -226,7 +281,7 @@ class Parser:
             {
                 "dest": "sort",
                 "action": "store_false",
-                "help": "don't change order of programs",
+                "help": "[?] don't change order of programs",
             },
         ),
         "dupprog": (
@@ -234,7 +289,7 @@ class Parser:
             {
                 "dest": "dupprog",
                 "action": "store_true",
-                "help": "keep duplicate programs",
+                "help": "[?] keep duplicate programs",
             },
         ),
         "execute": (
@@ -242,7 +297,7 @@ class Parser:
             {
                 "dest": "execute",
                 "action": "store_true",
-                "help": "treat programs as shell commands",
+                "help": "[?] treat programs as shell commands",
             },
         ),
         # verbosing
@@ -251,7 +306,7 @@ class Parser:
             {
                 "dest": "colorful",
                 "action": "store_false",
-                "help": "turn colors off",
+                "help": "[?] turn colors off",
             },
         ),
         "quiet": (
@@ -267,7 +322,7 @@ class Parser:
             {
                 "dest": "stats",
                 "action": "store_false",
-                "help": "don't print statistics",
+                "help": "[?] don't print statistics",
             },
         ),
         "json": (
@@ -275,7 +330,7 @@ class Parser:
             {
                 "dest": "json",
                 "default": None,
-                "help": "also write output in json format to file",
+                "help": "[?] also write output in json format to file",
             },
         ),
         # cleanup
@@ -284,7 +339,7 @@ class Parser:
             {
                 "dest": "clearinput",
                 "action": "store_false",
-                "help": "don't remove old input files. Samples are never removed",
+                "help": "[?] don't remove old input files. Samples are never removed",
             },
         ),
         "cleartemp": (
@@ -292,7 +347,7 @@ class Parser:
             {
                 "dest": "cleartemp",
                 "action": "store_false",
-                "help": "don't remove temporary files after finishing",
+                "help": "[?] don't remove temporary files after finishing",
             },
         ),
         "clearbin": (
@@ -300,7 +355,7 @@ class Parser:
             {
                 "dest": "clearbin",
                 "action": "store_true",
-                "help": "remove binary files after finishing",
+                "help": "[?] remove binary files after finishing",
             },
         ),
         "reset": (
@@ -317,7 +372,7 @@ class Parser:
             {
                 "dest": "gencmd",
                 "default": "gen",
-                "help": "generator used for generating inputs (default={})",
+                "help": "generator used for generating inputs (default: {})",
             },
         ),
         "idf_version": (
@@ -325,8 +380,8 @@ class Parser:
             {
                 "dest": "idf_version",
                 "default": 2,
-                "help": "idf version [1 or 2] to use (default={})",
                 "type": int,
+                "help": "idf version [1 or 2] to use (default: {})",
             },
         ),
         # testing options
@@ -335,7 +390,7 @@ class Parser:
             {
                 "dest": "rustime",
                 "action": "store_true",
-                "help": "show Real/User/System time statistics",
+                "help": "[?] show Real/User/System time statistics",
             },
         ),
         "timelimit": (
@@ -344,7 +399,7 @@ class Parser:
                 "dest": "timelimit",
                 "default": "3,cpp=1,py=5",
                 "help": "set timelimit, 0 means unlimited "
-                + "and can be set in per language format (default={})",
+                + "and can be set in per language format (default: {})",
             },
         ),
         "warntimelimit": (
@@ -353,7 +408,7 @@ class Parser:
                 "dest": "warntimelimit",
                 "default": "auto",
                 "help": "set tight timelimit warning time, "
-                + "same format as for regular timelimit (default={})",
+                + "same format as for regular timelimit (default: {})",
             },
         ),
         "memorylimit": (
@@ -361,8 +416,8 @@ class Parser:
             {
                 "dest": "memorylimit",
                 "default": 0,
-                "help": "set memorylimit, 0 means unlimited (default={})",
                 "type": float,
+                "help": "set memorylimit, 0 means unlimited (default: {})",
             },
         ),
         "diffcmd": (
@@ -370,8 +425,9 @@ class Parser:
             {
                 "dest": "diffcmd",
                 "default": "diff",
-                "help": "program which checks correctness of output, "
-                + "check TESTER.MD for list of supported commands (default={})",
+                "help": "program which checks correctness of output [format: "
+                + "`diff $our $theirs`, `check $inp $our $theirs`, rest in TESTER.MD] "
+                + "(default: {})",
             },
         ),
         "showdiff": (
@@ -398,7 +454,7 @@ class Parser:
                 "dest": "pythoncmd",
                 "default": "pypy3",
                 "help": "what command is used to execute python, "
-                + "e.g. `python3` or `pypy3` (default={})",
+                + "e.g. `python3` or `pypy3` (default: {})",
             },
         ),
         "pythoncmd_test": (
@@ -407,7 +463,7 @@ class Parser:
                 "dest": "pythoncmd",
                 "default": "python3",
                 "help": "what command is used to execute python, "
-                + "e.g. `python3` or `pypy3` (default={})",
+                + "e.g. `python3` or `pypy3` (default: {})",
             },
         ),
         "threads_gen": (
@@ -415,8 +471,8 @@ class Parser:
             {
                 "dest": "threads",
                 "default": 6,
-                "help": "how many threads to use (default={})",
                 "type": int,
+                "help": "how many threads to use (default: {})",
             },
         ),
         "threads_test": (
@@ -424,8 +480,8 @@ class Parser:
             {
                 "dest": "threads",
                 "default": 4,
-                "help": "how many threads to use (default={})",
                 "type": int,
+                "help": "how many threads to use (default: {})",
             },
         ),
         # what to do
@@ -446,31 +502,17 @@ class Parser:
         "programs": (
             ("programs",),
             {
-                "nargs": "+",
+                "nargs": "*",
+                "default": [],
                 "help": "list of programs to be run",
-            },
-        ),
-        # actions
-        "colortest": (
-            ("--colortest",),
-            {
-                "dest": "colortest",
-                "action": "store_true",
-                "help": "test colors and exit",
-            },
-        ),
-        "recompile": (
-            ("--recompile",),
-            {
-                "dest": "recompile",
-                "action": "store_true",
-                "help": "recompile programs and don't test",
             },
         ),
     }
 
     def __init__(self, description: str, arguments: Sequence[str]):
-        self.parser = argparse.ArgumentParser(description=description)
+        self.parser = argparse.ArgumentParser(
+            description=description, formatter_class=MyHelpFormatter
+        )
         for arg in arguments:
             args, kwargs = self.options.get(arg, (None, None))
             if args is None or kwargs is None:
@@ -483,4 +525,8 @@ class Parser:
 
     def parse(self, container: Type[Args]) -> Args:
         self.args = self.parser.parse_args()
+        if self.args.full_help:
+            MyHelpFormatter.full_mode = True
+            self.parser.print_help()
+            quit(0)
         return container(**vars(self.args))
