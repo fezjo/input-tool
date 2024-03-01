@@ -5,30 +5,36 @@ from dataclasses import dataclass, field
 from typing import Any, Sequence, Type, TypedDict, TypeVar
 
 
-class MyHelpFormatter(argparse.HelpFormatter):
-    # options with help message starting with this prefix are considered secondary
-    # secondary options are only printed in full help mode
-    # primary options in full help mode are printed in bold
-    mode_prefix = "[?]"
-    full_mode = False
+def MyHelpFormatterFactory(_full_mode: bool) -> Type[argparse.HelpFormatter]:
+    class MyHelpFormatter(argparse.HelpFormatter):
+        # options with help message starting with this prefix are considered secondary
+        # secondary options are only printed in full help mode
+        # primary options in full help mode are printed in bold
+        mode_prefix = "[?]"
+        full_mode = _full_mode
 
-    def _format_action(self, action):
-        if action.help is None:
-            return super()._format_action(action)
-        orig_help = action.help
-        issecondary = action.help.startswith(self.mode_prefix)
-        if issecondary:
-            action.help = action.help.removeprefix(self.mode_prefix).strip()
-        res = ""
-        if self.full_mode or not issecondary:
-            res = super()._format_action(action)
-        action.help = orig_help
-        if self.full_mode and not issecondary:
-            res = f"\033[1m{res}\033[0m"
-        return res
+        def _format_action(self, action):
+            if action.help is None:
+                return super()._format_action(action)
+            orig_help = action.help
+            issecondary = action.help.startswith(self.mode_prefix)
+            if issecondary:
+                action.help = action.help.removeprefix(self.mode_prefix).strip()
+            res = ""
+            if self.full_mode or not issecondary:
+                res = super()._format_action(action)
+            action.help = orig_help
+            if self.full_mode and not issecondary:
+                if res.endswith("\n"):
+                    res = res[:-1]
+                res = f"\033[1m{res}\033[0m\n"
+            return res
+
+    return MyHelpFormatter
 
 
 sample_options = [
+    "help",
     "full_help",
     "indir",
     "outdir",
@@ -56,6 +62,7 @@ class ArgsSample:
 
 
 generator_options = [
+    "help",
     "full_help",
     "indir",
     "progdir",
@@ -95,6 +102,7 @@ class ArgsGenerator:
 
 
 tester_options = [
+    "help",
     "full_help",
     "colortest",
     "recompile",
@@ -175,8 +183,16 @@ class ParserOptions(TypedDict, total=False):
 
 
 class Parser:
-    options: dict[str, tuple[tuple[str, ...], ParserOptions]] = {
+    options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] = {
         # actions
+        "help": (
+            ("-h", "--help"),
+            {
+                "action": "help",
+                "help": "show compact help message and exit",
+            },
+            "actions",
+        ),
         "full_help": (
             ("--help-all",),
             {
@@ -184,6 +200,7 @@ class Parser:
                 "action": "store_true",
                 "help": "show help message with all the available options and exit",
             },
+            "actions",
         ),
         "colortest": (
             ("--colortest",),
@@ -192,6 +209,7 @@ class Parser:
                 "action": "store_true",
                 "help": "[?] test colors and exit",
             },
+            "actions",
         ),
         "recompile": (
             ("--recompile",),
@@ -200,8 +218,9 @@ class Parser:
                 "action": "store_true",
                 "help": "recompile programs and exit",
             },
+            "actions",
         ),
-        # file names
+        # naming
         "indir": (
             ("--input",),
             {
@@ -209,6 +228,7 @@ class Parser:
                 "default": "test",
                 "help": "[?] directory with input files (default: {})",
             },
+            "naming",
         ),
         "outdir": (
             ("--output",),
@@ -217,6 +237,7 @@ class Parser:
                 "default": "test",
                 "help": "[?] directory for output and temporary files (default: {})",
             },
+            "naming",
         ),
         "progdir": (
             ("--progdir",),
@@ -226,6 +247,7 @@ class Parser:
                 "help": "[?] directory where programs compile to, "
                 'compile next to source file if set to "" (default: {})',
             },
+            "naming",
         ),
         "inext": (
             ("--inext",),
@@ -234,6 +256,7 @@ class Parser:
                 "default": "in",
                 "help": "[?] extension of input files (default: {})",
             },
+            "naming",
         ),
         "outext": (
             ("--outext",),
@@ -242,6 +265,7 @@ class Parser:
                 "default": "out",
                 "help": "[?] extension of output files (default: {})",
             },
+            "naming",
         ),
         "tempext": (
             ("--tempext",),
@@ -250,6 +274,7 @@ class Parser:
                 "default": "temp",
                 "help": "[?] extension of temporary files (default: {})",
             },
+            "naming",
         ),
         "multi": (
             ("--force-multi",),
@@ -258,6 +283,7 @@ class Parser:
                 "action": "store_true",
                 "help": "force batch (always print .a before extension)",
             },
+            "naming",
         ),
         "batchname": (
             ("--batch",),
@@ -266,8 +292,9 @@ class Parser:
                 "default": "00.sample",
                 "help": "[?] batch name (default: {})",
             },
+            "naming",
         ),
-        # prepare options
+        # preparing
         "compile": (
             ("--no-compile",),
             {
@@ -275,6 +302,7 @@ class Parser:
                 "action": "store_false",
                 "help": "[?] don't try to compile",
             },
+            "preparing",
         ),
         "nosort": (
             ("-S", "--no-sort"),
@@ -283,6 +311,7 @@ class Parser:
                 "action": "store_false",
                 "help": "[?] don't change order of programs",
             },
+            "preparing",
         ),
         "dupprog": (
             ("--dupprog",),
@@ -291,6 +320,7 @@ class Parser:
                 "action": "store_true",
                 "help": "[?] keep duplicate programs",
             },
+            "preparing",
         ),
         "execute": (
             ("--execute",),
@@ -299,6 +329,7 @@ class Parser:
                 "action": "store_true",
                 "help": "[?] treat programs as shell commands",
             },
+            "preparing",
         ),
         # verbosing
         "colorful": (
@@ -308,6 +339,7 @@ class Parser:
                 "action": "store_false",
                 "help": "[?] turn colors off",
             },
+            "verbosing",
         ),
         "quiet": (
             ("-q", "--quiet"),
@@ -316,6 +348,7 @@ class Parser:
                 "action": "store_true",
                 "help": "don't let subprograms print stuff",
             },
+            "verbosing",
         ),
         "nostats": (
             ("--no-statistics",),
@@ -324,6 +357,7 @@ class Parser:
                 "action": "store_false",
                 "help": "[?] don't print statistics",
             },
+            "verbosing",
         ),
         "json": (
             ("--json",),
@@ -332,8 +366,9 @@ class Parser:
                 "default": None,
                 "help": "[?] also write output in json format to file",
             },
+            "verbosing",
         ),
-        # cleanup
+        # cleaning
         "clearinput": (
             ("--keep-inputs",),
             {
@@ -341,6 +376,7 @@ class Parser:
                 "action": "store_false",
                 "help": "[?] don't remove old input files. Samples are never removed",
             },
+            "cleaning",
         ),
         "cleartemp": (
             ("--keep-temp",),
@@ -349,6 +385,7 @@ class Parser:
                 "action": "store_false",
                 "help": "[?] don't remove temporary files after finishing",
             },
+            "cleaning",
         ),
         "clearbin": (
             ("--clear-bin",),
@@ -357,6 +394,7 @@ class Parser:
                 "action": "store_true",
                 "help": "[?] remove binary files after finishing",
             },
+            "cleaning",
         ),
         "reset": (
             ("-R", "--Reset"),
@@ -365,8 +403,9 @@ class Parser:
                 "action": "store_true",
                 "help": "recompute outputs, similar as `--tempext out`",
             },
+            "cleaning",
         ),
-        # generating options
+        # generating
         "gencmd": (
             ("-g", "--gen"),
             {
@@ -374,6 +413,7 @@ class Parser:
                 "default": "gen",
                 "help": "generator used for generating inputs (default: {})",
             },
+            "generating",
         ),
         "idf_version": (
             ("--idf-version",),
@@ -383,8 +423,9 @@ class Parser:
                 "type": int,
                 "help": "idf version [1 or 2] to use (default: {})",
             },
+            "generating",
         ),
-        # testing options
+        # testing
         "rustime": (
             ("--rustime",),
             {
@@ -392,6 +433,7 @@ class Parser:
                 "action": "store_true",
                 "help": "[?] show Real/User/System time statistics",
             },
+            "testing",
         ),
         "timelimit": (
             ("-t", "--time"),
@@ -401,6 +443,7 @@ class Parser:
                 "help": "set timelimit, 0 means unlimited "
                 + "and can be set in per language format (default: {})",
             },
+            "testing",
         ),
         "warntimelimit": (
             ("--wtime",),
@@ -410,6 +453,7 @@ class Parser:
                 "help": "set tight timelimit warning time, "
                 + "same format as for regular timelimit (default: {})",
             },
+            "testing",
         ),
         "memorylimit": (
             ("-m", "--memory"),
@@ -419,16 +463,18 @@ class Parser:
                 "type": float,
                 "help": "set memorylimit, 0 means unlimited (default: {})",
             },
+            "testing",
         ),
         "diffcmd": (
             ("-d", "--diff"),
             {
                 "dest": "diffcmd",
                 "default": "diff",
-                "help": "program which checks correctness of output [format: "
-                + "`diff $our $theirs`, `check $inp $our $theirs`, rest in TESTER.MD] "
-                + "(default: {})",
+                "help": "program which checks correctness of output "
+                + "[format: `diff $our $theirs`, `check $inp $our $theirs`, "
+                + "details in TESTER.MD] (default: {})",
             },
+            "testing",
         ),
         "showdiff": (
             ("-D", "--show-diff"),
@@ -437,6 +483,7 @@ class Parser:
                 "action": "store_true",
                 "help": "show shortened diff output on WA",
             },
+            "testing",
         ),
         "fail_skip": (
             ("-F", "--no-fail-skip"),
@@ -446,8 +493,9 @@ class Parser:
                 "help": "don't skip the rest of input files in the same batch "
                 + "after first fail",
             },
+            "testing",
         ),
-        # running options
+        # running
         "pythoncmd_gen": (
             ("--pythoncmd",),
             {
@@ -456,6 +504,7 @@ class Parser:
                 "help": "what command is used to execute python, "
                 + "e.g. `python3` or `pypy3` (default: {})",
             },
+            "running",
         ),
         "pythoncmd_test": (
             ("--pythoncmd",),
@@ -465,6 +514,7 @@ class Parser:
                 "help": "what command is used to execute python, "
                 + "e.g. `python3` or `pypy3` (default: {})",
             },
+            "running",
         ),
         "threads_gen": (
             ("-j", "--threads"),
@@ -474,6 +524,7 @@ class Parser:
                 "type": int,
                 "help": "how many threads to use (default: {})",
             },
+            "running",
         ),
         "threads_test": (
             ("-j", "--threads"),
@@ -483,14 +534,16 @@ class Parser:
                 "type": int,
                 "help": "how many threads to use (default: {})",
             },
+            "running",
         ),
-        # what to do
+        # target
         "description": (
             ("description",),
             {
                 "nargs": "?",
                 "help": "recipe for inputs. If not provided, read it from stdin.",
             },
+            None,
         ),
         "task": (
             ("task",),
@@ -498,6 +551,7 @@ class Parser:
                 "nargs": "?",
                 "help": "task statement. If not provided, read it from stdin.",
             },
+            None,
         ),
         "programs": (
             ("programs",),
@@ -506,19 +560,44 @@ class Parser:
                 "default": [],
                 "help": "list of programs to be run",
             },
+            None,
         ),
     }
 
     def __init__(self, description: str, arguments: Sequence[str]):
         self.parser = argparse.ArgumentParser(
-            description=description, formatter_class=MyHelpFormatter
+            description=description,
+            formatter_class=MyHelpFormatterFactory(False),
+            add_help=False,
         )
+        self.full_help_parser = argparse.ArgumentParser(
+            description=description,
+            formatter_class=MyHelpFormatterFactory(True),
+            add_help=False,
+        )
+        groups = {
+            "actions": self.full_help_parser.add_argument_group("actions"),
+            "naming": self.full_help_parser.add_argument_group("naming"),
+            "preparing": self.full_help_parser.add_argument_group("preparing"),
+            "verbosing": self.full_help_parser.add_argument_group("verbosing"),
+            "cleaning": self.full_help_parser.add_argument_group("cleaning"),
+            "generating": self.full_help_parser.add_argument_group("generating"),
+            "testing": self.full_help_parser.add_argument_group("testing"),
+            "running": self.full_help_parser.add_argument_group("running"),
+        }
+
         for arg in arguments:
-            args, kwargs = self.options.get(arg, (None, None))
+            full_parser_group = self.full_help_parser
+            args, kwargs, group = self.options.get(arg, (None, None, None))
             if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")
+            if group is not None and group:
+                if group not in groups:
+                    raise NameError(f"Unrecognized group {group}")
+                full_parser_group = groups[group]
             if "default" in kwargs and "help" in kwargs:
                 kwargs["help"] = kwargs["help"].format(kwargs["default"])
+            full_parser_group.add_argument(*args, **kwargs)
             self.parser.add_argument(*args, **kwargs)
 
     Args = TypeVar("Args", ArgsSample, ArgsGenerator, ArgsTester)
@@ -526,7 +605,6 @@ class Parser:
     def parse(self, container: Type[Args]) -> Args:
         self.args = self.parser.parse_args()
         if self.args.full_help:
-            MyHelpFormatter.full_mode = True
-            self.parser.print_help()
+            self.full_help_parser.print_help()
             quit(0)
         return container(**vars(self.args))

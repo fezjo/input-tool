@@ -15,7 +15,7 @@ input-tester:
   -t TIMELIMIT, --time TIMELIMIT
     set timelimit, 0 means unlimited and can be set in per language format (default: 3,cpp=1,py=5)
   -d, --diff
-    program which checks correctness of output [format: `diff $our $theirs`, `check $inp $our $theirs`, rest in TESTER.MD] (default: diff)
+    program which checks correctness of output [format: `diff $our $theirs`, `check $inp $our $theirs`, details in TESTER.MD] (default: diff)
   -D, --show-diff-output
     show shortened diff output on WA
   -F, --no-fail-skip
