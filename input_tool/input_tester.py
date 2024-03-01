@@ -157,10 +157,14 @@ def print_solutions_run_commands(solutions: Sequence[Solution | Validator]) -> N
 
 
 def get_inputs(args: ArgsTester) -> list[str]:
+    if not os.path.exists(args.indir):
+        fatal(f"Input directory `{args.indir}` doesn't exist.")
     return sorted(filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)))
 
 
 def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
     if args.outext != args.tempext and not args.reset:
         outputs = sorted(
             filter(lambda x: x.endswith(args.outext), os.listdir(args.outdir))
