@@ -4,6 +4,17 @@ import argparse
 from dataclasses import dataclass, field
 from typing import Any, Sequence, Type, TypedDict, TypeVar
 
+sample_options = [
+    "indir",
+    "outdir",
+    "inext",
+    "outext",
+    "multi",
+    "batchname",
+    "colorful",
+    "task",
+]
+
 
 @dataclass
 class ArgsSample:
@@ -11,11 +22,29 @@ class ArgsSample:
     outdir: str
     inext: str
     outext: str
-    batchname: str
     multi: bool
+    batchname: str
     colorful: bool
     task: str | None
     deprecated: list[Any] = field(default_factory=list)
+
+
+generator_options = [
+    "indir",
+    "progdir",
+    "inext",
+    "compile",
+    "execute",
+    "colorful",
+    "quiet",
+    "clearinput",
+    "clearbin",
+    "gencmd",
+    "idf_version",
+    "pythoncmd_gen",
+    "threads_gen",
+    "description",
+]
 
 
 @dataclass
@@ -25,16 +54,49 @@ class ArgsGenerator:
     inext: str
     compile: bool
     execute: bool
-    pythoncmd: str
     colorful: bool
     quiet: bool
-    clearbin: bool
     clearinput: bool
-    description: str
+    clearbin: bool
     gencmd: str
-    threads: int
     idf_version: int
+    pythoncmd: str
+    threads: int
+    description: str
     deprecated: list[Any] = field(default_factory=list)
+
+
+tester_options = [
+    "indir",
+    "outdir",
+    "progdir",
+    "inext",
+    "outext",
+    "tempext",
+    "compile",
+    "nosort",
+    "dupprog",
+    "execute",
+    "colorful",
+    "quiet",
+    "nostats",
+    "json",
+    "cleartemp",
+    "clearbin",
+    "reset",
+    "rustime",
+    "timelimit",
+    "warntimelimit",
+    "memorylimit",
+    "diffcmd",
+    "showdiff",
+    "fail_skip",
+    "pythoncmd_test",
+    "threads_test",
+    "programs",
+    "colortest",
+    "recompile",
+]
 
 
 @dataclass
@@ -45,31 +107,29 @@ class ArgsTester:
     inext: str
     outext: str
     tempext: str
-    reset: bool
-    timelimit: str
-    warntimelimit: str
-    memorylimit: float
-    diffcmd: str | None
-    showdiffoutput: bool
-    fskip: bool
-    dupprog: bool
-    rustime: bool
     compile: bool
     sort: bool
+    dupprog: bool
     execute: bool
-    pythoncmd: str
-    threads: int
     colorful: bool
-    colortest: bool
     quiet: bool
     stats: bool
     json: str | None
     cleartemp: bool
     clearbin: bool
-    recompile: bool
+    reset: bool
+    rustime: bool
+    timelimit: str
+    warntimelimit: str
+    memorylimit: float
+    diffcmd: str
+    showdiff: bool
+    fail_skip: bool
+    pythoncmd: str
+    threads: int
     programs: list[str]
-    inside_oneline: bool = field(default=False)
-    inside_inputmaxlen: int = field(default=0)
+    colortest: bool
+    recompile: bool
     deprecated: list[Any] = field(default_factory=list)
 
 
@@ -88,152 +148,85 @@ class Parser:
     options: dict[str, tuple[tuple[str, ...], ParserOptions]] = {
         # file names
         "indir": (
-            ("-i", "--input"),
+            ("--input",),
             {
                 "dest": "indir",
                 "default": "test",
-                "help": "directory with input files (default=test)",
+                "help": "directory with input files (default={})",
             },
         ),
         "outdir": (
-            ("-o", "--output"),
+            ("--output",),
             {
                 "dest": "outdir",
                 "default": "test",
-                "help": "directory for output and temporary files (default=test)",
+                "help": "directory for output and temporary files (default={})",
             },
         ),
         "progdir": (
-            ("-p", "--progdir"),
+            ("--progdir",),
             {
                 "dest": "progdir",
                 "default": "prog",
-                "help": "directory where programs compile to (default=prog), "
-                'compile next to source file if set to ""',
+                "help": "directory where programs compile to, "
+                'compile next to source file if set to "" (default={})',
             },
         ),
         "inext": (
-            ("-I",),
+            ("--inext",),
             {
                 "dest": "inext",
                 "default": "in",
-                "help": "extension of input files (default=in)",
+                "help": "extension of input files (default={})",
             },
         ),
         "outext": (
-            ("-O",),
+            ("--outext",),
             {
                 "dest": "outext",
                 "default": "out",
-                "help": "extension of output files (default=out)",
+                "help": "extension of output files (default={})",
             },
         ),
         "tempext": (
-            ("-T",),
+            ("--tempext",),
             {
                 "dest": "tempext",
                 "default": "temp",
-                "help": "extension of temporary files (default=temp)",
-            },
-        ),
-        "reset": (
-            ("-R", "--Reset"),
-            {
-                "dest": "reset",
-                "action": "store_true",
-                "help": "recompute outputs, similar as -T out",
-            },
-        ),
-        "batchname": (
-            ("-b", "--batch"),
-            {
-                "dest": "batchname",
-                "default": "00.sample",
-                "help": "batch name (default=00.sample)",
+                "help": "extension of temporary files (default={})",
             },
         ),
         "multi": (
-            ("-m", "--force-multi"),
+            ("--force-multi",),
             {
                 "dest": "multi",
                 "action": "store_true",
                 "help": "force batch (always print .a before extension)",
             },
         ),
-        # testing options
-        "timelimit": (
-            ("-t", "--time"),
+        "batchname": (
+            ("--batch",),
             {
-                "dest": "timelimit",
-                "default": "3,cpp=1,py=5",
-                "help": "set timelimit (default=3,cpp=1,py=5), "
-                + "can be set to unlimited using 0 and "
-                + 'optionally in per language format (e.g. "1.5,py=0,cpp=0.5")',
+                "dest": "batchname",
+                "default": "00.sample",
+                "help": "batch name (default={})",
             },
         ),
-        "warntimelimit": (
-            ("--wtime",),
+        # prepare options
+        "compile": (
+            ("--no-compile",),
             {
-                "dest": "warntimelimit",
-                "default": "auto",
-                "help": "set warning tight timelimit (default=auto), "
-                + "which issues warning but does not fail, can be set in "
-                + 'optional per language format (e.g. "0.5,py=1.5,cpp=0.15")',
-            },
-        ),
-        "memorylimit": (
-            ("-m", "--memory"),
-            {
-                "dest": "memorylimit",
-                "help": "set memorylimit (default=infinity)",
-                "default": 0,
-                "type": float,
-            },
-        ),
-        "wrapper": (
-            ("-w", "--wrapper"),
-            {
-                "dest": "wrapper",
-                "nargs": "?",
-                "default": False,
-                "metavar": "PATH",
-                "help": 'use wrapper, default PATH="$WRAPPER"',
-            },
-        ),
-        "diffcmd": (
-            ("-d", "--diff"),
-            {
-                "dest": "diffcmd",
-                "default": None,
-                "help": "program which checks correctness of output (default=diff), "
-                + "arguments given to program depends of prefix:"
-                + "       diff $our $theirs,"
-                + "       check $inp $our $theirs,"
-                + "       ch_ito $inp $theirs $our,"
-                + "       test $dir $name $i $o $t",
-            },
-        ),
-        "showdiffoutput": (
-            (
-                "-D",
-                "--show-diff-output",
-            ),
-            {
-                "dest": "showdiffoutput",
-                "action": "store_true",
-                "help": "show shortened diff output on WA",
-            },
-        ),
-        "fskip": (
-            (
-                "-F",
-                "--no-fskip",
-            ),
-            {
-                "dest": "fskip",
+                "dest": "compile",
                 "action": "store_false",
-                "help": "dont skip the rest of input files in the same batch "
-                + "after first fail",
+                "help": "don't try to compile",
+            },
+        ),
+        "nosort": (
+            ("-S", "--no-sort"),
+            {
+                "dest": "sort",
+                "action": "store_false",
+                "help": "don't change order of programs",
             },
         ),
         "dupprog": (
@@ -244,86 +237,21 @@ class Parser:
                 "help": "keep duplicate programs",
             },
         ),
-        "rustime": (
-            ("--rustime",),
-            {
-                "dest": "rustime",
-                "action": "store_true",
-                "help": "show Real/User/System time statistics",
-            },
-        ),
-        # running options
-        "compile": (
-            ("--no-compile",),
-            {"dest": "compile", "action": "store_false", "help": "dont try to compile"},
-        ),
-        "nosort": (
-            (
-                "-S",
-                "--no-sort",
-            ),
-            {
-                "dest": "sort",
-                "action": "store_false",
-                "help": "dont change order of programs",
-            },
-        ),
         "execute": (
-            ("-x", "--execute"),
+            ("--execute",),
             {
                 "dest": "execute",
                 "action": "store_true",
-                "help": "treat programs as bash commands. Dont try to do "
-                + "as compiling",
-            },
-        ),
-        "pythoncmd_gen": (
-            ("--pythoncmd",),
-            {
-                "dest": "pythoncmd",
-                "default": "pypy3",
-                "help": "what command is used to execute python, "
-                + "e.g. `python3` or `pypy3` (default=pypy3)",
-            },
-        ),
-        "pythoncmd_test": (
-            ("--pythoncmd",),
-            {
-                "dest": "pythoncmd",
-                "default": "python3",
-                "help": "what command is used to execute python, "
-                + "e.g. `python3` or `pypy3` (default=python3)",
-            },
-        ),
-        "threads_gen": (
-            ("-j", "--threads"),
-            {
-                "dest": "threads",
-                "default": 6,
-                "help": "how many threads to use (default=6)",
-                "type": int,
-            },
-        ),
-        "threads_test": (
-            ("-j", "--threads"),
-            {
-                "dest": "threads",
-                "default": 4,
-                "help": "how many threads to use (default=4)",
-                "type": int,
+                "help": "treat programs as shell commands",
             },
         ),
         # verbosing
         "colorful": (
-            ("-B", "--boring"),
-            {"dest": "colorful", "action": "store_false", "help": "turn colors off"},
-        ),
-        "colortest": (
-            ("--colortest",),
+            ("--boring",),
             {
-                "dest": "colortest",
-                "action": "store_true",
-                "help": "test colors and exit",
+                "dest": "colorful",
+                "action": "store_false",
+                "help": "turn colors off",
             },
         ),
         "quiet": (
@@ -331,25 +259,16 @@ class Parser:
             {
                 "dest": "quiet",
                 "action": "store_true",
-                "help": "dont let subprograms print stuff",
-            },
-        ),
-        "Quiet": (
-            ("-Q", "--Quiet"),
-            {"dest": "Quiet", "action": "store_true", "help": "dont print anything"},
-        ),
-        "stats": (
-            ("-s", "--statistics"),
-            {
-                "dest": "deprecated",
-                "action": "append_const",
-                "const": "statistics (-s --statistics)",
-                "help": "print statistics (deprecated)",
+                "help": "don't let subprograms print stuff",
             },
         ),
         "nostats": (
             ("--no-statistics",),
-            {"dest": "stats", "action": "store_false", "help": "dont print statistics"},
+            {
+                "dest": "stats",
+                "action": "store_false",
+                "help": "don't print statistics",
+            },
         ),
         "json": (
             ("--json",),
@@ -360,21 +279,20 @@ class Parser:
             },
         ),
         # cleanup
+        "clearinput": (
+            ("--keep-inputs",),
+            {
+                "dest": "clearinput",
+                "action": "store_false",
+                "help": "don't remove old input files. Samples are never removed",
+            },
+        ),
         "cleartemp": (
-            ("-k", "--keep-temp"),
+            ("--keep-temp",),
             {
                 "dest": "cleartemp",
                 "action": "store_false",
-                "help": "dont remove temporary files after finishing",
-            },
-        ),
-        "noclearbin": (
-            ("-K", "--keep-bin"),
-            {
-                "dest": "deprecated",
-                "action": "append_const",
-                "const": "noclearbin (-K --keep-bin)",
-                "help": "dont remove binary files after finishing (deprecated)",
+                "help": "don't remove temporary files after finishing",
             },
         ),
         "clearbin": (
@@ -385,19 +303,132 @@ class Parser:
                 "help": "remove binary files after finishing",
             },
         ),
-        "clearinput": (
-            ("-k", "--keep-inputs"),
+        "reset": (
+            ("-R", "--Reset"),
             {
-                "dest": "clearinput",
+                "dest": "reset",
+                "action": "store_true",
+                "help": "recompute outputs, similar as `--tempext out`",
+            },
+        ),
+        # generating options
+        "gencmd": (
+            ("-g", "--gen"),
+            {
+                "dest": "gencmd",
+                "default": "gen",
+                "help": "generator used for generating inputs (default={})",
+            },
+        ),
+        "idf_version": (
+            ("--idf-version",),
+            {
+                "dest": "idf_version",
+                "default": 2,
+                "help": "idf version [1 or 2] to use (default={})",
+                "type": int,
+            },
+        ),
+        # testing options
+        "rustime": (
+            ("--rustime",),
+            {
+                "dest": "rustime",
+                "action": "store_true",
+                "help": "show Real/User/System time statistics",
+            },
+        ),
+        "timelimit": (
+            ("-t", "--time"),
+            {
+                "dest": "timelimit",
+                "default": "3,cpp=1,py=5",
+                "help": "set timelimit, 0 means unlimited "
+                + "and can be set in per language format (default={})",
+            },
+        ),
+        "warntimelimit": (
+            ("--wtime",),
+            {
+                "dest": "warntimelimit",
+                "default": "auto",
+                "help": "set tight timelimit warning time, "
+                + "same format as for regular timelimit (default={})",
+            },
+        ),
+        "memorylimit": (
+            ("-m", "--memory"),
+            {
+                "dest": "memorylimit",
+                "default": 0,
+                "help": "set memorylimit, 0 means unlimited (default={})",
+                "type": float,
+            },
+        ),
+        "diffcmd": (
+            ("-d", "--diff"),
+            {
+                "dest": "diffcmd",
+                "default": "diff",
+                "help": "program which checks correctness of output, "
+                + "check TESTER.MD for list of supported commands (default={})",
+            },
+        ),
+        "showdiff": (
+            ("-D", "--show-diff"),
+            {
+                "dest": "showdiff",
+                "action": "store_true",
+                "help": "show shortened diff output on WA",
+            },
+        ),
+        "fail_skip": (
+            ("-F", "--no-fail-skip"),
+            {
+                "dest": "fail_skip",
                 "action": "store_false",
-                "help": "dont remove old input files. Samples are never removed",
+                "help": "don't skip the rest of input files in the same batch "
+                + "after first fail",
+            },
+        ),
+        # running options
+        "pythoncmd_gen": (
+            ("--pythoncmd",),
+            {
+                "dest": "pythoncmd",
+                "default": "pypy3",
+                "help": "what command is used to execute python, "
+                + "e.g. `python3` or `pypy3` (default={})",
+            },
+        ),
+        "pythoncmd_test": (
+            ("--pythoncmd",),
+            {
+                "dest": "pythoncmd",
+                "default": "python3",
+                "help": "what command is used to execute python, "
+                + "e.g. `python3` or `pypy3` (default={})",
+            },
+        ),
+        "threads_gen": (
+            ("-j", "--threads"),
+            {
+                "dest": "threads",
+                "default": 6,
+                "help": "how many threads to use (default={})",
+                "type": int,
+            },
+        ),
+        "threads_test": (
+            ("-j", "--threads"),
+            {
+                "dest": "threads",
+                "default": 4,
+                "help": "how many threads to use (default={})",
+                "type": int,
             },
         ),
         # what to do
-        "programs": (
-            ("programs",),
-            {"nargs": "+", "help": "list of programs to be run"},
-        ),
         "description": (
             ("description",),
             {
@@ -405,19 +436,27 @@ class Parser:
                 "help": "recipe for inputs. If not provided, read it from stdin.",
             },
         ),
-        "gencmd": (
-            ("-g", "--gen"),
-            {
-                "dest": "gencmd",
-                "default": "gen",
-                "help": "generator used for generating inputs (default=gen)",
-            },
-        ),
         "task": (
             ("task",),
             {
                 "nargs": "?",
                 "help": "task statement. If not provided, read it from stdin.",
+            },
+        ),
+        "programs": (
+            ("programs",),
+            {
+                "nargs": "+",
+                "help": "list of programs to be run",
+            },
+        ),
+        # actions
+        "colortest": (
+            ("--colortest",),
+            {
+                "dest": "colortest",
+                "action": "store_true",
+                "help": "test colors and exit",
             },
         ),
         "recompile": (
@@ -428,15 +467,6 @@ class Parser:
                 "help": "recompile programs and don't test",
             },
         ),
-        "idf_version": (
-            ("--idf-version",),
-            {
-                "dest": "idf_version",
-                "default": 2,
-                "help": "idf version [1 or 2] to use (default=2)",
-                "type": int,
-            },
-        ),
     }
 
     def __init__(self, description: str, arguments: Sequence[str]):
@@ -445,6 +475,8 @@ class Parser:
             args, kwargs = self.options.get(arg, (None, None))
             if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")
+            if "default" in kwargs and "help" in kwargs:
+                kwargs["help"] = kwargs["help"].format(kwargs["default"])
             self.parser.add_argument(*args, **kwargs)
 
     Args = TypeVar("Args", ArgsSample, ArgsGenerator, ArgsTester)

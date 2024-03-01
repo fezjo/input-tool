@@ -23,7 +23,7 @@ Pokiaľ potrebujete robiť zveriny, napríklad použiť viac generátorov na jed
 $ input-generator idf
 
 # Keď potrebujete, dá sa však spraviť mnoho iných vecí
-$ input-generator -i . -I input -g gen-special.cpp -qK < idf
+$ input-generator --input . --inext input -g gen-special.cpp -q < idf
 
 # Pre pochopenie predošlého riadku spustite
 $ input-generator -h

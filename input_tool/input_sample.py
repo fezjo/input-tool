@@ -14,7 +14,7 @@ from input_tool.common.messages import (
     infob,
     warning,
 )
-from input_tool.common.parser import ArgsSample, Parser
+from input_tool.common.parser import ArgsSample, Parser, sample_options
 from input_tool.common.recipes import Input, Sample, prepare_cumber
 
 description = """
@@ -23,20 +23,10 @@ Given task statement, create sample input and output files.
 """
 # TODO Can be used in opposite direction.
 # TODO smart -- detect prefix and multi.
-options = [
-    "indir",
-    "outdir",
-    "inext",
-    "outext",
-    "colorful",
-    "batchname",
-    "multi",
-    "task",
-]
 
 
 def parse_args() -> ArgsSample:
-    parser = Parser(description, options)
+    parser = Parser(description, sample_options)
     return parser.parse(ArgsSample)
 
 

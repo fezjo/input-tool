@@ -18,7 +18,7 @@ from input_tool.common.messages import (
     info,
     infob,
 )
-from input_tool.common.parser import ArgsGenerator, Parser
+from input_tool.common.parser import ArgsGenerator, Parser, generator_options
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
 from input_tool.common.tools_common import (
@@ -33,27 +33,10 @@ Input generator.
 Generate inputs based on input description file. Each line is provided as input to
 generator. Empty lines separate batches.
 """
-options = [
-    "indir",
-    "progdir",
-    "inext",
-    "compile",
-    "execute",
-    "gencmd",
-    "pythoncmd_gen",
-    "threads_gen",
-    "colorful",
-    "quiet",
-    "clearinput",
-    "noclearbin",
-    "clearbin",
-    "description",
-    "idf_version",
-]
 
 
 def parse_args() -> ArgsGenerator:
-    parser = Parser(description, options)
+    parser = Parser(description, generator_options)
     return parser.parse(ArgsGenerator)
 
 

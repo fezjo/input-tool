@@ -27,7 +27,7 @@ from input_tool.common.messages import (
     serialize_for_json,
     warning,
 )
-from input_tool.common.parser import ArgsTester, Parser
+from input_tool.common.parser import ArgsTester, Parser, tester_options
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.programs.solution import Solution
@@ -48,45 +48,13 @@ Test all given solutions on all inputs.
 By default, if outputs don't exits, use the first solution to generate them.
 By default, automatically decide, how to compile and run solution.
 """
-options = [
-    "indir",
-    "outdir",
-    "progdir",
-    "inext",
-    "outext",
-    "tempext",
-    "reset",
-    "timelimit",
-    "warntimelimit",
-    "memorylimit",
-    "diffcmd",
-    "showdiffoutput",
-    "compile",
-    "execute",
-    "nosort",
-    "colorful",
-    "colortest",
-    "quiet",
-    "stats",
-    "nostats",
-    "json",
-    "cleartemp",
-    "noclearbin",
-    "clearbin",
-    "programs",
-    "fskip",
-    "dupprog",
-    "pythoncmd_test",
-    "threads_test",
-    "rustime",
-    "recompile",
-]
+
 
 # ----------------- configuration ----------------
 
 
 def parse_args() -> ArgsTester:
-    parser = Parser(description, options)
+    parser = Parser(description, tester_options)
     return parser.parse(ArgsTester)
 
 
@@ -147,12 +115,10 @@ def create_programs_from_files(
 
 
 def create_checker(
-    checker: Optional[str], checker_files: list[str], show_diff_output: bool
+    checker: str, checker_files: list[str], show_diff_output: bool
 ) -> Checker:
     if checker is not None:
         checker_files = [checker]
-    if not checker_files:
-        checker_files.append("diff")
     if len(checker_files) > 1:
         fatal(
             f"More than one checker found {checker_files}.\n"
@@ -380,7 +346,7 @@ def main() -> None:
         (
             "progdir",
             "pythoncmd",
-            "fskip",
+            "fail_skip",
             "memorylimit",
             "quiet",
             "compile",
@@ -397,7 +363,7 @@ def main() -> None:
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, not args.dupprog)
-    checker = create_checker(args.diffcmd, checker_files, args.showdiffoutput)
+    checker = create_checker(args.diffcmd, checker_files, args.showdiff)
     if args.sort:
         solutions.sort()
     programs = [checker] + solutions

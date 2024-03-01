@@ -6,24 +6,22 @@
 input-tester:
   -h, --help
     show this help message and exit
-  -t TIMELIMIT, --time TIMELIMIT
-    set timelimit (default=3,cpp=1,py=5),
-    can be set to unlimited using 0 and optionally in per language format (example "2,py=0,cxx=0.5")
-  -F, --no-fskip
-    dont skip the rest of input files in the same batch after first fail
-  -R, --Reset
-    recompute outputs
-  -d, --diff
-    program which checks correctness of output (default=diff),
-    arguments given to program depends of prefix: diff $our $theirs, check $inp $our $theirs
-  -D, --show-diff-output
-    show shortened diff output on WA
-  --pythoncmd
-    what command is used to execute python, e.g. `python3` or `pypy3`
   -q, --quiet
     dont let subprograms print stuff
+  -R, --Reset
+    recompute outputs
+  -t TIMELIMIT, --time TIMELIMIT
+    set timelimit, 0 means unlimited and can be set in per language format (default: 3,cpp=1,py=5)
+  -d, --diff
+    program which checks correctness of output [format: `diff $our $theirs`, `check $inp $our $theirs`, rest in TESTER.MD] (default: diff)
+  -D, --show-diff-output
+    show shortened diff output on WA
+  -F, --no-fail-skip
+    dont skip the rest of input files in the same batch after first fail
+  --pythoncmd
+    what command is used to execute python, e.g. `python3` or `pypy3` (default: python3)
   -j THREADS, --threads THREADS
-    how many threads to use (default=4)
+    how many threads to use (default: 4)
   --json JSON
     also write output in json format to file
 ```

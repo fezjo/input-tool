@@ -96,7 +96,7 @@ class Langs:
 class Config:
     Timelimit = dict[Langs.Lang | str, timedelta]
 
-    fskip: bool
+    fail_skip: bool
     rus_time: bool
     timelimits: Timelimit = {Langs.Lang.unknown: timedelta(seconds=3)}
     warn_timelimits: Timelimit = {Langs.Lang.unknown: timedelta(0)}

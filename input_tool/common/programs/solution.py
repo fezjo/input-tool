@@ -299,7 +299,7 @@ class Solution(Program):
     ) -> None:
         batch = self.parse_batch(ifile)
         TASK_HISTORY.start(self.name, batch, ifile)
-        if Config.fskip and batch in self.statistics.failedbatches:
+        if Config.fail_skip and batch in self.statistics.failedbatches:
             TASK_HISTORY.end(self.name, batch, ifile, True)
             return
 
@@ -314,7 +314,9 @@ class Solution(Program):
 
         warntle = self.get_timelimit(Config.warn_timelimits)
         status = status.set_warntle(
-            warntle != timedelta(0) and run_times is not None and run_times[0] >= warntle
+            warntle != timedelta(0) and
+            run_times is not None and
+            run_times[0] >= warntle
         )
 
         self.record(ifile, status, run_times)

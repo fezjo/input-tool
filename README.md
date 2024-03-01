@@ -118,7 +118,7 @@ Príklady použitia:
 ```bash
 input-sample -h
 input-sample prikl1.md
-input-sample -p 0.sample < cesta/k/zadaniam/prikl2.md
+input-sample --batchname 0.sample < cesta/k/zadaniam/prikl2.md
 ```
 
 # `input-generator`
@@ -187,7 +187,7 @@ Dôležité je, aby program, ktorý generuje výstupy zbehol na všetkých vstup
 
 Neoptimálne riešenia by často bežali zbytočne dlho, ak vôbec aj dobehli. Tento argument nastaví časový limit v sekundách. Vie to byť desatinné číslo. Vie to byť rôzne pre jednotlivé jazyky. Napríklad `-t 1`, `t -0.5` alebo `-t "3,cpp=1,py=5"`.
 
-### `-F --no-fskip`
+### `-F --no-fail-skip`
 
 Štandardne sa programy, ktoré na niektorom vstupe zlyhali nevyhodnocujú na zvyšných testov v danej sade. Takto to funguje na niektorých súťažiach a urýchľuje to testovanie napríklad bruteforcov. Často však takéto správanie necheme a preto ho môžeme týmto argumentom vypnúť.
 
