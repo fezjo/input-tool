@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 # © 2024 fezjo
 # Unified script for input-tool
 import input_tool.common.parser.parser as itool_parser
-from input_tool.common.messages import color_test
-from input_tool.common.programs.checker import Checker
 
 
 def run_sample(args: itool_parser.specs.ArgsSample):
@@ -25,6 +24,7 @@ def run_tester(args: itool_parser.specs.ArgsTester):
 
 
 def run_compile(args: itool_parser.specs.ArgsCompile):
+    from input_tool.common.programs.checker import Checker
     from input_tool.input_tester import (
         create_programs_from_files,
         get_relevant_prog_files_deeper,
@@ -40,10 +40,14 @@ def run_compile(args: itool_parser.specs.ArgsCompile):
 
 
 def run_colortest(args: itool_parser.specs.ArgsColorTest):
+    from input_tool.common.messages import color_test
+
     color_test()
 
 
 def main():
+    unified_parser = itool_parser.UnifiedParser()
+    subcommand, args = unified_parser.parse()
     subcommand_funcs = {
         "sample": run_sample,
         "generate": run_generator,
@@ -51,8 +55,6 @@ def main():
         "compile": run_compile,
         "colortest": run_colortest,
     }
-    unified_parser = itool_parser.UnifiedParser()
-    subcommand, args = unified_parser.parse()
     subcommand_funcs[subcommand](args)
 
 

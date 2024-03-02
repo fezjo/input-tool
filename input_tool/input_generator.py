@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that helps generating inputs for contests

@@ -3,6 +3,8 @@
 import argparse
 from typing import Sequence, Type, TypeVar
 
+import argcomplete
+
 import input_tool.common.parser.specifications as specs
 from input_tool.common.parser.options import argument_options
 
@@ -78,6 +80,7 @@ class Parser:
     Args = TypeVar("Args", specs.ArgsSample, specs.ArgsGenerator, specs.ArgsTester)
 
     def parse(self, container: Type[Args]) -> Args:
+        argcomplete.autocomplete(self.parser)
         self.args = self.parser.parse_args()
         if self.args.full_help:
             self.full_help_parser.print_help()
@@ -232,6 +235,7 @@ class UnifiedParser:
         return (parser, full_help_parser)
 
     def parse(self) -> tuple[str, Args]:
+        argcomplete.autocomplete(self.parser)
         args = self.parser.parse_args()
         subcommand = args.subcommand
         if subcommand is None:

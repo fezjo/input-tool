@@ -36,6 +36,7 @@ itool = "input_tool.itool:main"
 python = "^3.10"
 requests = "^2.31.0"
 pyyaml = "^6.0.1"
+argcomplete = "^3.2.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.291"
