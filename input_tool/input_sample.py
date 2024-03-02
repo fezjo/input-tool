@@ -14,19 +14,20 @@ from input_tool.common.messages import (
     infob,
     warning,
 )
-from input_tool.common.parser import ArgsSample, Parser, sample_options
+from input_tool.common.parser.parser import Parser
+from input_tool.common.parser.specifications import (
+    ArgsSample,
+    description_sample,
+    options_sample,
+)
 from input_tool.common.recipes import Input, Sample, prepare_cumber
 
-description = """
-Input sample.
-Given task statement, create sample input and output files.
-"""
 # TODO Can be used in opposite direction.
 # TODO smart -- detect prefix and multi.
 
 
 def parse_args() -> ArgsSample:
-    parser = Parser(description, sample_options)
+    parser = Parser(description_sample, options_sample)
     return parser.parse(ArgsSample)
 
 
@@ -142,8 +143,7 @@ def prepare_dirs(dirs: Sequence[str]) -> None:
             os.makedirs(d)
 
 
-def main() -> None:
-    args = parse_args()
+def run(args: ArgsSample) -> None:
     Color.setup(args.colorful)
     prepare_cumber(args.batchname)
 
@@ -166,6 +166,11 @@ def main() -> None:
         sample.save()
 
     info(str(default_logger.statistics))
+
+
+def main():
+    args = parse_args()
+    run(args)
 
 
 if __name__ == "__main__":

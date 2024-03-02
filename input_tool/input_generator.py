@@ -18,7 +18,12 @@ from input_tool.common.messages import (
     info,
     infob,
 )
-from input_tool.common.parser import ArgsGenerator, Parser, generator_options
+from input_tool.common.parser.parser import Parser
+from input_tool.common.parser.specifications import (
+    ArgsGenerator,
+    description_generator,
+    options_generator,
+)
 from input_tool.common.programs.generator import Generator
 from input_tool.common.recipes import Input, Recipe
 from input_tool.common.tools_common import (
@@ -28,15 +33,9 @@ from input_tool.common.tools_common import (
     setup_config,
 )
 
-description = """
-Input generator.
-Generate inputs based on input description file. Each line is provided as input to
-generator. Empty lines separate batches.
-"""
-
 
 def parse_args() -> ArgsGenerator:
-    parser = Parser(description, generator_options)
+    parser = Parser(description_generator, options_generator)
     return parser.parse(ArgsGenerator)
 
 
@@ -127,8 +126,7 @@ def generate_all(
     infob("Done")
 
 
-def main() -> None:
-    args = parse_args()
+def run(args: ArgsGenerator) -> None:
     setup_config(args, ("progdir", "quiet", "compile", "execute"))
 
     recipe = get_recipe(args.description, args.idf_version)
@@ -148,6 +146,11 @@ def main() -> None:
     check_data_folder_size(args.indir)
     check_for_updates()
     info(str(default_logger.statistics))
+
+
+def main():
+    args = parse_args()
+    run(args)
 
 
 if __name__ == "__main__":

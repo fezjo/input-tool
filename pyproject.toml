@@ -28,6 +28,7 @@ exclude = ["tests", ".git*"]
 input-sample = "input_tool.input_sample:main"
 input-generator = "input_tool.input_generator:main"
 input-tester = "input_tool.input_tester:main"
+itool = "input_tool.itool:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"

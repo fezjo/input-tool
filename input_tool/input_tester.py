@@ -27,7 +27,12 @@ from input_tool.common.messages import (
     serialize_for_json,
     warning,
 )
-from input_tool.common.parser import ArgsTester, Parser, tester_options
+from input_tool.common.parser.parser import Parser
+from input_tool.common.parser.specifications import (
+    ArgsTester,
+    description_tester,
+    options_tester,
+)
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.programs.solution import Solution
@@ -42,19 +47,11 @@ from input_tool.common.tools_common import (
     setup_config,
 )
 
-description = """
-Input tester.
-Test all given solutions on all inputs.
-By default, if outputs don't exits, use the first solution to generate them.
-By default, automatically decide, how to compile and run solution.
-"""
-
-
 # ----------------- configuration ----------------
 
 
 def parse_args() -> ArgsTester:
-    parser = Parser(description, tester_options)
+    parser = Parser(description_tester, options_tester)
     return parser.parse(ArgsTester)
 
 
@@ -340,8 +337,7 @@ def check_too_long_tests(
 # --------------------- FLOW ---------------------
 
 
-def main() -> None:
-    args = parse_args()
+def run(args: ArgsTester) -> None:
     if args.colortest:
         color_test()
         quit()
@@ -380,13 +376,13 @@ def main() -> None:
     if not args.dupprog:
         solutions = deduplicate_solutions(solutions)
 
+    if args.recompile:
+        quit()
+
     for s in solutions:
         Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
     Config.inside_oneline = len(solutions) <= 1
     print_solutions_run_commands(solutions)
-
-    if args.recompile:
-        quit()
 
     inputs = get_inputs(args)
     _outputs = get_outputs(inputs, args)
@@ -408,6 +404,11 @@ def main() -> None:
             output.append(sol.get_json())
         with open(args.json, "w") as f:
             json.dump(output, f, default=serialize_for_json)
+
+
+def main():
+    args = parse_args()
+    run(args)
 
 
 if __name__ == "__main__":

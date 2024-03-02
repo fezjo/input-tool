@@ -15,7 +15,7 @@ from input_tool.common.messages import (
     plain,
     warning,
 )
-from input_tool.common.parser import ArgsGenerator, ArgsTester
+from input_tool.common.parser.specifications import ArgsGenerator, ArgsTester
 from input_tool.common.programs.program import Program
 
 

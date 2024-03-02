@@ -35,6 +35,7 @@
 <details>
 <summary>Nemergnuté zmeny</summary>
 
+- **Zjednotený nástroj `itool`**
 - **Zjednodušené CLI parametre, BREAKING CHANGE**
 - **Podpora starého formátu IDF**
 - **Varovania pre dlhé behy a objemné vstupno-výstupné dáta**
