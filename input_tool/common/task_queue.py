@@ -1,3 +1,4 @@
+# © 2023 fezjo
 import threading
 from collections import deque
 from concurrent.futures.thread import _WorkItem

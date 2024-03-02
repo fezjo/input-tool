@@ -1,3 +1,4 @@
+# © 2024 fezjo
 from dataclasses import dataclass, field
 from typing import Any
 

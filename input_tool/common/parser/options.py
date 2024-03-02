@@ -1,3 +1,4 @@
+# © 2024 fezjo
 from typing import Any, Type, TypedDict
 
 

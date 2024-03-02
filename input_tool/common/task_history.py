@@ -1,3 +1,4 @@
+# © 2023 fezjo
 import threading
 import time
 from dataclasses import dataclass
