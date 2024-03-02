@@ -10,7 +10,7 @@ import shutil
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Union
 
 from input_tool.common.commands import Config, Langs, get_statistics_header
 from input_tool.common.messages import (
@@ -95,8 +95,8 @@ def get_relevant_prog_files_deeper(candidates: Sequence[str]) -> list[str]:
 
 def create_programs_from_files(
     files: Sequence[str], deduplicate: bool
-) -> tuple[list[Solution | Validator], list[str]]:
-    solutions: list[Solution | Validator] = []
+) -> tuple[list[Union[Solution, Validator]], list[str]]:
+    solutions: list[Union[Solution, Validator]] = []
     checker_files: list[str] = []
     if deduplicate:  # remove duplicate paths keeping order
         files = list(dict.fromkeys(files))
@@ -125,10 +125,10 @@ def create_checker(
 
 
 def deduplicate_solutions(
-    solutions: Sequence[Solution | Validator],
-) -> list[Solution | Validator]:
+    solutions: Sequence[Union[Solution, Validator]],
+) -> list[Union[Solution, Validator]]:
     d: dict[str, Program] = {}
-    res: list[Solution | Validator] = []
+    res: list[Union[Solution, Validator]] = []
     for s in solutions:
         key = s.run_cmd
         if key in d:
@@ -142,7 +142,9 @@ def deduplicate_solutions(
     return res
 
 
-def print_solutions_run_commands(solutions: Sequence[Solution | Validator]) -> None:
+def print_solutions_run_commands(
+    solutions: Sequence[Union[Solution, Validator]]
+) -> None:
     infob("----- Run commands -----")
     for s in solutions:
         infob(f"Program {s.name:{Config.cmd_maxlen}}   is ran as `{s.run_cmd}`")
@@ -220,7 +222,7 @@ def general_run_sol(
 
 
 def test_all(
-    solutions: Sequence[Solution | Validator],
+    solutions: Sequence[Union[Solution, Validator]],
     checker: Checker,
     inputs: Sequence[str],
     threads: int,
@@ -310,7 +312,7 @@ def test_all(
 
 
 def print_summary(
-    solutions: Sequence[Solution | Validator], inputs: Sequence[str]
+    solutions: Sequence[Union[Solution, Validator]], inputs: Sequence[str]
 ) -> None:
     info("")
     info(get_statistics_header(inputs))
@@ -319,7 +321,7 @@ def print_summary(
 
 
 def check_too_long_tests(
-    solutions: Sequence[Solution | Validator], timelitmit: timedelta
+    solutions: Sequence[Union[Solution, Validator]], timelitmit: timedelta
 ) -> None:
     accepted = [s for s in solutions if s.statistics.result == Status.ok]
     if not accepted:

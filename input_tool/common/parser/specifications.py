@@ -1,6 +1,6 @@
 # © 2024 fezjo
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Union
 
 description_sample = """
 Input sample.
@@ -31,7 +31,7 @@ class ArgsSample:
     multi: bool
     batchname: str
     colorful: bool
-    task: str | None
+    task: Union[str, None]
     deprecated: list[Any] = field(default_factory=list)
 
 
@@ -137,7 +137,7 @@ class ArgsTester:
     colorful: bool
     quiet: bool
     stats: bool
-    json: str | None
+    json: Union[str, None]
     cleartemp: bool
     clearbin: bool
     reset: bool

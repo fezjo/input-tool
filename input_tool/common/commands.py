@@ -35,7 +35,7 @@ program.ext      -- If .pyX, run as 'pythonX program.ext. py = py3
 import os
 from datetime import timedelta
 from enum import Enum
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Union
 
 from input_tool.common.messages import table_header
 from input_tool.common.os_config import OsConfig
@@ -82,7 +82,7 @@ class Langs:
         return Langs.from_ext(ext)
 
     @staticmethod
-    def from_ext(ext: str | None) -> Lang:
+    def from_ext(ext: Union[str, None]) -> Lang:
         for lang in Langs.Lang:
             if ext in Langs.ext[lang]:
                 return lang
@@ -94,7 +94,7 @@ class Langs:
 
 
 class Config:
-    Timelimit = dict[Langs.Lang | str, timedelta]
+    Timelimit = dict[Union[Langs.Lang, str], timedelta]
 
     fail_skip: bool
     rus_time: bool

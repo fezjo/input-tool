@@ -3,7 +3,7 @@
 import subprocess
 from collections import defaultdict
 from threading import Event
-from typing import Optional
+from typing import Optional, Union
 
 from input_tool.common.commands import to_base_alnum
 from input_tool.common.messages import Logger, default_logger, fit_text_into_screen
@@ -23,7 +23,7 @@ class Checker(Program):
             self.forceexecute = True
 
     @staticmethod
-    def filename_befits(filename: str) -> str | None:
+    def filename_befits(filename: str) -> Union[str, None]:
         filename = to_base_alnum(filename)
         prefixes = ["diff", "check", "chito", "tester"]
         for prefix in prefixes:
@@ -34,7 +34,7 @@ class Checker(Program):
     def compare_mask(self) -> tuple[int, int, str]:
         return (-3, 0, self.name)
 
-    def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> str | None:
+    def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> Union[str, None]:
         diff_map = {
             "diff": " %s %s" % (ofile, tfile),
             "check": " %s %s %s > /dev/null" % (ifile, ofile, tfile),

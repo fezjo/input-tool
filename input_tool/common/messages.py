@@ -9,7 +9,7 @@ import sys
 import threading
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Sequence, TextIO, TypeVar
+from typing import Any, Optional, Sequence, TextIO, TypeVar, Union
 
 
 def register_quit_signal() -> None:
@@ -36,7 +36,7 @@ class Status(Enum):
         return self.value[0]
 
     @property
-    def warntle(self) -> bool | None:
+    def warntle(self) -> Union[bool, None]:
         return self.value[1]
 
     def __eq__(self, other: object) -> bool:
@@ -45,7 +45,7 @@ class Status(Enum):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def set_warntle(self, state: bool | None = True) -> Status:
+    def set_warntle(self, state: Union[bool, None] = True) -> Status:
         return Status((self.id, None if self.warntle is None else state))
 
     def __str__(self) -> str:
@@ -113,12 +113,12 @@ class Color:
         return Color.scores[p]
 
     @staticmethod
-    def status_colorize(status: Status, text: Any, end: Color | None = None) -> str:
+    def status_colorize(status: Status, text: Any, end: Optional[Color] = None) -> str:
         color = Color.infog if status in (Status.ok, Status.valid) else Color.warning
         return Color.colorize(text, color, end)
 
     @staticmethod
-    def colorize(text: Any, color: Color, end: Color | None = None) -> str:
+    def colorize(text: Any, color: Color, end: Optional[Color] = None) -> str:
         return "%s%s%s" % (color, text, end or Color.normal)
 
 

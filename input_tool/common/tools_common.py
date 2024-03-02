@@ -4,7 +4,7 @@ import os
 import signal
 import sys
 from concurrent.futures import Executor, ThreadPoolExecutor
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Union
 
 from input_tool.common import os_config
 from input_tool.common.commands import Config
@@ -30,7 +30,9 @@ def register_quit_with_executor(executor: Executor) -> None:
     signal.signal(signal.SIGUSR1, lambda *_: quit_with_executor(1))
 
 
-def setup_config(args: ArgsTester | ArgsGenerator, config_keys: Iterable[str]) -> None:
+def setup_config(
+    args: Union[ArgsTester, ArgsGenerator], config_keys: Iterable[str]
+) -> None:
     Color.setup(args.colorful)
 
     if args.deprecated:
