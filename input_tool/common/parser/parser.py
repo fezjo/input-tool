@@ -17,6 +17,25 @@ def MyHelpFormatterFactory(_full_mode: bool) -> Type[argparse.HelpFormatter]:
         mode_prefix = "[?]"
         full_mode = _full_mode
 
+        def _format_action_invocation(self, action):
+            if not action.option_strings:
+                default = self._get_default_metavar_for_positional(action)
+                (metavar,) = self._metavar_formatter(action, default)(1)
+                return metavar
+
+            else:
+                options = sorted(action.option_strings, key=len)
+                if len(options[0]) != 2:  # align long only options
+                    options = ["  "] + options
+                res = "  ".join(options)
+
+                if action.nargs != 0:
+                    default = self._get_default_metavar_for_optional(action)
+                    args_string = self._format_args(action, default)
+                    res += " " + args_string
+
+                return res
+
         def _format_action(self, action):
             if action.help is None:
                 return super()._format_action(action)

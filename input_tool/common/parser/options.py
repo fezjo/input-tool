@@ -47,6 +47,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "indir",
             "default": "test",
+            "metavar": "DIR",
             "help": "[?] directory with input files (default: {})",
         },
         "naming",
@@ -56,6 +57,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "outdir",
             "default": "test",
+            "metavar": "DIR",
             "help": "[?] directory for output and temporary files (default: {})",
         },
         "naming",
@@ -65,6 +67,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "progdir",
             "default": "prog",
+            "metavar": "DIR",
             "help": "[?] directory where programs compile to, "
             'compile next to source file if set to "" (default: {})',
         },
@@ -75,6 +78,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "inext",
             "default": "in",
+            "metavar": "EXT",
             "help": "[?] extension of input files (default: {})",
         },
         "naming",
@@ -84,6 +88,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "outext",
             "default": "out",
+            "metavar": "EXT",
             "help": "[?] extension of output files (default: {})",
         },
         "naming",
@@ -93,6 +98,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "tempext",
             "default": "temp",
+            "metavar": "EXT",
             "help": "[?] extension of temporary files (default: {})",
         },
         "naming",
@@ -111,6 +117,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "batchname",
             "default": "00.sample",
+            "metavar": "NAME",
             "help": "[?] batch name (default: {})",
         },
         "naming",
@@ -242,6 +249,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
             "dest": "idf_version",
             "default": 2,
             "type": int,
+            "metavar": "NUM",
             "help": "idf version [1 or 2] to use (default: {})",
         },
         "generating",
@@ -261,6 +269,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "timelimit",
             "default": "3,cpp=1,py=5",
+            "metavar": "LIMIT",
             "help": "set timelimit, 0 means unlimited "
             + "and can be set in per language format (default: {})",
         },
@@ -271,6 +280,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "warntimelimit",
             "default": "auto",
+            "metavar": "LIMIT",
             "help": "set tight timelimit warning time, "
             + "same format as for regular timelimit (default: {})",
         },
@@ -282,6 +292,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
             "dest": "memorylimit",
             "default": 0,
             "type": float,
+            "metavar": "MB",
             "help": "set memorylimit, 0 means unlimited (default: {})",
         },
         "testing",
@@ -322,6 +333,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "pythoncmd",
             "default": "pypy3",
+            "metavar": "CMD",
             "help": "what command is used to execute python, "
             + "e.g. `python3` or `pypy3` (default: {})",
         },
@@ -332,6 +344,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "pythoncmd",
             "default": "python3",
+            "metavar": "CMD",
             "help": "what command is used to execute python, "
             + "e.g. `python3` or `pypy3` (default: {})",
         },
@@ -343,6 +356,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
             "dest": "threads",
             "default": 6,
             "type": int,
+            "metavar": "NUM",
             "help": "how many threads to use (default: {})",
         },
         "running",
@@ -353,6 +367,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
             "dest": "threads",
             "default": 4,
             "type": int,
+            "metavar": "NUM",
             "help": "how many threads to use (default: {})",
         },
         "running",
