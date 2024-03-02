@@ -105,7 +105,7 @@ Všetky príkazy sú dostupné pod jedným príkazom `itool`. Tento príkaz má 
 - `generate` (alebo `g`)
 - `sample` (alebo `s`)
 - `test` (alebo `t`)
-- `compile` (alebo `c`)
+- `compile` (alebo `c`), `colortest`, `checkupdates`
 
 # `itool sample`
 

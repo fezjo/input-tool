@@ -1,6 +1,9 @@
 # © 2024 fezjo
+from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Any, Union
+
+ArgsGeneric = Namespace
 
 description_sample = """
 Input sample.
@@ -176,14 +179,14 @@ class ArgsCompile:
 
 
 description_colortest = """
-Test colors and exit.
+Test colors.
+Test color support of terminal by printing all of them and exit.
 """
-short_description_colortest = "Test colors and exit."
-options_colortest = [
-    "help",
-]
+short_description_colortest = "Test colors by printing all of them and exit."
 
-
-@dataclass
-class ArgsColorTest:
-    deprecated: list[Any] = field(default_factory=list)
+description_checkupdates = """
+Check for updates.
+Check for updates by fetching latest github release.
+Print a message if a newer version is available.
+"""
+short_description_checkupdates = "Check for updates."

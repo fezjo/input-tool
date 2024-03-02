@@ -110,11 +110,11 @@ class Parser:
 class UnifiedParser:
     Args = TypeVar(
         "Args",
+        specs.ArgsGeneric,
         specs.ArgsSample,
         specs.ArgsGenerator,
         specs.ArgsTester,
         specs.ArgsCompile,
-        specs.ArgsColorTest,
     )
 
     def __init__(self):
@@ -159,7 +159,17 @@ class UnifiedParser:
             (),
             specs.description_colortest,
             specs.short_description_colortest,
-            specs.options_colortest,
+            ["help"],
+        )
+        (
+            self.checkupdates_parser,
+            self.checkupdates_full_help_parser,
+        ) = self.add_subparser(
+            "checkupdates",
+            (),
+            specs.description_checkupdates,
+            specs.short_description_checkupdates,
+            ["help"],
         )
 
         self.alias_mapping = {
@@ -172,6 +182,7 @@ class UnifiedParser:
             "compile": "compile",
             "c": "compile",
             "colortest": "colortest",
+            "checkupdates": "checkupdates",
         }
         self.mapping = {
             "sample": (
@@ -197,7 +208,12 @@ class UnifiedParser:
             "colortest": (
                 self.colortest_parser,
                 self.colortest_full_help_parser,
-                specs.ArgsColorTest,
+                argparse.Namespace,
+            ),
+            "checkupdates": (
+                self.checkupdates_parser,
+                self.checkupdates_full_help_parser,
+                argparse.Namespace,
             ),
         }
 

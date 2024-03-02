@@ -39,10 +39,16 @@ def run_compile(args: itool_parser.specs.ArgsCompile):
     prepare_programs(programs, max(4, args.threads))
 
 
-def run_colortest(args: itool_parser.specs.ArgsColorTest):
+def run_colortest(args: itool_parser.specs.ArgsGeneric):
     from input_tool.common.messages import color_test
 
     color_test()
+
+
+def run_checkupdates(args: itool_parser.specs.ArgsGeneric):
+    from input_tool.common.check_updates import main
+
+    main()
 
 
 def main():
@@ -54,6 +60,7 @@ def main():
         "test": run_tester,
         "compile": run_compile,
         "colortest": run_colortest,
+        "checkupdates": run_checkupdates,
     }
     subcommand_funcs[subcommand](args)
 

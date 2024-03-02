@@ -46,6 +46,10 @@ def check_for_updates() -> None:
         warning(f"Could not check for updates! An error occurred:\n{e!r}")
 
 
-if __name__ == "__main__":
+def main():
     check_for_updates()
     info(str(default_logger.statistics))
+
+
+if __name__ == "__main__":
+    main()
