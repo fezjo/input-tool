@@ -413,6 +413,13 @@ def run(args: ArgsTester) -> None:
         with open(args.json, "w") as f:
             json.dump(output, f, default=serialize_for_json)
 
+    # TODO check if parallel testing slows down the testing
+    if args.threads > 1:
+        infob(
+            "Make sure to verify whether parallel testing significantly "
+            "impacts the program's execution speed."
+        )
+
 
 def main():
     args = parse_args()
