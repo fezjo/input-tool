@@ -255,7 +255,7 @@ class Logger:
         self.write(text, "")
 
 
-default_logger = Logger()
+default_logger = Logger(sys.stdout)
 fatal = default_logger.fatal
 error = default_logger.error
 warning = default_logger.warning
