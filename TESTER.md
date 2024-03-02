@@ -3,7 +3,7 @@
 ### Užitočné prepínače
 
 ```
-input-tester:
+itool test:
   -h, --help
     show this help message and exit
   --help-all

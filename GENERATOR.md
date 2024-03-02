@@ -10,26 +10,26 @@ Generátor sa bežne volá `gen` (príponu si `input-tool` vie domyslieť, takž
 
 Keď chcete commitnúť vstupy na git, commitujete zdrojový kód generátoru a `idf`, nie binárku a vygenerované vstupy.
 
-O zvyšné veci by sa mal postarať `input-generator`.
+O zvyšné veci by sa mal postarať `itool generate`.
 
 ### Spúšťanie
 
-Pokiaľ robíte vstupy do KSP, odporúčané je púšťať `input-generator idf` bez prepínačov, aby ostatní vedúci vedeli vygenerovať rovnaké vstupy. Prepínače slúžia hlavne na to, ak robíte vstupy pre nejakú inú súťaž, kde sú iné prípony/ iná priečinková štruktúra. Iné prepínače zasa pomáhajú pri debugovaní.
+Pokiaľ robíte vstupy do KSP, odporúčané je púšťať `itool generate idf` bez prepínačov, aby ostatní vedúci vedeli vygenerovať rovnaké vstupy. Prepínače slúžia hlavne na to, ak robíte vstupy pre nejakú inú súťaž, kde sú iné prípony/ iná priečinková štruktúra. Iné prepínače zasa pomáhajú pri debugovaní.
 
 Pokiaľ potrebujete robiť zveriny, napríklad použiť viac generátorov na jednu úlohu, toto sa dá špecifikovať v IDF.
 
 ```
 # Odporúčané je použiť defaultný tvar:
-$ input-generator idf
+$ itool generate idf
 
 # Keď potrebujete, dá sa však spraviť mnoho iných vecí
-$ input-generator --input . --inext input -g gen-special.cpp -q < idf
+$ itool generate --input . --inext input -g gen-special.cpp -q < idf
 
 # Pre pochopenie predošlého riadku spustite
-$ input-generator -h
+$ itool generate -h
 ```
 
-**Pozor** si treba dávať na to, že `input-generator`, ak mu nepovieme prepínačom inak, zmaže všetky staré vstupy, okrem samplov.
+**Pozor** si treba dávať na to, že `itool generate`, ak mu nepovieme prepínačom inak, zmaže všetky staré vstupy, okrem samplov.
 
 # Používaj IDF ako mág
 
@@ -56,7 +56,7 @@ Sady v IDF oddeľujeme práznymi riadkami. Sady sú číslované `1`..`9`, ak je
 1000 1000000 nahodne
 ```
 
-Vyrobí postupne vstupy `1.a.in`, `1.b.in`, `1.c.in`, `2.a.in`, `2.b.in`. V tomto návode (aj v tom, čo vypisuje `input-generator`) sa používa nasledovná notácia
+Vyrobí postupne vstupy `1.a.in`, `1.b.in`, `1.c.in`, `2.a.in`, `2.b.in`. V tomto návode (aj v tom, čo vypisuje `itool generate`) sa používa nasledovná notácia
 
 ```
 1.a.in  <  10 1000 ciara
@@ -95,7 +95,7 @@ Vyrobí vstupy podľa:
 2.c.in  <  {name} {id}
 ```
 
-**Ak chcete niečim inicializovať `seed` vo svojom generátore, tak rozumný nápad je `{id}`**, pretože to je deterministické a zároveň unikátne pre každý vstup. Deterministické vstupy majú výhodu, že ak niekto iný pustí `input-generator` s rovnakými parametrami a rovnakým IDF, dostane rovnaké vstupy.
+**Ak chcete niečim inicializovať `seed` vo svojom generátore, tak rozumný nápad je `{id}`**, pretože to je deterministické a zároveň unikátne pre každý vstup. Deterministické vstupy majú výhodu, že ak niekto iný pustí `itool generate` s rovnakými parametrami a rovnakým IDF, dostane rovnaké vstupy.
 
 ## Efekty znakov '`#`', '`$`', '`~`', `\`'
 
@@ -128,7 +128,7 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
 
 - Mám Bujov generátor a Janov generátor, každý má svoj IDF. Chcem aby neboli kolízie medzi názvami vstupov.  
    _Riešenie:_
-  Na začiatku Bujovho IDF dáme `$ class: b` a na začiatku Janovho `$ class: j`. Pustím `input-generator -g gen-buj idf-buj && input-generator -g gen-jano idf-jano -k` a vygeneruje mi to vstupy s disjunktnými názvami (napr. `1.ba.in` a `1.ja.in`). Všimnite si `-k` v druhom spustení, ktoré spôsobí, aby sa nezmazali Bujove vstupy.
+  Na začiatku Bujovho IDF dáme `$ class: b` a na začiatku Janovho `$ class: j`. Pustím `itool generate -g gen-buj idf-buj && itool generate -g gen-jano idf-jano -k` a vygeneruje mi to vstupy s disjunktnými názvami (napr. `1.ba.in` a `1.ja.in`). Všimnite si `-k` v druhom spustení, ktoré spôsobí, aby sa nezmazali Bujove vstupy.
 - Mám tri generátory, a chcem mať len jeden IDF.  
   _Riešenie:_ Použijem `$ gen: nazovgeneratora`, na správnych miestach.
 - Chcem vygenerovať aj sample.  

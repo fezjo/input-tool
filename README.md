@@ -36,7 +36,7 @@
 <summary>Nemergnuté zmeny</summary>
 
 - **Zjednotený nástroj `itool`**
-- **Zjednodušené CLI parametre, BREAKING CHANGE**
+- **Okresané CLI parametre, BREAKING CHANGE**
 - **Podpora starého formátu IDF**
 - **Varovania pre dlhé behy a objemné vstupno-výstupné dáta**
 - **Podpora MacOS**
@@ -44,7 +44,7 @@
 - **Rozšírená funkcionalita IDF o podporu YAML a `!eval`**
 - **Poetry manager**
 - Kontrola aktualizácií pri spustení generátora
-- Podpora priečinka ako argument pre `input-generator` a `input-sample` &ndash; automatické načítanie IDF a zadania
+- Podpora priečinka ako argument pre `itool generate` a `itool sample` &ndash; automatické načítanie IDF a zadania
 - Automatický varovný timelimit tesných riešení
 - **Možnosť výpisať výstup hodnotiča pri WA** (pomocou prepínača `-D`)
 - **Kompilovanie do samostatného priečinku** `prog/` (zmena pomocou prepínača `--progdir`)
@@ -61,20 +61,19 @@
 
 ```bash
 # napíšeme si riešenia, generátor, idf a potom:
-input-sample . # priečinok so zadanie.md
-input-generator .
-input-tester .
+itool s . # priečinok so zadanie.md
+itool g .
+itool t .
 
-# o pomoc požiadame `input-<program> -h`, napríklad:
-input-generator -h
+# o pomoc požiadame `itool [podpríkaz] -h`, napríklad:
+itool t -h
 ```
 
 # `input-tool`
 
-Nástroj, ktorý výrazne zjednodušuje vytváranie a testovanie vstupov pre súťažné programátorské príklady. Skladá sa z troch častí &ndash; **`input-sample`**, **`input-generator`** a **`input-tester`**.
+Nástroj, ktorý výrazne zjednodušuje vytváranie a testovanie vstupov pre súťažné programátorské príklady. Umožňuje automatizovane generovať vstupy, vytvárať vzorové výstupy, kompilovať a testovať riešenia, merať čas ich behu, ...
 
 ## Inštalácia
-
 
 Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, ale pod **WSL** by to malo ísť bez problémov.
 
@@ -84,7 +83,7 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
    - Potrebujete kompilátory C/C++ (`gcc/clang/...`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
    - Na **MacOS** potrebujete nainštalovať `coreutils` a `gcc`
      - všetko potrebné napríklad pomocou `brew install coreutils gcc make python3`
-   - _Nepovinne_ `time` (Linux) / `gnu-time` (MacOS)  (nestačí bashová funkcia) ak chceme _Real/User/System_ časy
+   - _Nepovinne_ `time` (Linux) / `gnu-time` (MacOS) (nestačí bashová funkcia) ak chceme _Real/User/System_ časy
 
 2. Nainštalujte cez `pip`:
 
@@ -93,25 +92,22 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
    # alebo ak nemáte pipx
    pip3 install --break-system-packages input-tool
 
-   # alebo
-   pip3 install git+https://github.com/fezjo/input-tool.git
-   # alebo
-   git clone git@github.com:fezjo/input-tool.git
-   pip3 install -e .
-   # nezabudnite mať inštalačný priečinok v PATH
-   ```
-
-   Aktualizuje sa pomocou:
-
-   ```bash
+   # aktualizujeme podobne
    pipx upgrade input-tool
    # alebo
-   pip3 install -U --break-system-packages git+https://github.com/fezjo/input-tool.git
-   # alebo
-   git pull
+   pip3 install -U --break-system-packages input-tool
    ```
 
-# `input-sample`
+# `itool`
+
+Všetky príkazy sú dostupné pod jedným príkazom `itool`. Tento príkaz má niekoľko podpríkazov, ktoré sa dajú spustiť pomocou `itool <subcommand>`. Tieto podpríkazy sú:
+
+- `generate` (alebo `g`)
+- `sample` (alebo `s`)
+- `test` (alebo `t`)
+- `compile` (alebo `c`)
+
+# `itool sample`
 
 Tento skript dostane na vstupe (alebo ako argument) zadanie príkladu. Vyrobí (defaultne v priečinku `./test`) sample vstupy a sample výstupy pre tento príklad.
 
@@ -120,16 +116,16 @@ Defaultne pomenúva súbory `00.sample.in` resp. `00.sample.x.in`, ak je ich via
 Príklady použitia:
 
 ```bash
-input-sample -h
-input-sample prikl1.md
-input-sample --batchname 0.sample < cesta/k/zadaniam/prikl2.md
+itool sample -h
+itool sample prikl1.md
+itool sample --batchname 0.sample < cesta/k/zadaniam/prikl2.md
 ```
 
-# `input-generator`
+# `itool generate`
 
 1. Najskôr treba nakódiť **generátor**, ktorý nazvite `gen` (teda napr. `gen.cpp` alebo `gen.py`).
 2. Následne vytvoríte **IDF**, vysvetlené nižšie.
-3. Spustíte `input-generator` pomocou `input-generator idf` a tešíte sa.
+3. Spustíte generátor pomocou `itool generate idf` a tešíte sa.
 
 ## Generátor
 
@@ -139,7 +135,7 @@ Dávajte si pozor, aby bol vypísaný vstup korektný, žiadne medzery na koncoc
 
 ```bash
 # Odporúčané je použiť základný tvar:
-input-generator .
+itool generate .
 ```
 
 ## IDF
@@ -165,17 +161,17 @@ $ hran: !eval 1e6
 
 Vyrobí postupne vstupy `1.a.in`, `1.b.in`, `1.c.in`, `2.a.in`, `2.b.in`.
 
-**Ak chcete niečim inicializovať `seed` vo svojom generátore, tak rozumný nápad je `{id}`**, pretože to je deterministické a zároveň unikátne pre každý vstup. Deterministické vstupy majú výhodu, že ak niekto iný pustí `input-generator` s rovnakými parametrami a rovnakým IDF, dostane rovnaké vstupy.
+**Ak chcete niečim inicializovať `seed` vo svojom generátore, tak rozumný nápad je `{id}`**, pretože to je deterministické a zároveň unikátne pre každý vstup. Deterministické vstupy majú výhodu, že ak niekto iný pustí `itool generate` s rovnakými parametrami a rovnakým IDF, dostane rovnaké vstupy.
 
-# `input-tester`
+# `itool test`
 
 Cieľom tohto skriptu je otestovať všetky riešenia na vstupoch, overiť, či dávajú správne výstupy, zmerať čas behu a podobne.
 
 **Pozor**, slúži to len na domáce testovanie, netestujte tým nejaké reálne kontesty, kde môžu užívatelia submitovať čo chcú. Nemá to totiž žiaden sandbox ani žiadnu ochranu pred neprajníkmi.
 
-`input-tester` sa používa veľmi jednoducho. Iba spustíte `input-tester <zoznam riešení>` a ono to porobí všetko samé.
+`itool test` sa používa veľmi jednoducho. Iba spustíte `itool test <zoznam riešení>` a ono to porobí všetko samé.
 
-Odporúčame mať na konci `.bashrc` alebo pri spustení terminálu nastaviť kompilátory podobne ako sú na testovači, teda napríklad `export CXXFLAGS="-O2 -std=gnu++11 -Wno-unused-result -DDG=1"`, avšak `input-tester` má nastavené rozumné predvolené hodnoty.
+Odporúčame mať na konci `.bashrc` alebo pri spustení terminálu nastaviť kompilátory podobne ako sú na testovači, teda napríklad `export CXXFLAGS="-O2 -std=gnu++11 -Wno-unused-result -DDG=1"`, avšak `itool test` má nastavené rozumné predvolené hodnoty.
 
 Riešenia pomenúvame s prefixom '`sol`' štýlom `sol-<hodnotenie>-<autor>-<algoritmus>-<zlozitost>.<pripona>`. Teda názov má podmnožinu týchto častí v tomto poradí, teda napríklad `sol-75-fero-zametanie-n2.cpp` alebo `sol-100-dezo.py`. Validátor má prefix '`val`', prípadný hodnotič '`check`'.
 
@@ -219,27 +215,27 @@ Kompilovanie, generovanie aj testovanie vieme značne urýchliť paralelizáciou
 
 ```bash
 # pomoc!
-input-tester -h
+itool test -h
 # najzákladnejšie použitie, keď máme všetko v aktuálnom priečinku
-input-tester .
+itool test .
 # chceme spustiť iba vzorové riešenia
-input-tester sol-100*
+itool test sol-100*
 # chceme vidieť na ktorých všetkých vstupoch programy nefungujú (nielen na ktorých
 # sadách), chceme vidieť ako sa líšia od vzorového výstupu a robíme to sériovo
-input-tester -FD -j 1 .
+itool test -FD -j 1 .
 # bežné použitie, ak si dáme všetky riešenia do priečinku `sols`
-input-tester -t "3,cpp=0.5,py=5" sols .
+itool test -t "3,cpp=0.5,py=5" sols .
 # ak požívame názvoslovie ktoré input-tool nevie dobre rozpoznať, môžeme najprv
 # spustiť vzorové riešenie ktoré vygeneruje výstupy a následne použiť wildcardy
-input-tester -R vzorove-riesenie.py
-input-tester . vzor* ries* program2.cpp cokolvek.py
+itool test -R vzorove-riesenie.py
+itool test . vzor* ries* program2.cpp cokolvek.py
 ```
 
 # Pokročilé
 
-Ak chcete vedieť, aké cool veci navyše dokážu `input-generator` a `IDF`, prečítajte si o nich v súbore [`GENERATOR.md`](GENERATOR.md).
+Ak chcete vedieť, aké cool veci navyše dokážu `itool generate` a `IDF`, prečítajte si o nich v súbore [`GENERATOR.md`](GENERATOR.md).
 
-Ak chcete vedieť, aké cool veci navyše dokáže `input-tester` a **ako písať validátor a hodnotič**, prečítajte si o tom v súbore [`TESTER.md`](TESTER.md).
+Ak chcete vedieť, aké cool veci navyše dokáže `itool test` a **ako písať validátor a hodnotič**, prečítajte si o tom v súbore [`TESTER.md`](TESTER.md).
 
 # Feedback
 
