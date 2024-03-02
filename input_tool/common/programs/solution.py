@@ -314,9 +314,9 @@ class Solution(Program):
 
         warntle = self.get_timelimit(Config.warn_timelimits)
         status = status.set_warntle(
-            warntle != timedelta(0) and
-            run_times is not None and
-            run_times[0] >= warntle
+            warntle != timedelta(0)
+            and run_times is not None
+            and run_times[0] >= warntle
         )
 
         self.record(ifile, status, run_times)

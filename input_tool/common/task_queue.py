@@ -11,6 +11,7 @@ from input_tool.common.task_history import TaskHistory
 
 class Empty(Exception):
     "Exception raised by Queue.get(block=0)/get_nowait()."
+
     pass
 
 

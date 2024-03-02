@@ -12,6 +12,7 @@ class ParserOptions(TypedDict, total=False):
     nargs: str
     type: Type[Any]
 
+
 argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] = {
     # actions
     "help": (
