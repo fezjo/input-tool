@@ -17,7 +17,6 @@ from input_tool.common.messages import (
     BufferedLogger,
     ParallelLoggerManager,
     Status,
-    color_test,
     default_logger,
     fatal,
     info,
@@ -338,9 +337,6 @@ def check_too_long_tests(
 
 
 def run(args: ArgsTester) -> None:
-    if args.colortest:
-        color_test()
-        quit()
     setup_config(
         args,
         (
@@ -375,9 +371,6 @@ def run(args: ArgsTester) -> None:
     # multiple solutions can have same run command after compilation
     if not args.dupprog:
         solutions = deduplicate_solutions(solutions)
-
-    if args.recompile:
-        quit()
 
     for s in solutions:
         Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))

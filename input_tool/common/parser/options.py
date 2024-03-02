@@ -39,15 +39,6 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         },
         "actions",
     ),
-    "recompile": (
-        ("--recompile",),
-        {
-            "dest": "recompile",
-            "action": "store_true",
-            "help": "recompile programs and exit",
-        },
-        "actions",
-    ),
     # naming
     "indir": (
         ("--input",),

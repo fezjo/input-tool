@@ -90,8 +90,6 @@ short_description_tester = "Test all given solutions on all inputs."
 options_tester = [
     "help",
     "full_help",
-    "colortest",
-    "recompile",
     "indir",
     "outdir",
     "progdir",
@@ -125,8 +123,6 @@ options_tester = [
 @dataclass
 class ArgsTester:
     full_help: bool
-    colortest: bool
-    recompile: bool
     indir: str
     outdir: str
     progdir: str
