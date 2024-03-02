@@ -18,6 +18,7 @@ from input_tool.common.messages import (
     fatal,
     info,
     infob,
+    stylized_tqdm,
 )
 from input_tool.common.parser.parser import Parser
 from input_tool.common.parser.specifications import (
@@ -109,21 +110,29 @@ def generate_all(
     default_gencmd: str,
     args: ArgsGenerator,
 ) -> None:
-    def submit_input(executor: ThreadPoolExecutor, input: Input) -> Future:
+    def submit_input(executor: ThreadPoolExecutor, inp: Input) -> Future:
         return executor.submit(
-            programs[input.generator or default_gencmd].generate,
-            get_ifile(input, args, True),
-            input.get_generation_text(),
+            programs[inp.generator or default_gencmd].generate,
+            get_ifile(inp, args, True),
+            inp.get_generation_text(),
         )
 
     infob("Generating:")
     leftw = max([len(get_ifile(i, args)) for i in recipe.inputs])
     prev = None
-    with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        futures = [(submit_input(executor, input), input) for input in recipe.inputs]
-        for future, input in futures:
-            print_message_for_input(leftw, future.result(), input, prev, args)
-            prev = input
+
+    ntasks = len(recipe.inputs)
+    with stylized_tqdm(desc="Generating", total=ntasks) as progress_bar:
+        with ThreadPoolExecutor(max_workers=args.threads) as executor:
+            futures = [(submit_input(executor, inp), inp) for inp in recipe.inputs]
+            for future, _ in futures:
+                future.add_done_callback(lambda _: progress_bar.update(1))
+            for future, inp in futures:
+                message = future.result()
+                progress_bar.clear()
+                print_message_for_input(leftw, message, inp, prev, args)
+                progress_bar.display()
+                prev = inp
     infob("Done")
 
 

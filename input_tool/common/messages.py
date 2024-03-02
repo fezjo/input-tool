@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Sequence, TextIO, TypeVar, Union
 
+from tqdm import tqdm
+
 
 def register_quit_signal() -> None:
     signal.signal(signal.SIGUSR1, lambda *_: sys.exit(1))
@@ -177,6 +179,22 @@ while _changed:
 
 
 Color.setup(True)
+
+# {{{ ---------------------- progress bar ------------------------
+
+
+def stylized_tqdm(desc: str, total: int, *args, **kwargs) -> tqdm:
+    cnt_len = len(str(total))
+    fields = (
+        Color.colorize("{desc}", Color("bold", "white")),
+        Color.colorize("│{bar}│", Color("cyan")),
+        Color.colorize("{percentage:3.0f}%", Color("purple")),
+        Color.colorize("{n_fmt:>" + str(cnt_len) + "}/{total_fmt}", Color("green")),
+        Color.colorize("{elapsed} ", Color("yellow")),
+    )
+    bar_format = " ".join(fields)
+    return tqdm(desc=desc, total=total, bar_format=bar_format, *args, **kwargs)
+
 
 # {{{ ---------------------- messages ----------------------------
 
