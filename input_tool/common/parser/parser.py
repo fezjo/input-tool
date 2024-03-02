@@ -124,6 +124,9 @@ class UnifiedParser:
             + "inputs for programming contests.",
             formatter_class=MyHelpFormatterFactory(False),
         )
+        self.parser.add_argument(
+            "--version", action="version", version="%(prog)s 2.0.0"
+        )
         self.subparsers = self.parser.add_subparsers(dest="subcommand")
 
         self.sample_parser, self.sample_full_help_parser = self.add_subparser(
