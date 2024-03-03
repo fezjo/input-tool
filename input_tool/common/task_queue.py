@@ -1,18 +1,12 @@
 # © 2023 fezjo
+import queue
 import threading
 from collections import deque
 from concurrent.futures.thread import _WorkItem
-from queue import SimpleQueue
 from typing import Callable, Optional
 
 from input_tool.common.commands import Config, Langs
 from input_tool.common.task_history import TaskHistory
-
-
-class Empty(Exception):
-    "Exception raised by Queue.get(block=0)/get_nowait()."
-
-    pass
 
 
 class TaskItem:
@@ -31,7 +25,7 @@ class TaskItem:
         return self.func(*args, **kwargs)
 
 
-class TaskQueue(SimpleQueue):
+class TaskQueue(queue.SimpleQueue):
     """Thread-safe Usually-First-In-First-Out queue. Based on queue.SimpleQueue.
     A task is a program running on an input. The same program can also already
     be running on a different input. If we deduce that the already running
@@ -84,7 +78,7 @@ class TaskQueue(SimpleQueue):
         if timeout is not None and timeout < 0:
             raise ValueError("'timeout' must be a non-negative number")
         if not self._count.acquire(block, timeout):
-            raise Empty
+            raise queue.Empty
         res = None
         with self._lock:
             self._tidy(lock=False)
