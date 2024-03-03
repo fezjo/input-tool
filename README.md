@@ -85,7 +85,7 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
      - všetko potrebné napríklad pomocou `brew install coreutils gcc make python3`
    - _Nepovinne_ `time` (Linux) / `gnu-time` (MacOS) (nestačí bashová funkcia) ak chceme _Real/User/System_ časy
 
-2. Nainštalujte cez `pip`:
+2. Nainštalujte z PyPi:
 
    ```bash
    pipx install input-tool
@@ -97,6 +97,19 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
    # alebo
    pip3 install -U --break-system-packages input-tool
    ```
+
+   <details>
+   <summary>Inštalácia z Githubu</summary>
+
+   ```bash
+   pipx install git+https://github.com/fezjo/input-tool.git
+
+   git clone https://github.com/fezjo/input-tool.git
+   cd input-tool
+   pipx install -e .
+   ```
+
+   </details>
 
 # `itool`
 
