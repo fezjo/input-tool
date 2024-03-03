@@ -2,6 +2,7 @@
 # © 2022 fezjo
 import argparse
 from typing import Sequence, Type, TypeVar
+from importlib.metadata import version
 
 import argcomplete
 
@@ -125,7 +126,7 @@ class UnifiedParser:
             formatter_class=MyHelpFormatterFactory(False),
         )
         self.parser.add_argument(
-            "--version", action="version", version="%(prog)s 2.0.0"
+            "--version", action="version", version=version("input-tool")
         )
         self.subparsers = self.parser.add_subparsers(dest="subcommand")
 
