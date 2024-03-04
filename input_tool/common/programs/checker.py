@@ -23,7 +23,11 @@ class Checker(Program):
             self.forceexecute = True
 
     @staticmethod
-    def filename_befits(filename: str) -> Union[str, None]:
+    def filename_befits(filename: str) -> bool:
+        return Checker.which_checker_format(filename) is not None
+
+    @staticmethod
+    def which_checker_format(filename: str) -> Union[str, None]:
         filename = to_base_alnum(filename)
         prefixes = ["diff", "check", "chito", "tester"]
         for prefix in prefixes:
@@ -42,7 +46,7 @@ class Checker(Program):
             "test": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
             "tester": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
         }
-        prefix = self.filename_befits(self.name)
+        prefix = self.which_checker_format(self.name)
         if prefix:
             return self.run_cmd + diff_map[prefix]
         return None

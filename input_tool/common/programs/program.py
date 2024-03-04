@@ -22,6 +22,10 @@ class Program:
         # compute run_cmd, compilecmd and filestoclear
         self._transform()
 
+    @staticmethod
+    def filename_befits(filename: str) -> bool:
+        raise NotImplementedError
+
     def compare_mask(self) -> tuple[int, int, str]:
         return (0, 0, self.name)
 

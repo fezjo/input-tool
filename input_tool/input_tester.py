@@ -78,11 +78,11 @@ def parse_warntimelimit(
 
 
 def get_relevant_prog_files_in_directory(directory: str) -> list[str]:
+    classes: Sequence[type[Program]] = (Solution, Validator, Checker)
     return [
         os.path.normpath(de.path)
         for de in os.scandir(directory)
-        if de.is_file()
-        and any(cl.filename_befits(de.name) for cl in (Solution, Validator, Checker))
+        if de.is_file() and any(cl.filename_befits(de.name) for cl in classes)
     ]
 
 

@@ -170,11 +170,14 @@ class Recipe:
         self.inputs: list[Input] = []
         self.idf_version = idf_version
         self._parse_commands_versions = [
-            None,
+            self._parse_commands_v0,
             self._parse_commands_v1,
             self._parse_commands_v2,
         ]
         self._parse_commands = self._parse_commands_versions[idf_version]
+
+    def _parse_commands_v0(self, line: str) -> dict[str, str]:
+        return {}
 
     def _parse_commands_v1(self, line: str) -> dict[str, str]:
         commands: dict[str, str] = {}

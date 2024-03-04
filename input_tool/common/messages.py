@@ -183,7 +183,7 @@ Color.setup(True)
 # {{{ ---------------------- progress bar ------------------------
 
 
-def stylized_tqdm(desc: str, total: int, *args, **kwargs) -> tqdm:
+def stylized_tqdm(desc: str, total: int, **kwargs: Any) -> tqdm:
     cnt_len = len(str(total))
     fields = (
         Color.colorize("{desc}", Color("bold", "white")),
@@ -193,7 +193,7 @@ def stylized_tqdm(desc: str, total: int, *args, **kwargs) -> tqdm:
         Color.colorize("{elapsed} ", Color("yellow")),
     )
     bar_format = " ".join(fields)
-    return tqdm(desc=desc, total=total, bar_format=bar_format, *args, **kwargs)
+    return tqdm(desc=desc, total=total, bar_format=bar_format, **kwargs)
 
 
 # {{{ ---------------------- messages ----------------------------

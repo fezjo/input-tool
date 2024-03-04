@@ -33,8 +33,7 @@ def run_compile(args: itool_parser.specs.ArgsCompile):
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, True)
-    programs = [Checker(checker_file, False) for checker_file in checker_files]
-    programs += solutions
+    programs = solutions + [Checker(file, False) for file in checker_files]
 
     prepare_programs(programs, max(4, args.threads))
 
