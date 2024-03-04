@@ -219,22 +219,27 @@ class Recipe:
 
         for line in self.recipe:
             line = line.strip()
-            if continuingline:
-                continuingline = line.endswith("\\")
+            if line.startswith("#"):  # comment
                 if continuingline:
-                    line = line[:-1]
-                self.inputs[-1].text += "\n" + line
+                    warning("Continuing line with comment, ignoring")
+                    continuingline = False
                 continue
-            continuingline = line.endswith("\\")
-            if continuingline:
-                line = line[:-1]
-
             if len(line) == 0:  # new batch
+                if continuingline:
+                    warning("Continuing line with empty line, ignoring")
+                    continuingline = False
                 batchid += 1
                 subid = 0
                 continue
-            if line.startswith("#"):  # comment
+
+            add_to_previous = continuingline
+            continuingline = line.endswith("\\")
+            if continuingline:
+                line = line[:-1]
+            if add_to_previous:
+                self.inputs[-1].text += "\n" + line
                 continue
+
             if line.startswith("$+"):
                 new_commands = self._parse_commands(line[2:])
                 over_commands = dict(over_commands, **new_commands)
@@ -242,6 +247,7 @@ class Recipe:
             if line.startswith("$"):
                 over_commands = self._parse_commands(line[1:])
                 continue
+
             effects = True
             if line.startswith("~"):  # effects off
                 line = line[1:]
