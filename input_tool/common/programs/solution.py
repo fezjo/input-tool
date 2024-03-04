@@ -61,7 +61,7 @@ class Solution(Program):
                 score += int(parts[1])
             elif parts[1] == "wa":
                 score -= 100
-        return (-1, -score, self.name)
+        return (1, score, self.name)
 
     def compute_time_statistics(self) -> None:
         self.statistics.sumtime = timedelta()

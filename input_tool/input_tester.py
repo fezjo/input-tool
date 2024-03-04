@@ -376,7 +376,7 @@ def run(args: ArgsTester) -> None:
     solutions, checker_files = create_programs_from_files(files, not args.dupprog)
     checker = create_checker(args.diffcmd, checker_files, args.showdiff)
     if args.sort:
-        solutions.sort()
+        solutions.sort(reverse=True, key=lambda s: s.compare_mask())
     programs = [checker] + solutions
 
     if args.clearbin:

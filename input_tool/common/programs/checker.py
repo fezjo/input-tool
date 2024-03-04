@@ -36,7 +36,7 @@ class Checker(Program):
         return None
 
     def compare_mask(self) -> tuple[int, int, str]:
-        return (-3, 0, self.name)
+        return (3, 0, self.name)
 
     def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> Union[str, None]:
         diff_map = {

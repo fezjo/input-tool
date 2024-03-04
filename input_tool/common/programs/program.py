@@ -29,9 +29,6 @@ class Program:
     def compare_mask(self) -> tuple[int, int, str]:
         return (0, 0, self.name)
 
-    def __lt__(self, other: Program) -> bool:
-        return self.compare_mask() < other.compare_mask()
-
     def _transform(self) -> None:
         self.compilecmd = None
         self.source = None

@@ -18,7 +18,7 @@ class Validator(Solution):
         return to_base_alnum(filename).startswith("val")
 
     def compare_mask(self) -> tuple[int, int, str]:
-        return (-2, 0, self.name)
+        return (2, 0, self.name)
 
     def updated_status(self, original: Status, new: Status) -> Status:
         if original == Status.err or new == Status.err:
