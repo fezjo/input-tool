@@ -165,7 +165,11 @@ short_description_compile = "Compile all given programs as if they were to be te
 options_compile = [
     "help",
     "full_help",
-    "threads_test",
+    "progdir",
+    "colorful",
+    "quiet",
+    "pythoncmd_test",
+    "threads_gen",
     "programs",
 ]
 
@@ -173,6 +177,10 @@ options_compile = [
 @dataclass
 class ArgsCompile:
     full_help: bool
+    progdir: str
+    colorful: bool
+    quiet: bool
+    pythoncmd: str
     threads: int
     programs: list[str]
     deprecated: list[Any] = field(default_factory=list)

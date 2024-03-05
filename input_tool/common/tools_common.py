@@ -15,7 +15,11 @@ from input_tool.common.messages import (
     plain,
     warning,
 )
-from input_tool.common.parser.specifications import ArgsGenerator, ArgsTester
+from input_tool.common.parser.specifications import (
+    ArgsCompile,
+    ArgsGenerator,
+    ArgsTester,
+)
 from input_tool.common.programs.program import Program
 
 
@@ -31,7 +35,7 @@ def register_quit_with_executor(executor: Executor) -> None:
 
 
 def setup_config(
-    args: Union[ArgsTester, ArgsGenerator], config_keys: Iterable[str]
+    args: Union[ArgsTester, ArgsGenerator, ArgsCompile], config_keys: Iterable[str]
 ) -> None:
     Color.setup(args.colorful)
 

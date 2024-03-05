@@ -24,12 +24,18 @@ def run_tester(args: itool_parser.specs.ArgsTester):
 
 
 def run_compile(args: itool_parser.specs.ArgsCompile):
+    from input_tool.common.commands import Config
     from input_tool.common.programs.checker import Checker
+    from input_tool.common.tools_common import setup_config
     from input_tool.input_tester import (
         create_programs_from_files,
         get_relevant_prog_files_deeper,
         prepare_programs,
     )
+
+    setup_config(args, ("progdir", "quiet", "colorful"))
+    Config.compile = True
+    Config.execute = False
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, True)
