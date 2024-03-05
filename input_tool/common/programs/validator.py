@@ -21,6 +21,7 @@ class Validator(Solution):
         return (2, 0, self.name)
 
     def updated_status(self, original: Status, new: Status) -> Status:
+        original = Status.valid if original == Status.ok else original
         if original == Status.err or new == Status.err:
             return Status.err
         if original == Status.valid:

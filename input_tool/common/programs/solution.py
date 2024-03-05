@@ -92,15 +92,21 @@ class Solution(Program):
 
         self.compute_time_statistics()
         color, points = self.get_statistics_color_and_points()
-        widths = (Config.cmd_maxlen, 8, 9, 6, 6)
+        batch_stats = "".join(
+            Color.colorize(str(status.set_warntle(False))[0], Color.status[status])
+            for status in self.statistics.batchresults.values()
+        )
+        batch_col_len = max(7, len(self.statistics.batchresults.values()))
+        widths = (Config.cmd_maxlen, 8, 9, 6, 6, batch_col_len)
         colnames = [
             self.name,
             to_miliseconds(self.statistics.maxtime),
             to_miliseconds(self.statistics.sumtime),
             points,
             self.statistics.result,
+            batch_stats,
         ]
-        return table_row(color, colnames, widths, "<>>>>")
+        return table_row(color, colnames, widths, "<>>>><")
 
     def get_json(self) -> dict[str, Any]:
         self.compute_time_statistics()
