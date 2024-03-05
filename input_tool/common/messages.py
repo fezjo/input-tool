@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import signal
 import sys
 import threading
@@ -72,6 +73,7 @@ status_reprs = {
 
 
 class Color:
+    ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     colorful = False
     dim: Color
     normal: Color
@@ -124,6 +126,10 @@ class Color:
         lines = str(text).split("\n")
         end = end or Color.normal
         return "\n".join("%s%s%s" % (color, line, end) for line in lines)
+
+    @staticmethod
+    def uncolorize(text: str) -> str:
+        return Color.ANSI_ESCAPE.sub("", text)
 
 
 _codemap: dict[str, str | int] = {
@@ -342,7 +348,7 @@ class ParallelLoggerManager:
 
 
 def table_row(
-    row_color: Color,
+    color: Color,
     columns: Sequence[Any],
     widths: Sequence[int],
     alignments: Sequence[str],
@@ -351,8 +357,9 @@ def table_row(
     columns = list(columns)
     for i in range(len(columns)):
         width, align, value = widths[i], alignments[i], columns[i]
-        # TODO backgrounds do not work, status will color whole cell, align will be broken
-        color = Color.status[value] if isinstance(value, Status) else row_color
+        if isinstance(value, Status):
+            value = value.colored()
+        width += len(str(value)) - len(Color.uncolorize(str(value)))
         text = f"{value:{align}{width}}"
         columns[i] = Color.colorize(text + str(Color.normal), color, Color.table)
     return Color.colorize("| %s |" % " | ".join(columns), Color.table)
