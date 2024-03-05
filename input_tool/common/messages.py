@@ -121,7 +121,9 @@ class Color:
 
     @staticmethod
     def colorize(text: Any, color: Color, end: Optional[Color] = None) -> str:
-        return "%s%s%s" % (color, text, end or Color.normal)
+        lines = str(text).split("\n")
+        end = end or Color.normal
+        return "\n".join("%s%s%s" % (color, line, end) for line in lines)
 
 
 _codemap: dict[str, str | int] = {
@@ -349,9 +351,10 @@ def table_row(
     columns = list(columns)
     for i in range(len(columns)):
         width, align, value = widths[i], alignments[i], columns[i]
+        # TODO backgrounds do not work, status will color whole cell, align will be broken
         color = Color.status[value] if isinstance(value, Status) else row_color
         text = f"{value:{align}{width}}"
-        columns[i] = Color.colorize(text, color, Color.table)
+        columns[i] = Color.colorize(text + str(Color.normal), color, Color.table)
     return Color.colorize("| %s |" % " | ".join(columns), Color.table)
 
 
