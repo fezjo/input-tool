@@ -34,7 +34,7 @@ from typing import Any, Optional, Sequence, TextIO
 
 import yaml
 
-from input_tool.common.messages import warning
+from input_tool.common.messages import error, warning
 
 
 class EvalLoader(yaml.SafeLoader):
@@ -116,15 +116,21 @@ class Input:
     def _apply_format(self) -> None:
         if not self.effects:
             return
-        self.text = self.text.format(
-            **{
-                "batch": self.batch,
-                "name": self.name,
-                "id": self.id,
-                "rand": randint(0, Input.MAXINT - 1),
-                **self.commands,
-            }
-        )
+        try:
+            self.text = self.text.format(
+                **{
+                    "batch": self.batch,
+                    "name": self.name,
+                    "id": self.id,
+                    "rand": randint(0, Input.MAXINT - 1),
+                    **self.commands,
+                }
+            )
+        except KeyError as e:
+            error(
+                f"Error in filling IDF variables for input #{self.id}. "
+                + f"Variable `{e.args[0]}` is undefined."
+            )
 
     def compile(self) -> None:
         if self.compiled:
