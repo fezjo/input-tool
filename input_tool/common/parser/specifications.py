@@ -1,7 +1,7 @@
 # © 2024 fezjo
 from argparse import Namespace
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any, Type, TypeVar, Union
 
 ArgsGeneric = Namespace
 
@@ -188,6 +188,66 @@ class ArgsCompile:
     deprecated: list[Any] = field(default_factory=list)
 
 
+short_description_autogenerate = "Generate inputs and outputs with one command."
+description_autogenerate = """
+Generate inputs and outputs with one command.
+Combined generator and tester with best solution only.
+"""
+
+options_autogenerate = [
+    "help",
+    "full_help",
+    "indir",
+    "outdir",
+    "progdir",
+    "inext",
+    "outext",
+    "tempext",
+    "compile",
+    "execute",
+    "colorful",
+    "quiet",
+    "nostats",
+    "json",
+    "clearinput",
+    "cleartemp",
+    "clearbin",
+    "gencmd",
+    "idf_version",
+    "pythoncmd_gen",
+    "threads_gen",
+    "description",
+    "programs",
+]
+
+
+@dataclass
+class ArgsAutogenerate:
+    full_help: bool
+    indir: str
+    outdir: str
+    progdir: str
+    inext: str
+    outext: str
+    tempext: str
+    compile: bool
+    execute: bool
+    colorful: bool
+    quiet: bool
+    stats: bool
+    json: Union[str, None]
+    clearinput: bool
+    cleartemp: bool
+    clearbin: bool
+    gencmd: str
+    idf_version: int
+    pythoncmd: str
+    threads: int
+    description: str
+    programs: list[str]
+    deprecated: list[Any] = field(default_factory=list)
+
+
 description_colortest = """
 Test colors.
 Test color support of terminal by printing all of them and exit.
@@ -200,3 +260,30 @@ Check for updates by fetching latest github release.
 Print a message if a newer version is available.
 """
 short_description_checkupdates = "Check for updates."
+
+
+Args = Union[
+    ArgsGeneric,
+    ArgsSample,
+    ArgsGenerator,
+    ArgsTester,
+    ArgsCompile,
+    ArgsAutogenerate,
+]
+
+ArgsT = TypeVar(
+    "ArgsT",
+    ArgsSample,
+    ArgsGenerator,
+    ArgsTester,
+    ArgsCompile,
+    ArgsAutogenerate,
+)
+
+
+def convert_args(args: Args, to_type: Type[ArgsT], **kwargs) -> ArgsT:
+    common_keys = set(args.__dict__) & set(to_type.__dataclass_fields__)
+    return to_type(
+        **{k: getattr(args, k) for k in common_keys},
+        **kwargs,
+    )

@@ -44,6 +44,32 @@ def run_compile(args: itool_parser.specs.ArgsCompile):
     prepare_programs(programs, max(4, args.threads))
 
 
+def run_autogenerate(args: itool_parser.specs.ArgsAutogenerate):
+    from input_tool.input_generator import run as run_generator
+    from input_tool.input_tester import run as run_tester
+
+    args_generator = itool_parser.specs.convert_args(
+        args, itool_parser.specs.ArgsGenerator
+    )
+    args_tester = itool_parser.specs.convert_args(
+        args,
+        itool_parser.specs.ArgsTester,
+        sort=True,
+        dupprog=False,
+        bestonly=True,
+        reset=True,
+        rustime=False,
+        timelimit="0",
+        warntimelimit="0",
+        memorylimit=0,
+        diffcmd="diff",
+        showdiff=False,
+        fail_skip=False,
+    )
+    run_generator(args_generator)
+    run_tester(args_tester)
+
+
 def run_colortest(args: itool_parser.specs.ArgsGeneric):
     from input_tool.common.messages import color_test
 
@@ -57,6 +83,10 @@ def run_checkupdates(args: itool_parser.specs.ArgsGeneric):
 
 
 def main():
+    # specification:  description_X, short_description_X, options_X, ArgsX, Args, ArgsT
+    # parser:         subcommand, alias_mapping, mapping
+    # itool:          subcommand_funcs
+
     unified_parser = itool_parser.UnifiedParser()
     subcommand, args = unified_parser.parse()
     subcommand_funcs = {
@@ -64,6 +94,7 @@ def main():
         "generate": run_generator,
         "test": run_tester,
         "compile": run_compile,
+        "autogenerate": run_autogenerate,
         "colortest": run_colortest,
         "checkupdates": run_checkupdates,
     }

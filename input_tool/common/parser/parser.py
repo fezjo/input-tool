@@ -64,13 +64,13 @@ class Parser:
             formatter_class=MyHelpFormatterFactory(False),
             add_help=False,
         )
-        self.full_help_parser = argparse.ArgumentParser(
+        self.fh_parser = argparse.ArgumentParser(
             description=description,
             formatter_class=MyHelpFormatterFactory(True),
             add_help=False,
         )
         groups = {
-            name: self.full_help_parser.add_argument_group(name)
+            name: self.fh_parser.add_argument_group(name)
             for name in (
                 "actions",
                 "naming",
@@ -86,7 +86,7 @@ class Parser:
         for arg in arguments:
             full_parser_group: (
                 argparse.ArgumentParser | argparse._ArgumentGroup
-            ) = self.full_help_parser
+            ) = self.fh_parser
             args, kwargs, group = argument_options.get(arg, (None, None, None))
             if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")
@@ -105,21 +105,12 @@ class Parser:
         argcomplete.autocomplete(self.parser)
         self.args = self.parser.parse_args()
         if self.args.full_help:
-            self.full_help_parser.print_help()
+            self.fh_parser.print_help()
             quit(0)
         return container(**vars(self.args))
 
 
 class UnifiedParser:
-    Args = TypeVar(
-        "Args",
-        specs.ArgsGeneric,
-        specs.ArgsSample,
-        specs.ArgsGenerator,
-        specs.ArgsTester,
-        specs.ArgsCompile,
-    )
-
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             "itool",
@@ -132,45 +123,49 @@ class UnifiedParser:
         )
         self.subparsers = self.parser.add_subparsers(dest="subcommand")
 
-        self.sample_parser, self.sample_full_help_parser = self.add_subparser(
+        self.sample_parser, self.sample_fh_parser = self.add_subparser(
             "sample",
             ("s",),
             specs.description_sample,
             specs.short_description_sample,
             specs.options_sample,
         )
-        self.generator_parser, self.generator_full_help_parser = self.add_subparser(
+        self.generator_parser, self.generator_fh_parser = self.add_subparser(
             "generate",
             ("g",),
             specs.description_generator,
             specs.short_description_generator,
             specs.options_generator,
         )
-        self.tester_parser, self.tester_full_help_parser = self.add_subparser(
+        self.tester_parser, self.tester_fh_parser = self.add_subparser(
             "test",
             ("t",),
             specs.description_tester,
             specs.short_description_tester,
             specs.options_tester,
         )
-        self.compile_parser, self.compile_full_help_parser = self.add_subparser(
+        self.compile_parser, self.compile_fh_parser = self.add_subparser(
             "compile",
             ("c",),
             specs.description_compile,
             specs.short_description_compile,
             specs.options_compile,
         )
-        self.colortest_parser, self.colortest_full_help_parser = self.add_subparser(
+        self.autogenerate_parser, self.autogenerate_fh_parser = self.add_subparser(
+            "autogenerate",
+            ("ag",),
+            specs.description_autogenerate,
+            specs.short_description_autogenerate,
+            specs.options_autogenerate,
+        )
+        self.colortest_parser, self.colortest_fh_parser = self.add_subparser(
             "colortest",
             (),
             specs.description_colortest,
             specs.short_description_colortest,
             ["help"],
         )
-        (
-            self.checkupdates_parser,
-            self.checkupdates_full_help_parser,
-        ) = self.add_subparser(
+        self.checkupdates_parser, self.checkupdates_fh_parser = self.add_subparser(
             "checkupdates",
             (),
             specs.description_checkupdates,
@@ -187,38 +182,45 @@ class UnifiedParser:
             "t": "test",
             "compile": "compile",
             "c": "compile",
+            "autogenerate": "autogenerate",
+            "ag": "autogenerate",
             "colortest": "colortest",
             "checkupdates": "checkupdates",
         }
         self.mapping = {
             "sample": (
                 self.sample_parser,
-                self.sample_full_help_parser,
+                self.sample_fh_parser,
                 specs.ArgsSample,
             ),
             "generate": (
                 self.generator_parser,
-                self.generator_full_help_parser,
+                self.generator_fh_parser,
                 specs.ArgsGenerator,
             ),
             "test": (
                 self.tester_parser,
-                self.tester_full_help_parser,
+                self.tester_fh_parser,
                 specs.ArgsTester,
             ),
             "compile": (
                 self.compile_parser,
-                self.compile_full_help_parser,
+                self.compile_fh_parser,
                 specs.ArgsCompile,
+            ),
+            "autogenerate": (
+                self.autogenerate_parser,
+                self.autogenerate_fh_parser,
+                specs.ArgsAutogenerate,
             ),
             "colortest": (
                 self.colortest_parser,
-                self.colortest_full_help_parser,
+                self.colortest_fh_parser,
                 argparse.Namespace,
             ),
             "checkupdates": (
                 self.checkupdates_parser,
-                self.checkupdates_full_help_parser,
+                self.checkupdates_fh_parser,
                 argparse.Namespace,
             ),
         }
@@ -240,13 +242,13 @@ class UnifiedParser:
             formatter_class=MyHelpFormatterFactory(False),
             add_help=False,
         )
-        full_help_parser = argparse.ArgumentParser(
+        fh_parser = argparse.ArgumentParser(
             description=description,
             formatter_class=MyHelpFormatterFactory(True),
             add_help=False,
         )
         groups = {
-            name: full_help_parser.add_argument_group(name)
+            name: fh_parser.add_argument_group(name)
             for name in (
                 "actions",
                 "naming",
@@ -262,7 +264,7 @@ class UnifiedParser:
         for arg in arguments:
             full_parser_group: (
                 argparse.ArgumentParser | argparse._ArgumentGroup
-            ) = full_help_parser
+            ) = fh_parser
             args, kwargs, group = argument_options.get(arg, (None, None, None))
             if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")
@@ -275,9 +277,9 @@ class UnifiedParser:
             full_parser_group.add_argument(*args, **kwargs)
             parser.add_argument(*args, **kwargs)
 
-        return (parser, full_help_parser)
+        return (parser, fh_parser)
 
-    def parse(self) -> tuple[str, Args]:
+    def parse(self) -> tuple[str, specs.Args]:
         argcomplete.autocomplete(self.parser)
         args = self.parser.parse_args()
         subcommand = args.subcommand
@@ -287,10 +289,10 @@ class UnifiedParser:
         if subcommand not in self.alias_mapping:
             raise NameError(f"Unrecognized subcommand {subcommand}")
         subcommand = self.alias_mapping[subcommand]
-        (_, full_help_parser, container) = self.mapping[subcommand]
+        (_, fh_parser, container) = self.mapping[subcommand]
         delattr(args, "subcommand")
         args = container(**vars(args))
         if hasattr(args, "full_help") and args.full_help:
-            full_help_parser.print_help()
+            fh_parser.print_help()
             quit(0)
         return subcommand, args
