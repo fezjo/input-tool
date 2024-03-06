@@ -35,6 +35,7 @@
 <details>
 <summary>Nemergnuté zmeny</summary>
 
+- `--best-only` prepínač pre tester
 - **Zjednotený nástroj `itool`**
 - **Okresané CLI parametre, BREAKING CHANGE**
 - **Podpora starého formátu IDF**

@@ -150,6 +150,15 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         },
         "preparing",
     ),
+    "bestonly": (
+        ("--best-only",),
+        {
+            "dest": "bestonly",
+            "action": "store_true",
+            "help": "keep only the best program to generate ouputs",
+        },
+        "preparing",
+    ),
     "execute": (
         ("--execute",),
         {

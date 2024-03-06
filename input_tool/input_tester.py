@@ -113,10 +113,10 @@ def create_programs_from_files(
 
 
 def create_checker(
-    checker: str, checker_files: list[str], show_diff_output: bool
+    checker_files: list[str], default_checker: str, show_diff_output: bool
 ) -> Checker:
-    if checker is not None:
-        checker_files = [checker]
+    if default_checker:
+        checker_files = [default_checker]
     if len(checker_files) > 1:
         fatal(
             f"More than one checker found {checker_files}.\n"
@@ -374,9 +374,13 @@ def run(args: ArgsTester) -> None:
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, not args.dupprog)
-    checker = create_checker(args.diffcmd, checker_files, args.showdiff)
+    checker = create_checker(checker_files, args.diffcmd, args.showdiff)
     if args.sort:
         solutions.sort(reverse=True, key=lambda s: s.compare_mask())
+    if args.bestonly:
+        solutions = [s for s in solutions if isinstance(s, Validator)] + [
+            s for s in solutions if not isinstance(s, Validator)
+        ][:1]
     programs = [checker] + solutions
 
     if args.clearbin:

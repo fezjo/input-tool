@@ -103,6 +103,7 @@ options_tester = [
     "compile",
     "nosort",
     "dupprog",
+    "bestonly",
     "execute",
     "colorful",
     "quiet",
@@ -136,6 +137,7 @@ class ArgsTester:
     compile: bool
     sort: bool
     dupprog: bool
+    bestonly: bool
     execute: bool
     colorful: bool
     quiet: bool
