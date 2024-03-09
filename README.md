@@ -160,7 +160,7 @@ Sady v IDF oddeľujeme práznymi riadkami. Sady sú číslované `1..9`, ak je i
 
 Príklad IDF
 
-```
+```perl
 # id pocet_vrcholov pocet_hran pocet_hracov
 # 1. sada
 {id} 10 1000 1
@@ -176,6 +176,8 @@ $ hran: !eval 1e6
 Vyrobí postupne vstupy `1.a.in`, `1.b.in`, `1.c.in`, `2.a.in`, `2.b.in`.
 
 **Ak chcete niečim inicializovať `seed` vo svojom generátore, tak rozumný nápad je `{id}`**, pretože to je deterministické a zároveň unikátne pre každý vstup. Deterministické vstupy majú výhodu, že ak niekto iný pustí `itool generate` s rovnakými parametrami a rovnakým IDF, dostane rovnaké vstupy.
+
+Najlepší jazyk na zvýraznenie IDF je _Perl_ -- má rovnaké komentáre a zvýrazňuje `{}` a `!eval`.
 
 # `itool test`
 
