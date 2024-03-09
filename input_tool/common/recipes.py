@@ -174,12 +174,14 @@ class Recipe:
         self.recipe = recipe
         self.programs: list[str] = []
         self.inputs: list[Input] = []
-        self.idf_version = idf_version
         self._parse_commands_versions = [
             self._parse_commands_v0,
             self._parse_commands_v1,
             self._parse_commands_v2,
         ]
+        if not -1 <= idf_version < len(self._parse_commands_versions):
+            raise ValueError(f"Invalid idf_version: {idf_version}")
+        self.idf_version = idf_version % len(self._parse_commands_versions)
         self._parse_commands = self._parse_commands_versions[idf_version]
 
     def _parse_commands_v0(self, line: str) -> dict[str, str]:
@@ -234,6 +236,11 @@ class Recipe:
                 if continuingline:
                     warning("Continuing line with empty line, ignoring")
                     continuingline = False
+                if subid == 0:
+                    if self.idf_version == 1:  # in v1 any empty line starts new batch
+                        warning(f"Empty batch #{batchid}, maybe excessive empty line?")
+                    else:
+                        continue  # superfluous empty lines are ignored
                 batchid += 1
                 subid = 0
                 continue
