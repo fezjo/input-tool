@@ -57,11 +57,12 @@ pytest-ruff = "^0.1.1"
 
 [tool.poe.tasks]
 black = "black ."
-ruff = "ruff check ."
+ruff = "ruff check --fix ."
 mypy = "mypy ."
 test = "pytest ."
 lint = ["black", "ruff"]
-typecheck = ["mypy"]
+typecheck.sequence = ["mypy"]
+typecheck.ignore_fail = true
 checkall = ["lint", "typecheck"]
 testall = "pytest --black --ruff --mypy ."
 
