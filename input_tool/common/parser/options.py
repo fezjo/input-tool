@@ -374,7 +374,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         ("-j", "--threads"),
         {
             "dest": "threads",
-            "default": 4,
+            "default": 2,
             "type": int,
             "metavar": "NUM",
             "help": "how many threads to use (default: {})",
