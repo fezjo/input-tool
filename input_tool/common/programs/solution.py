@@ -92,11 +92,13 @@ class Solution(Program):
 
         self.compute_time_statistics()
         color, points = self.get_statistics_color_and_points()
+        # NOTE: natural sort would be better
+        batchresults = [v for k, v in sorted(self.statistics.batchresults.items())]
         batch_stats = "".join(
             Color.colorize(str(status.set_warntle(False))[0], Color.status[status])
-            for status in self.statistics.batchresults.values()
+            for status in batchresults
         )
-        batch_col_len = max(7, len(self.statistics.batchresults.values()))
+        batch_col_len = max(7, len(batchresults))
         widths = (Config.cmd_maxlen, 8, 9, 6, 6, batch_col_len)
         colnames = [
             self.name,
@@ -125,8 +127,8 @@ class Solution(Program):
     @staticmethod
     def parse_batch(ifile: str) -> str:
         name = os.path.basename(ifile)
-        input, _ext = os.path.splitext(name)
-        return input if input.endswith("sample") else input.rsplit(".", 1)[0]
+        inp, _ext = os.path.splitext(name)
+        return inp if inp.endswith("sample") else inp.rsplit(".", 1)[0]
 
     def record(
         self, ifile: str, status: Status, times: Optional[Sequence[timedelta]]
