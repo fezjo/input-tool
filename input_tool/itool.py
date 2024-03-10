@@ -65,6 +65,7 @@ def run_autogenerate(args: itool_parser.specs.ArgsAutogenerate):
         diffcmd="diff",
         showdiff=False,
         fail_skip=False,
+        ioram=False,
     )
     run_generator(args_generator)
     run_tester(args_tester)

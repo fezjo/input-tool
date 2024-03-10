@@ -119,6 +119,7 @@ options_tester = [
     "diffcmd",
     "showdiff",
     "fail_skip",
+    "ioram",
     "pythoncmd_test",
     "threads_test",
     "programs",
@@ -153,6 +154,7 @@ class ArgsTester:
     diffcmd: str
     showdiff: bool
     fail_skip: bool
+    ioram: bool
     pythoncmd: str
     threads: int
     programs: list[str]

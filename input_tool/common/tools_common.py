@@ -27,8 +27,8 @@ def register_quit_with_executor(executor: Executor) -> None:
     def quit_with_executor(code: int) -> None:
         try:
             executor.shutdown(wait=False, cancel_futures=True)
-        except Exception as err:
-            warning(f"Exception while shutting down executor: {err!r}")
+        except Exception as e:
+            warning(f"Exception while shutting down executor: {e!r}")
         sys.exit(code)
 
     signal.signal(signal.SIGUSR1, lambda *_: quit_with_executor(1))

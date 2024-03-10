@@ -177,6 +177,24 @@ def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
         return None
 
 
+def setup_ioram(
+    args: ArgsTester, inputs: list[str], _outputs: Optional[list[str]]
+) -> None:
+    ramdir = "/dev/shm/input_tool/{0}".format(os.getpid())
+    try:
+        os.makedirs(ramdir)
+    except Exception as e:
+        fatal(f"Failed to create ramdir {ramdir}: {e!r}")
+    infob(f"Using {ramdir} for input and output files.")
+    for input in inputs:
+        shutil.copy(args.indir + "/" + input, ramdir + "/" + input)
+    for output in _outputs or []:
+        shutil.copy(args.outdir + "/" + output, ramdir + "/" + output)
+    args.indir = ramdir
+    args.outdir = ramdir
+    atexit.register(lambda: shutil.rmtree(ramdir))
+
+
 def temp_clear(args: ArgsTester) -> None:
     tempfiles = sorted(
         filter(lambda x: x.endswith(args.tempext), os.listdir(args.outdir))
@@ -218,9 +236,9 @@ def general_run_sol(
         sol.run(ifile, ofile, rfile, checker, *rargs)
         if cleartemp and ofile != rfile and os.path.exists(rfile):
             os.remove(rfile)
-    except Exception as err:
+    except Exception as e:
         traceback.print_exc()
-        fatal(repr(err))
+        fatal(repr(e))
 
 
 def test_all(
@@ -398,6 +416,9 @@ def run(args: ArgsTester) -> None:
 
     inputs = get_inputs(args)
     _outputs = get_outputs(inputs, args)
+    if args.ioram:
+        setup_ioram(args, inputs, _outputs)
+
     temp_clear(args)
     Config.inside_inputmaxlen = max(map(len, inputs)) if inputs else 0
 

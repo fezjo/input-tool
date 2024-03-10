@@ -336,6 +336,15 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         },
         "testing",
     ),
+    "ioram": (
+        ("--ioram",),
+        {
+            "dest": "ioram",
+            "action": "store_true",
+            "help": "[?] run programs in ramdisk",
+        },
+        "testing",
+    ),
     # running
     "pythoncmd_gen": (
         ("--pythoncmd",),
