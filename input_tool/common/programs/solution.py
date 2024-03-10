@@ -230,20 +230,20 @@ class Solution(Program):
         try:
             if cb_was_killed():
                 return None, Status.tle
-            process = subprocess.Popen(
+            with subprocess.Popen(
                 cmd,
                 shell=True,
                 stdout=subprocess.PIPE,  # stdout goes to file anyway
                 stderr=subprocess.PIPE,
-            )
-            cb_set_process(process)
-            process.wait()
-            if cb_was_killed():
-                return None, Status.tle
-            TASK_HISTORY.end(self.name, self.parse_batch(ifile), ifile)
-            if not self.quiet and process.stderr:
-                logger.infod(process.stderr.read().decode("utf-8"))
-            status = self.translate_exit_code_to_status(process.returncode)
+            ) as process:
+                cb_set_process(process)
+                process.wait()
+                if cb_was_killed():
+                    return None, Status.tle
+                TASK_HISTORY.end(self.name, self.parse_batch(ifile), ifile)
+                if not self.quiet and process.stderr:
+                    logger.infod(process.stderr.read().decode("utf-8"))
+                status = self.translate_exit_code_to_status(process.returncode)
             if status == Status.tle:
                 cb_kill_siblings()
 

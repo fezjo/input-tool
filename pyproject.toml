@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "input-tool"
-version = "2.0.0"
+version = "2.0.1"
 description = "Tool which simplifies creating and testing inputs for programming contests."
 license = "MIT"
 authors = ["jablkoj (Ján Hozza)", "fezjo (Jozef Číž)"]
