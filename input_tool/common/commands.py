@@ -76,6 +76,16 @@ class Langs:
         Lang.rust: ["rs"],
     }
 
+    expected_performance_ranking = (
+        Lang.cpp,
+        Lang.rust,
+        Lang.c,
+        Lang.java,
+        Lang.pascal,
+        Lang.python,
+        Lang.unknown,
+    )
+
     @staticmethod
     def from_filename(filename: str) -> Lang:
         ext = filename.rsplit(".", 1)[-1]

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, Optional, Sequence
 
-from input_tool.common.commands import Config, to_base_alnum
+from input_tool.common.commands import Config, Langs, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
@@ -61,7 +61,13 @@ class Solution(Program):
                 score += int(parts[1])
             elif parts[1] == "wa":
                 score -= 100
-        return (1, score, self.name)
+
+        language = Langs.from_filename(filename)
+        lang_rank = Langs.expected_performance_ranking.index(language)
+        # TODO: this is a bit hacky
+        ranked_name = "{}_{}".format(chr(ord("9") - lang_rank), self.name)
+
+        return (1, score, ranked_name)
 
     def compute_time_statistics(self) -> None:
         self.statistics.sumtime = timedelta()
