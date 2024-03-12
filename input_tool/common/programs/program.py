@@ -8,7 +8,7 @@ import subprocess
 from typing import Optional
 
 from input_tool.common.commands import Config, Langs, is_file_newer, to_base_alnum
-from input_tool.common.messages import Logger, default_logger
+from input_tool.common.messages import Logger, default_logger, fatal
 
 
 class Program:
@@ -38,7 +38,11 @@ class Program:
         self.lang: Langs.Lang = Langs.Lang.unknown
 
         # if it is final command, dont do anything
-        if self.forceexecute or len(self.name.split()) > 1:
+        if self.forceexecute:
+            return
+        if len(self.name.split()) > 1:
+            if os.path.exists(self.name):
+                fatal(f"Error: whitespace in filenames not supported [{self.name}]")
             return
 
         # compute source, binary and extension
