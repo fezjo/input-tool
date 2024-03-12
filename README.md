@@ -80,7 +80,7 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
 
 1. Prerekvizity:
 
-   - Potrebujete `python3` a `make`
+   - Potrebujete `python3` ($\geq 3.8$) a `make`
    - Potrebujete kompilátory C/C++ (`gcc/clang/...`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
    - Na **MacOS** potrebujete nainštalovať `coreutils` a `gcc`
      - všetko potrebné napríklad pomocou `brew install coreutils gcc make python3`

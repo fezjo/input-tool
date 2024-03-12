@@ -261,7 +261,7 @@ def test_all(
     """
     parallel_logger_manager = ParallelLoggerManager()
 
-    def logger_close_and_trigger(logger: BufferedLogger) -> None:
+    def logger_finalize(logger: BufferedLogger) -> None:
         logger.close()
         parallel_logger_manager.closed_event.set()
 
@@ -295,10 +295,10 @@ def test_all(
 
                 output_ready = checker.output_ready[input_file]
                 output_ready.clear()
-                generated_output = False
+                generating_output = False
                 for si, sol in enumerate(solutions):
                     result_force = (
-                        "temp" if generated_output else "out" if args.reset else "none"
+                        "temp" if generating_output else "out" if args.reset else "none"
                     )
                     result_file = get_result_file(
                         output_file,
@@ -316,18 +316,14 @@ def test_all(
                     )
                     if is_generator:
                         testcase_logger.infob(get_output_creation_message(output_file))
-                        generated_output = True
+                        generating_output = True
                         future.add_done_callback(lambda _, o=output_ready: o.set())
-                    future.add_done_callback(
-                        lambda _, log=logger: (
-                            logger_close_and_trigger(log),
-                            progress_bar.update(),
-                        )
-                    )
+                    future.add_done_callback(lambda _, log=logger: logger_finalize(log))
+                    future.add_done_callback(lambda _: progress_bar.update())
 
-                if not generated_output:
+                if not generating_output:
                     output_ready.set()
-                logger_close_and_trigger(testcase_logger)
+                logger_finalize(testcase_logger)
 
             while parallel_logger_manager.last_open < len(
                 parallel_logger_manager.sinks

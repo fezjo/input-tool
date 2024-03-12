@@ -201,6 +201,7 @@ def stylized_tqdm(desc: str, total: int, **kwargs: Any) -> tqdm:
         Color.colorize("{elapsed} ", Color("yellow")),
     )
     bar_format = " ".join(fields)
+    # TODO autorefresh
     return tqdm(desc=desc, total=total, bar_format=bar_format, **kwargs)
 
 
