@@ -36,12 +36,13 @@ def run_compile(args: itool_parser.specs.ArgsCompile):
     setup_config(args, ("progdir", "quiet", "colorful"))
     Config.compile = True
     Config.execute = False
+    Config.threads = args.threads if args.threads else Config.get_cpu_corecount(0.99)
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, True)
     programs = solutions + [Checker(file, False) for file in checker_files]
 
-    prepare_programs(programs, max(4, args.threads))
+    prepare_programs(programs, Config.threads)
 
 
 def run_autogenerate(args: itool_parser.specs.ArgsAutogenerate):

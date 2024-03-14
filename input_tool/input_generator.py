@@ -10,6 +10,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
+from input_tool.common.commands import Config
 from input_tool.common.messages import (
     Color,
     Status,
@@ -123,7 +124,7 @@ def generate_all(
 
     ntasks = len(recipe.inputs)
     with stylized_tqdm(desc="Generating", total=ntasks) as progress_bar:
-        with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        with ThreadPoolExecutor(max_workers=Config.threads) as executor:
             futures = [(submit_input(executor, inp), inp) for inp in recipe.inputs]
             for future, _ in futures:
                 future.add_done_callback(lambda _: progress_bar.update(1))
@@ -138,6 +139,7 @@ def generate_all(
 
 def run(args: ArgsGenerator) -> None:
     setup_config(args, ("progdir", "quiet", "compile", "execute"))
+    Config.threads = args.threads if args.threads else Config.get_cpu_corecount(0.75)
 
     recipe = get_recipe(args.description, args.idf_version)
     recipe.process()
@@ -146,7 +148,7 @@ def run(args: ArgsGenerator) -> None:
     programs = {x: Generator(x) for x in recipe.programs}
     gencmd = args.gencmd
     programs[gencmd] = Generator(gencmd)
-    prepare_programs(programs.values(), max(4, args.threads))
+    prepare_programs(programs.values(), max(4, Config.threads))
     if args.clearbin:
         atexit.register(lambda p=programs: cleanup(tuple(p.values())))
 

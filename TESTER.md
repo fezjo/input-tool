@@ -23,7 +23,7 @@ itool test:
   --pythoncmd
     what command is used to execute python, e.g. `python3` or `pypy3` (default: python3)
   -j THREADS, --threads THREADS
-    how many threads to use (default: 2)
+    how many threads to use (default: 1/4 of threads)
   --json JSON
     also write output in json format to file
 ```

@@ -106,18 +106,21 @@ class Langs:
 class Config:
     Timelimit = dict[Union[Langs.Lang, str], timedelta]
 
-    fail_skip: bool
+    progdir: Optional[str] = None
+    compile: bool
+    execute: bool
+    quiet: bool
     rus_time: bool
     timelimits: Timelimit = {Langs.Lang.unknown: timedelta(seconds=3)}
     warn_timelimits: Timelimit = {Langs.Lang.unknown: timedelta(0)}
     memorylimit: float
-    quiet: bool
-    compile: bool
-    execute: bool
+    fail_skip: bool
+    threads: int
+
     inside_oneline: bool
     inside_inputmaxlen: int
-    progdir: Optional[str] = None
     cmd_maxlen: int = len("Solution")
+
     os_config: OsConfig
 
     @staticmethod
@@ -129,6 +132,10 @@ class Config:
         if lang in timelimits:
             return timelimits[lang]
         return timelimits[Langs.Lang.unknown]
+    
+    @staticmethod
+    def get_cpu_corecount(ratio: float = 1) -> int:
+        return max(1, int(len(os.sched_getaffinity(0)) * ratio))
 
 
 def get_statistics_header(inputs: Iterable[str]) -> str:

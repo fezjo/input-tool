@@ -383,6 +383,7 @@ def run(args: ArgsTester) -> None:
     Config.warn_timelimits.update(
         parse_warntimelimit(args.warntimelimit, Config.timelimits)
     )
+    Config.threads = args.threads if args.threads else Config.get_cpu_corecount(0.25)
 
     os.system(f"{Config.os_config.cmd_python} --version")
 
@@ -400,7 +401,7 @@ def run(args: ArgsTester) -> None:
     if args.clearbin:
         atexit.register(lambda p=programs: cleanup(p))
 
-    prepare_programs(programs, max(4, args.threads))
+    prepare_programs(programs, max(4, Config.threads))
     # multiple solutions can have same run command after compilation
     if not args.dupprog:
         solutions = deduplicate_solutions(solutions)
@@ -418,7 +419,7 @@ def run(args: ArgsTester) -> None:
     temp_clear(args)
     Config.inside_inputmaxlen = max(map(len, inputs)) if inputs else 0
 
-    test_all(solutions, checker, inputs, args.threads, args)
+    test_all(solutions, checker, inputs, Config.threads, args)
     if args.stats:
         print_summary(solutions, inputs)
 
@@ -435,7 +436,7 @@ def run(args: ArgsTester) -> None:
             json.dump(output, f, default=serialize_for_json)
 
     # TODO check if parallel testing slows down the testing
-    if args.threads > 1:
+    if Config.threads > 1:
         infob(
             "Make sure to verify whether parallel testing significantly "
             "impacts the program's execution speed."
