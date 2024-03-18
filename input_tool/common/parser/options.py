@@ -137,7 +137,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         {
             "dest": "sort",
             "action": "store_false",
-            "help": "[?] don't change order of programs",
+            "help": "don't change order of programs",
         },
         "preparing",
     ),
@@ -290,7 +290,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
             "dest": "warntimelimit",
             "default": "auto",
             "metavar": "LIMIT",
-            "help": "set tight timelimit warning time, "
+            "help": "[?] set tight timelimit warning time, "
             + "same format as for regular timelimit (default: {})",
         },
         "testing",

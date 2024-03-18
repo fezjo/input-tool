@@ -80,10 +80,25 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
 
 1. Prerekvizity:
 
+   - Na **Windows** `input-tool` funguje iba pod **WSL**
+      <details>
+      <summary>Inštalácia WSL</summary>
+
+     ```powershell
+     # spustite Powershell ako administátor (pravý klik na ikonu a "Run as administrator")
+     wsl --install # nainštaluje WSL
+     # reštartujte počítač
+     # znovu otvorte Powershell
+     wsl           # spustí WSL
+     # pokračujte ako na Ubuntu
+     ```
+
+      </details>
+
+   - Na **MacOS** potrebujete nainštalovať `coreutils` a `gcc`
+     - všetko potrebné získate napríklad pomocou `brew install coreutils gcc make python3`
    - Potrebujete `python3` ($\geq 3.8$) a `make`
    - Potrebujete kompilátory C/C++ (`gcc/clang/...`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
-   - Na **MacOS** potrebujete nainštalovať `coreutils` a `gcc`
-     - všetko potrebné napríklad pomocou `brew install coreutils gcc make python3`
    - _Nepovinne_ `time` (Linux) / `gnu-time` (MacOS) (nestačí bashová funkcia) ak chceme _Real/User/System_ časy
 
 2. Nainštalujte z PyPi:
@@ -104,13 +119,24 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
 
    ```bash
    pipx install git+https://github.com/fezjo/input-tool.git
-
+   # alebo
    git clone https://github.com/fezjo/input-tool.git
    cd input-tool
    pipx install -e .
    ```
 
    </details>
+
+### Inštalácia na Ubuntu
+
+```bash
+# nainštalujeme prerekvizity
+sudo apt update
+sudo apt install gcc g++ make python3 python3-pip pipx
+pipx ensurepath
+# nainštalujeme input-tool
+pipx install input-tool
+```
 
 # `itool`
 
