@@ -41,8 +41,8 @@ class Checker(Program):
     def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> Union[str, None]:
         diff_map = {
             "diff": " %s %s" % (ofile, tfile),
-            "check": " %s %s %s > /dev/null" % (ifile, ofile, tfile),
-            "chito": " %s %s %s > /dev/null" % (ifile, tfile, ofile),
+            "check": " %s %s %s" % (ifile, ofile, tfile),
+            "chito": " %s %s %s" % (ifile, tfile, ofile),
             "test": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
             "tester": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
         }
