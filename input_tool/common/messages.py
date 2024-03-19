@@ -95,7 +95,7 @@ class Color:
         Color.warning = Color("bad")
         Color.error = Color("error")
         Color.table = Color("blue")
-        Color.scores = [Color("special1", "special2", "score%s" % i) for i in range(5)]
+        Color.scores = [Color("special1", "special2", f"score{i}") for i in range(5)]
         Color.status = {s: Color(str(s)) for s in Status}
 
     def __init__(self, *args: str):

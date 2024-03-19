@@ -40,11 +40,11 @@ class Checker(Program):
 
     def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> Union[str, None]:
         diff_map = {
-            "diff": " %s %s" % (ofile, tfile),
-            "check": " %s %s %s" % (ifile, ofile, tfile),
-            "chito": " %s %s %s" % (ifile, tfile, ofile),
-            "test": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
-            "tester": " %s %s %s %s %s" % ("./", "./", ifile, ofile, tfile),
+            "diff": f" {ofile} {tfile}",
+            "check": f" {ifile} {ofile} {tfile}",
+            "chito": f" {ifile} {tfile} {ofile}",
+            "test": f" ./ ./ {ifile} {ofile} {tfile}",
+            "tester": f" ./ ./ {ifile} {ofile} {tfile}",
         }
         prefix = self.which_checker_format(self.name)
         if prefix:
