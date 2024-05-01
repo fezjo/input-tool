@@ -132,7 +132,7 @@ class Config:
         if lang in timelimits:
             return timelimits[lang]
         return timelimits[Langs.Lang.unknown]
-    
+
     @staticmethod
     def get_cpu_corecount(ratio: float = 1) -> int:
         return max(1, int(len(os.sched_getaffinity(0)) * ratio))

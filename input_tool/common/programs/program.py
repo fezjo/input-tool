@@ -133,7 +133,7 @@ class Program:
                 os.mkdir(class_dir)
                 self.compilecmd = f"javac {self.source} -d {class_dir}"
                 self.filestoclear.append(class_dir)
-                self.run_cmd = f"-cp {class_dir} {self.run_cmd}"
+                self.run_cmd = f"java -Xss256m -cp {class_dir} {self.run_cmd}"
             elif self.lang is Langs.Lang.rust:
                 options = f"-C opt-level=2 --out-dir {Config.progdir}"
                 self.compilecmd = f"rustc {options} {self.run_cmd}.rs"
@@ -143,8 +143,6 @@ class Program:
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
                 self.run_cmd = f"{Config.os_config.cmd_python} {self.source}"
-            if self.lang is Langs.Lang.java:
-                self.run_cmd = "java -Xss256m " + self.run_cmd
 
     @staticmethod
     def get_possible_locations_of_executable(run_cmd: str, source: str) -> list[str]:
@@ -186,17 +184,18 @@ class Program:
             if result.returncode:
                 logger.fatal("Compilation failed.")
 
-            possible_cmds = self.get_possible_locations_of_executable(
-                self.run_cmd, self.name
-            )
-            found_cmd = self.try_possible_locations_of_executable(possible_cmds)
-            if found_cmd is None:
-                logger.fatal(f"Error: No executable found for {self.name}")
-            elif found_cmd != self.run_cmd:
-                logger.warning(
-                    f"Warning: {self.run_cmd} not found, using {found_cmd} instead."
+            if self.lang is not Langs.Lang.java:
+                possible_cmds = self.get_possible_locations_of_executable(
+                    self.run_cmd, self.name
                 )
-                self.run_cmd = found_cmd
+                found_cmd = self.try_possible_locations_of_executable(possible_cmds)
+                if found_cmd is None:
+                    logger.fatal(f"Error: No executable found for {self.name}")
+                elif found_cmd != self.run_cmd:
+                    logger.warning(
+                        f"Warning: {self.run_cmd} not found, using {found_cmd} instead."
+                    )
+                    self.run_cmd = found_cmd
 
         if (
             not self.forceexecute
