@@ -83,6 +83,7 @@ def prepare_programs(programs: Iterable[Program], threads: int) -> None:
         for future, logger in zip(futures, parallel_logger_manager.sinks):
             future.result()
             plain(logger.read())
+            parallel_logger_manager.statistics += logger.statistics
         parallel_logger_manager.clear_buffers()
     default_logger.statistics += parallel_logger_manager.statistics
 

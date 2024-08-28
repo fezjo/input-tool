@@ -214,8 +214,9 @@ def plural(n: int, s: str) -> str:
 
 @dataclass
 class LoggerStatistics:
-    warnings: int = 0
     errors: int = 0
+    warnings: int = 0
+    compilation_warnings: int = 0
 
     def __str__(self) -> str:
         info_color = Color("normal", "blue" if self.warnings + self.errors else "green")
@@ -229,6 +230,12 @@ class LoggerStatistics:
             Color.warning if self.warnings else info_color,
             info_color,
         )
+        if self.compilation_warnings:
+            warning_msg += " and " + Color.colorize(
+                plural(self.compilation_warnings, "compilation warning"),
+                Color.warning,
+                info_color,
+            )
         msg = Color.colorize(
             f"During execution there were {error_msg} and {warning_msg}.", info_color
         )
@@ -236,8 +243,9 @@ class LoggerStatistics:
 
     def __add__(self, other: LoggerStatistics) -> LoggerStatistics:
         return LoggerStatistics(
-            warnings=self.warnings + other.warnings,
             errors=self.errors + other.errors,
+            warnings=self.warnings + other.warnings,
+            compilation_warnings=self.compilation_warnings + other.compilation_warnings,
         )
 
 
@@ -404,6 +412,7 @@ def ellipsis(items: Concatable, max_length: int, indicator: Concatable) -> Conca
 
 
 def fit_text_into_screen(text: str, height: int, width: int = 80) -> str:
+    # return text
     lines = text.splitlines(True)
     vertically_fit = ellipsis(lines, height, ["...\n"])
     fit = (ellipsis(line, width, "...") for line in vertically_fit)

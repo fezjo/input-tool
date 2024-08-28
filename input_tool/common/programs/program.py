@@ -177,8 +177,13 @@ class Program:
                 self.compilecmd,
                 shell=True,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
+                # TODO if stderr=subprocess.STDOUT, it would stream during compilation
+                stderr=subprocess.PIPE,
             )
+            stderr = result.stderr.decode("utf-8")
+            if stderr:
+                logger.infod(stderr)
+                logger.statistics.compilation_warnings += stderr.count("warning:")
             if not self.quiet:
                 logger.plain(result.stdout.decode("utf-8"))
             if result.returncode:
