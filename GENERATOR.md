@@ -47,7 +47,7 @@ Sady v IDF oddeľujeme práznymi riadkami. Sady sú číslované `1`..`9`, ak je
 
 ### Príklad IDF
 
-```perl
+```r
 10 1000 ciara
 20 1000 nahodne
 30 1000 hviezda
@@ -75,7 +75,7 @@ Vyrobí postupne vstupy `1.a.in`, `1.b.in`, `1.c.in`, `2.a.in`, `2.b.in`. V tomt
 
 Ak chcete svojmu generátoru povedať, aký vstup vyrába, nie je problém. Nasledujúci IDF:
 
-```perl
+```r
 {batch} {name} {id}
 {batch} {name} {id} 47
 
@@ -138,7 +138,7 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
 
 - ### IDF príklad 1
 
-  ```perl
+  ```r
   10
   20
   $ class: prvocislo-
@@ -175,7 +175,7 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
 
 - ### IDF príklad 2
 
-  ```perl
+  ```r
   # komentár
   platí to len # na začiatku riadku
   a neplatí to pri \
@@ -202,7 +202,7 @@ Táto fičúra sa môže hodiť na riešenie nasledovných problémov:
 
 Máme vstupy prebraté z inej súťaže, ale chceme si spraviť aj nejaké vlastné:
 
-```perl
+```r
 # najprv vygenerujeme prvú sadu z prebratých vstupov
 $ gen: sh
 cat sutazne-vstupy/01.a.in
@@ -225,7 +225,7 @@ Ak chcete, dať svojmu generátoru viac riadkový vstup, použite '`\`'. Ak riad
 
 Príklad:
 
-```perl
+```r
 $ gen: cat, batch: 0.sample
 4\
 1 2 3 4
@@ -249,7 +249,7 @@ Vyrobí dva sample vstupy. Všimnite si, že v IDF sa ignorujú biele znaky na z
 
 Ak chceme určiť nielen typ vstupu, ale podrobnejšie, čo má generátor vyrobiť, môžeme použiť generatívny popis vstupov. V ňom generátoru dáme postupnosť príkazov, ktoré má vykonať. Toto sa hodí, ak chceme generovať napríklad rôznorodé stromy so špecifickou štruktúrou. Uvedieme príklad, ako to môže vyzerať na generovanie postupnosti čísel.
 
-```perl
+```r
 # array <count> <x_1> <x_2> ... <x_count> -- vygeneruje postupnosť čísel
 # random <count> <lo> <hi> -- vygeneruje <count> náhodných čísel z intervalu [lo, hi]
 # range <lo> <hi> -- vygeneruje postupnosť čísel z intervalu [lo, hi]
