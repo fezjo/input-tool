@@ -86,7 +86,7 @@ def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
 
 
 def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> str:
-    return x.get_name(path=args.indir + "/" if path else "", ext=args.inext)
+    return x.get_name(path=args.indir if path else "", ext=args.inext)
 
 
 def print_message_for_input(

@@ -29,6 +29,7 @@ Format of description files:
 """
 from __future__ import annotations
 
+from os.path import join as path_join
 from random import randint
 from typing import Any, Optional, Sequence, TextIO
 
@@ -146,7 +147,7 @@ class Input:
             self.name = f".{self.name}"
 
     def get_name(self, path: str = "", ext: str = "") -> str:
-        return "%s%s%s.%s" % (path, self.batch, self.name, ext)
+        return path_join(path, "%s%s.%s" % (self.batch, self.name, ext))
 
     def get_generation_text(self) -> str:
         return self.text + "\n"
@@ -159,7 +160,7 @@ class Input:
 class Sample(Input):
     def __init__(self, lines: str, path: str, batchname: str, id: int, ext: str):
         super().__init__(lines, 0, id, id)
-        self.path = path + "/"
+        self.path = path
         self.ext = ext
         self.batch = batchname
         self.effects = False

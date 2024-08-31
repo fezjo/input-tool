@@ -187,9 +187,9 @@ def setup_ioram(
         fatal(f"Failed to create ramdir {ramdir}: {e!r}")
     infob(f"Using {ramdir} for input and output files.")
     for input in inputs:
-        shutil.copy(args.indir + "/" + input, ramdir + "/" + input)
+        shutil.copy(os.path.join(args.indir, input), os.path.join(ramdir, input))
     for output in _outputs or []:
-        shutil.copy(args.outdir + "/" + output, ramdir + "/" + output)
+        shutil.copy(os.path.join(args.outdir, output), os.path.join(ramdir, output))
     args.indir = ramdir
     args.outdir = ramdir
     atexit.register(lambda: shutil.rmtree(ramdir))
@@ -202,7 +202,7 @@ def temp_clear(args: ArgsTester) -> None:
     if len(tempfiles):
         info(f"Deleting all .{args.tempext} files")
         for tempfile in tempfiles:
-            os.remove(args.outdir + "/" + tempfile)
+            os.remove(os.path.join(args.outdir, tempfile))
 
 
 # ---------------- test solutions ----------------
@@ -271,8 +271,8 @@ def test_all(
             register_quit_with_executor(executor)
             executor._work_queue = TaskQueue(TASK_HISTORY)
             for input in inputs:
-                input_file = args.indir + "/" + input
-                prefix = args.outdir + "/" + input.rsplit(".", 1)[0]
+                input_file = os.path.join(args.indir, input)
+                prefix = os.path.join(args.outdir, input.rsplit(".", 1)[0])
                 output_file = prefix + "." + args.outext
                 temp_file = prefix + ".s{:0>2}." + args.tempext
 
