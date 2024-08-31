@@ -110,7 +110,7 @@ class Input:
             return
         commands = self.commands
         self.batch = commands.get("batch", self.batch)
-        self.name = commands.get("name", self.name) + commands.get("class", "")
+        self.name = commands.get("class", "") + commands.get("name", self.name)
         self.generator = commands.get("gen", self.generator)
 
     def _apply_format(self) -> None:
