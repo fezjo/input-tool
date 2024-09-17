@@ -8,10 +8,11 @@ from typing import Optional, Union
 from input_tool.common.commands import to_base_alnum
 from input_tool.common.messages import Logger, default_logger, fit_text_into_screen
 from input_tool.common.programs.program import Program
+from input_tool.common.types import Path, ProgramName
 
 
 class Checker(Program):
-    def __init__(self, name: str, show_output: bool = False):
+    def __init__(self, name: ProgramName, show_output: bool = False):
         super().__init__(name)
         self.output_ready: defaultdict[str, Event] = defaultdict(Event)
         self.show_output = show_output
@@ -23,22 +24,22 @@ class Checker(Program):
             self.forceexecute = True
 
     @staticmethod
-    def filename_befits(filename: str) -> bool:
-        return Checker.which_checker_format(filename) is not None
+    def filename_befits(name: ProgramName) -> bool:
+        return Checker.which_checker_format(name) is not None
 
     @staticmethod
-    def which_checker_format(filename: str) -> Union[str, None]:
-        filename = to_base_alnum(filename)
+    def which_checker_format(name: ProgramName) -> Union[str, None]:
+        name = ProgramName(to_base_alnum(name))
         prefixes = ["diff", "check", "chito", "tester"]
         for prefix in prefixes:
-            if filename.startswith(prefix):
+            if name.startswith(prefix):
                 return prefix
         return None
 
     def compare_mask(self) -> tuple[int, int, str]:
         return (3, 0, self.name)
 
-    def diff_cmd(self, ifile: str, ofile: str, tfile: str) -> Union[str, None]:
+    def diff_cmd(self, ifile: Path, ofile: Path, tfile: Path) -> Union[str, None]:
         diff_map = {
             "diff": f" {ofile} {tfile}",
             "check": f" {ifile} {ofile} {tfile}",
@@ -52,7 +53,7 @@ class Checker(Program):
         return None
 
     def check(
-        self, ifile: str, ofile: str, tfile: str, logger: Optional[Logger] = None
+        self, ifile: Path, ofile: Path, tfile: Path, logger: Optional[Logger] = None
     ) -> int:
         logger = default_logger if logger is None else logger
         cmd = self.diff_cmd(ifile, ofile, tfile)

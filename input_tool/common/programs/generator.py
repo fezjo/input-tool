@@ -5,13 +5,14 @@ import subprocess
 from input_tool.common.commands import Config
 from input_tool.common.messages import Status
 from input_tool.common.programs.program import Program
+from input_tool.common.types import Path
 
 
 class Generator(Program):
     def compare_mask(self) -> tuple[int, int, str]:
         return (4, 0, self.name)
 
-    def generate(self, ifile: str, text: str) -> Status:
+    def generate(self, ifile: Path, text: str) -> Status:
         osc = Config.os_config
         ulimit_cmd = (
             f"{osc.cmd_ulimit} -m {osc.mem_unlimited}; "

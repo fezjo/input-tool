@@ -47,6 +47,7 @@ from input_tool.common.tools_common import (
     register_quit_with_executor,
     setup_config,
 )
+from input_tool.common.types import Path, ProgramName
 
 # ----------------- configuration ----------------
 
@@ -77,16 +78,16 @@ def parse_warntimelimit(
 # --------------- prepare programs ---------------
 
 
-def get_relevant_prog_files_in_directory(directory: str) -> list[str]:
+def get_relevant_prog_files_in_directory(directory: Path) -> list[Path]:
     classes = (Solution, Validator, Checker)
     return [
-        os.path.normpath(de.path)
+        Path(os.path.normpath(de.path))
         for de in os.scandir(directory)
-        if de.is_file() and any(cl.filename_befits(de.name) for cl in classes)
+        if de.is_file() and any(cl.filename_befits(Path(de.name)) for cl in classes)
     ]
 
 
-def get_relevant_prog_files_deeper(candidates: Sequence[str]) -> list[str]:
+def get_relevant_prog_files_deeper(candidates: Sequence[Path]) -> list[Path]:
     return list(
         itertools.chain.from_iterable(
             get_relevant_prog_files_in_directory(p) if os.path.isdir(p) else [p]
@@ -96,10 +97,10 @@ def get_relevant_prog_files_deeper(candidates: Sequence[str]) -> list[str]:
 
 
 def create_programs_from_files(
-    files: Sequence[str], deduplicate: bool
-) -> tuple[list[Union[Solution, Validator]], list[str]]:
+    files: Sequence[Path], deduplicate: bool
+) -> tuple[list[Union[Solution, Validator]], list[Path]]:
     solutions: list[Union[Solution, Validator]] = []
-    checker_files: list[str] = []
+    checker_files: list[Path] = []
     if deduplicate:  # remove duplicate paths keeping order
         files = list(dict.fromkeys(files))
     for p in files:
@@ -113,7 +114,7 @@ def create_programs_from_files(
 
 
 def create_checker(
-    checker_files: list[str], default_checker: str, show_diff_output: bool
+    checker_files: list[Path], default_checker: ProgramName, show_diff_output: bool
 ) -> Checker:
     if default_checker:
         checker_files = [default_checker]
@@ -129,7 +130,7 @@ def create_checker(
 def deduplicate_solutions(
     solutions: Sequence[Union[Solution, Validator]],
 ) -> list[Union[Solution, Validator]]:
-    d: dict[str, Program] = {}
+    d: dict[ProgramName, Program] = {}
     res: list[Union[Solution, Validator]] = []
     for s in solutions:
         key = s.run_cmd
@@ -156,13 +157,13 @@ def print_solutions_run_commands(
 # --------------- prepare io files ---------------
 
 
-def get_inputs(args: ArgsTester) -> list[str]:
+def get_inputs(args: ArgsTester) -> list[Path]:
     if not os.path.exists(args.indir):
         fatal(f"Input directory `{args.indir}` doesn't exist.")
-    return sorted(filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)))
+    return sorted(filter(lambda x: x.endswith(args.inext), map(Path, os.listdir(args.indir))))
 
 
-def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
+def get_outputs(inputs: Sequence[Path], args: ArgsTester) -> Optional[list[Path]]:
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
     if args.outext != args.tempext and not args.reset:
@@ -178,7 +179,7 @@ def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
 
 
 def setup_ioram(
-    args: ArgsTester, inputs: list[str], _outputs: Optional[list[str]]
+    args: ArgsTester, inputs: Sequence[Path], _outputs: Optional[Sequence[Path]]
 ) -> None:
     ramdir = "/dev/shm/input_tool/{0}".format(os.getpid())
     try:
@@ -209,8 +210,8 @@ def temp_clear(args: ArgsTester) -> None:
 
 
 def get_result_file(
-    out_file: str, temp_file: str, isvalidator: bool, force: str = "none"
-) -> str:
+    out_file: Path, temp_file: Path, isvalidator: bool, force: str = "none"
+) -> Path:
     if isvalidator or force == "temp":
         return temp_file
     if not os.path.exists(out_file) or force == "out":
@@ -218,16 +219,16 @@ def get_result_file(
     return temp_file
 
 
-def get_output_creation_message(output_file: str) -> str:
+def get_output_creation_message(output_file: Path) -> str:
     reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
     return f"File {output_file} will be created now ({reason})."
 
 
 def general_run_sol(
     sol: Solution,
-    ifile: str,
-    ofile: str,
-    rfile: str,
+    ifile: Path,
+    ofile: Path,
+    rfile: Path,
     checker: Checker,
     cleartemp: bool,
     *rargs: Any,
@@ -244,7 +245,7 @@ def general_run_sol(
 def test_all(
     solutions: Sequence[Union[Solution, Validator]],
     checker: Checker,
-    inputs: Sequence[str],
+    inputs: Sequence[Path],
     threads: int,
     args: ArgsTester,
 ) -> None:
@@ -282,10 +283,10 @@ def test_all(
 
                 def run_sol(
                     sol: Solution,
-                    rfile: str,
+                    rfile: Path,
                     *rargs: Any,
-                    ifile: str = input_file,
-                    ofile: str = output_file,
+                    ifile: Path = input_file,
+                    ofile: Path = output_file,
                     checker: Checker = checker,
                     cleartemp: bool = args.cleartemp,
                 ) -> None:

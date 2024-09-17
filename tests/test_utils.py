@@ -101,7 +101,7 @@ def clean() -> None:
 
 @pytest.fixture
 def setup_directory(
-    request: pytest.FixtureRequest, path: str, cleanup: bool = True
+    request: pytest.FixtureRequest, path: Path, cleanup: bool = True
 ) -> Iterator[None]:
     # change to directory of the test
     os.chdir(os.path.join(os.path.dirname(request.path), path))

@@ -9,10 +9,11 @@ from typing import Optional
 
 from input_tool.common.commands import Config, Langs, is_file_newer, to_base_alnum
 from input_tool.common.messages import Logger, default_logger, fatal
+from input_tool.common.types import Path, ProgramName
 
 
 class Program:
-    def __init__(self, name: str):
+    def __init__(self, name: ProgramName):
         self.name = name
         self.quiet: bool = Config.quiet
         self.cancompile: bool = Config.compile
@@ -23,7 +24,7 @@ class Program:
         self._transform()
 
     @staticmethod
-    def filename_befits(filename: str) -> bool:
+    def filename_befits(filename: ProgramName) -> bool:
         raise NotImplementedError
 
     def compare_mask(self) -> tuple[int, int, str]:
@@ -34,7 +35,7 @@ class Program:
         self.source = None
         self.ext = None
         self.run_cmd = self.name
-        self.filestoclear: list[str] = []
+        self.filestoclear: list[Path] = []
         self.lang: Langs.Lang = Langs.Lang.unknown
 
         # if it is final command, dont do anything

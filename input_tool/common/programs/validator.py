@@ -6,15 +6,16 @@ from input_tool.common.commands import to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.solution import Solution
+from input_tool.common.types import Path, ProgramName
 
 
 class Validator(Solution):
-    def __init__(self, name: str):
+    def __init__(self, name: ProgramName):
         super().__init__(name)
         self.statistics.result = Status.valid
 
     @staticmethod
-    def filename_befits(filename: str) -> bool:
+    def filename_befits(filename: ProgramName) -> bool:
         return to_base_alnum(filename).startswith("val")
 
     def compare_mask(self) -> tuple[int, int, str]:
@@ -32,14 +33,14 @@ class Validator(Solution):
         color = Color.score_color(self.statistics.result == Status.valid, 1)
         return color, ""
 
-    def run_args(self, ifile: str) -> str:
+    def run_args(self, ifile: Path) -> str:
         return " ".join(ifile.split("/")[-1].split(".")) + " "
 
     def run(
         self,
-        ifile: str,
-        ofile: str,
-        tfile: str,
+        ifile: Path,
+        ofile: Path,
+        tfile: Path,
         checker: Checker,
         is_output_generator: bool = False,
         logger: Optional[Logger] = None,

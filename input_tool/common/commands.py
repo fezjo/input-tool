@@ -39,9 +39,10 @@ from typing import Iterable, Optional, Union
 
 from input_tool.common.messages import table_header
 from input_tool.common.os_config import OsConfig
+from input_tool.common.types import Path
 
 
-def is_file_newer(file1: str, file2: str) -> bool | None:
+def is_file_newer(file1: Path, file2: Path) -> bool | None:
     if not os.path.exists(file1) or not os.path.exists(file2):
         return None
     return os.path.getctime(file1) > os.path.getctime(file2)
@@ -87,7 +88,7 @@ class Langs:
     )
 
     @staticmethod
-    def from_filename(filename: str) -> Lang:
+    def from_filename(filename: Path) -> Lang:
         ext = filename.rsplit(".", 1)[-1]
         return Langs.from_ext(ext)
 
@@ -106,7 +107,7 @@ class Langs:
 class Config:
     Timelimit = dict[Union[Langs.Lang, str], timedelta]
 
-    progdir: Optional[str] = None
+    progdir: Optional[Path] = None
     compile: bool
     execute: bool
     quiet: bool
@@ -138,7 +139,7 @@ class Config:
         return max(1, int(len(os.sched_getaffinity(0)) * ratio))
 
 
-def get_statistics_header(inputs: Iterable[str]) -> str:
+def get_statistics_header(inputs: Iterable[Path]) -> str:
     batches = set([x.rsplit(".", 2)[0] for x in inputs if "sample" not in x])
     pts = len(batches)
     widths = [Config.cmd_maxlen, 8, 9, 6, 6, max(7, pts)]

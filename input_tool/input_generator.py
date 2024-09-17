@@ -35,6 +35,7 @@ from input_tool.common.tools_common import (
     prepare_programs,
     setup_config,
 )
+from input_tool.common.types import Path, ProgramName
 
 
 def parse_args() -> ArgsGenerator:
@@ -42,8 +43,8 @@ def parse_args() -> ArgsGenerator:
     return parser.parse(ArgsGenerator)
 
 
-def find_idf(directory: str) -> str:
-    idfs: list[str] = []
+def find_idf(directory: Path) -> Path:
+    idfs: list[Path] = []
     for de in os.scandir(directory):
         if de.is_file() and de.name.startswith("idf"):
             idfs.append(de.path)
@@ -55,7 +56,7 @@ def find_idf(directory: str) -> str:
     return idfs[0]
 
 
-def get_recipe(file: Optional[str], idf_version: int) -> Recipe:
+def get_recipe(file: Optional[Path], idf_version: int) -> Recipe:
     if file is not None:
         if os.path.isdir(file):
             file = find_idf(file)
@@ -66,13 +67,13 @@ def get_recipe(file: Optional[str], idf_version: int) -> Recipe:
     return Recipe(text, idf_version)
 
 
-def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
+def setup_indir(indir: Path, inext: str, clear_input: bool) -> None:
     if not os.path.exists(indir):
         infob(f"Creating directory '{indir}'")
         os.makedirs(indir)
 
     filestoclear = os.listdir(indir)
-    if filestoclear and clear_input:
+    if filestoclear and clear_input:  # TODO pathlib
         infob(f"Cleaning directory '{indir}:'")
         # delete only following files
         exttodel = ["in", "out", "temp", inext]
@@ -85,7 +86,7 @@ def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
                 os.remove(f"{indir}/{file}")
 
 
-def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> str:
+def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> Path:
     return x.get_name(path=args.indir if path else "", ext=args.inext)
 
 
@@ -108,7 +109,7 @@ def print_message_for_input(
 def generate_all(
     recipe: Recipe,
     programs: dict[str, Generator],
-    default_gencmd: str,
+    default_gencmd: ProgramName,
     args: ArgsGenerator,
 ) -> None:
     def submit_input(executor: ThreadPoolExecutor, inp: Input) -> Future:

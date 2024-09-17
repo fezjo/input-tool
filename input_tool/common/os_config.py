@@ -5,17 +5,18 @@ from dataclasses import dataclass
 from typing import Iterable, Optional
 
 from input_tool.common.messages import warning
+from input_tool.common.types import ProgramName
 
 
 @dataclass
 class OsConfig:
-    cmd_cpp_compiler: Optional[str]
-    cmd_date: str
-    cmd_python: str
-    cmd_time: str
-    cmd_timeout: str
-    cmd_ulimit: str
-    mem_unlimited: str
+    cmd_cpp_compiler: Optional[ProgramName]
+    cmd_date: ProgramName
+    cmd_python: ProgramName
+    cmd_time: ProgramName
+    cmd_timeout: ProgramName
+    cmd_ulimit: ProgramName
+    mem_unlimited: ProgramName
 
     def check_all_os_utils_exist(self) -> None:
         for cmd in (
@@ -62,7 +63,9 @@ def find_os_config() -> OsConfig:
     return LINUX_OS_CONFIG
 
 
-def find_pythoncmd(argcmd: str, alternatives: Iterable[str] = ()) -> str:
+def find_pythoncmd(
+    argcmd: ProgramName, alternatives: Iterable[ProgramName] = ()
+) -> ProgramName:
     cmds = [argcmd] + list(alternatives) + ["python3", "python", "pypy3"]
     res = next((x for x in cmds if shutil.which(x)), "NO_PYTHON_INTERPRETER_FOUND")
     if res != argcmd:
@@ -70,7 +73,7 @@ def find_pythoncmd(argcmd: str, alternatives: Iterable[str] = ()) -> str:
     return res
 
 
-def find_macos_gcc() -> Optional[str]:
+def find_macos_gcc() -> Optional[ProgramName]:
     for version in range(20, 0, -1):
         for prog in ("g++", "gcc"):
             cmd = f"{prog}-{version}"

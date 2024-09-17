@@ -13,6 +13,7 @@ from input_tool.common.messages import Color, Logger, Status, default_logger, ta
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.task_history import TASK_HISTORY, TaskHistory
+from input_tool.common.types import Path, ProgramName
 
 
 class Solution(Program):
@@ -25,7 +26,7 @@ class Solution(Program):
         times: defaultdict[str, list[Optional[tuple[timedelta, ...]]]]
         failedbatches: set[str]
 
-    def __init__(self, name: str):
+    def __init__(self, name: ProgramName):
         super().__init__(name)
         self.statistics = Solution.Statistics(
             maxtime=timedelta(milliseconds=-1),
@@ -37,7 +38,7 @@ class Solution(Program):
         )
 
     @staticmethod
-    def filename_befits(filename: str) -> bool:
+    def filename_befits(filename: ProgramName) -> bool:
         return to_base_alnum(filename).startswith("sol")
 
     def updated_status(self, original: Status, new: Status) -> Status:
@@ -131,13 +132,13 @@ class Solution(Program):
         }
 
     @staticmethod
-    def parse_batch(ifile: str) -> str:
+    def parse_batch(ifile: Path) -> str:
         name = os.path.basename(ifile)
         inp, _ext = os.path.splitext(name)
         return inp if inp.endswith("sample") else inp.rsplit(".", 1)[0]
 
     def record(
-        self, ifile: str, status: Status, times: Optional[Sequence[timedelta]]
+        self, ifile: Path, status: Status, times: Optional[Sequence[timedelta]]
     ) -> None:
         batch = self.parse_batch(ifile)
         batchresults = self.statistics.batchresults
@@ -159,11 +160,11 @@ class Solution(Program):
 
     def get_exec_cmd(
         self,
-        ifile: str,
-        tfile: str,
+        ifile: Path,
+        tfile: Path,
         timelimit: timedelta = timedelta(0),
         memorylimit: float = 0.0,
-    ) -> tuple[str, str]:
+    ) -> tuple[Path, str]:
         f_timefile = tempfile.NamedTemporaryFile(delete=False)
         f_timefile.close()
         timefile = f_timefile.name
@@ -191,7 +192,7 @@ class Solution(Program):
         )
         return timefile, cmd
 
-    def run_args(self, ifile: str) -> str:
+    def run_args(self, ifile: Path) -> str:
         return ""
 
     def translate_exit_code_to_status(self, exit_code: int) -> Status:
@@ -204,7 +205,7 @@ class Solution(Program):
         return Status.err
 
     def get_times(
-        self, timefile: str, logger: Logger = default_logger
+        self, timefile: Path, logger: Logger = default_logger
     ) -> Optional[list[timedelta]]:
         try:
             with open(timefile, "r") as tf:
@@ -219,9 +220,9 @@ class Solution(Program):
 
     def _run(
         self,
-        ifile: str,
-        ofile: str,
-        tfile: str,
+        ifile: Path,
+        ofile: Path,
+        tfile: Path,
         checker: Optional[Checker],
         is_output_generator: bool,
         logger: Logger,
@@ -274,7 +275,7 @@ class Solution(Program):
 
     def output_testcase_summary(
         self,
-        ifile: str,
+        ifile: Path,
         status: Status,
         run_times: Optional[Sequence[timedelta]],
         logger: Logger,
@@ -304,9 +305,9 @@ class Solution(Program):
 
     def run(
         self,
-        ifile: str,
-        ofile: str,
-        tfile: str,
+        ifile: Path,
+        ofile: Path,
+        tfile: Path,
         checker: Checker,
         is_output_generator: bool = False,
         logger: Optional[Logger] = None,

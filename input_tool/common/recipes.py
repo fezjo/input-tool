@@ -36,6 +36,7 @@ from typing import Any, Optional, Sequence, TextIO
 import yaml
 
 from input_tool.common.messages import error, warning
+from input_tool.common.types import Path
 
 
 class EvalLoader(yaml.SafeLoader):
@@ -146,8 +147,9 @@ class Input:
         if self.name:
             self.name = f".{self.name}"
 
-    def get_name(self, path: str = "", ext: str = "") -> str:
-        return path_join(path, "%s%s.%s" % (self.batch, self.name, ext))
+    def get_name(self, path: Optional[Path] = None, ext: str = "") -> Path:
+        filename = "%s%s%s" % (self.batch, self.name, ext)
+        return path_join(path, filename) if path else filename
 
     def get_generation_text(self) -> str:
         return self.text + "\n"
@@ -158,7 +160,7 @@ class Input:
 
 
 class Sample(Input):
-    def __init__(self, lines: str, path: str, batchname: str, id: int, ext: str):
+    def __init__(self, lines: str, path: Path, batchname: str, id: int, ext: str):
         super().__init__(lines, 0, id, id)
         self.path = path
         self.ext = ext

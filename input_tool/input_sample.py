@@ -22,6 +22,7 @@ from input_tool.common.parser.specifications import (
     options_sample,
 )
 from input_tool.common.recipes import Input, Sample, prepare_cumber
+from input_tool.common.types import Path
 
 # TODO Can be used in opposite direction.
 # TODO smart -- detect prefix and multi.
@@ -32,7 +33,7 @@ def parse_args() -> ArgsSample:
     return parser.parse(ArgsSample)
 
 
-def read_recipe(path: Optional[str]) -> list[str]:
+def read_recipe(path: Optional[Path]) -> list[str]:
     if path:
         if not os.path.exists(path):
             fatal(f"Path '{path}' does not exist.")
@@ -110,7 +111,7 @@ def process_lines(lines: Sequence[str]) -> tuple[list[str], list[str]]:
 
 
 def get_samples(
-    samples_in: Sequence[str], samples_out: Sequence[str], args: ArgsSample
+    samples_in: Sequence[Path], samples_out: Sequence[Path], args: ArgsSample
 ) -> list[Sample]:
     samples: list[Sample] = []
     for i in range(len(samples_in)):
@@ -137,7 +138,7 @@ def print_tips() -> None:
         warning(message)
 
 
-def prepare_dirs(dirs: Sequence[str]) -> None:
+def prepare_dirs(dirs: Sequence[Path]) -> None:
     for d in dirs:
         if not os.path.exists(d):
             infob(f"Creating directory '{d}'")
