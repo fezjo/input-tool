@@ -138,6 +138,10 @@ pipx ensurepath
 pipx install input-tool
 ```
 
+### Problémy na Windows WSL
+
+Často sa stáva, že program pod WSL beží oveľa pomalšie ako na Linuxe (dostáva TLE), konkrétne pri programoch s veľkým vstupom/výstupom. Toto sa deje ak WSL musí pracovať so súborovým systémom Windowsu. Riešenie je presunúť priečinok v ktorom pripravujeme úlohu do WSL (teda `/home/username/...` namiesto `/mnt/c/...`).
+
 # `itool`
 
 Všetky príkazy sú dostupné pod jedným príkazom `itool`. Tento príkaz má niekoľko podpríkazov, ktoré sa dajú spustiť pomocou `itool <subcommand>`. Tieto podpríkazy sú:
