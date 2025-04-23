@@ -310,10 +310,10 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
         ("-d", "--diff"),
         {
             "dest": "diffcmd",
-            "default": "diff",
+            "default": "",
             "help": "program which checks correctness of output "
             + "[format: `diff $our $theirs`, `check $inp $our $theirs`, "
-            + "details in TESTER.MD] (default: {})",
+            + "details in TESTER.MD] (default: diff)",
         },
         "testing",
     ),
