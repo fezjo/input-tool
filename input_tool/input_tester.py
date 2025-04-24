@@ -145,7 +145,7 @@ def deduplicate_solutions(
 
 
 def print_solutions_run_commands(
-    solutions: Sequence[Union[Solution, Validator]]
+    solutions: Sequence[Union[Solution, Validator]],
 ) -> None:
     infob("----- Run commands -----")
     for s in solutions:
