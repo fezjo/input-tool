@@ -29,6 +29,7 @@ Format of description files:
 """
 from __future__ import annotations
 
+from io import StringIO
 from os.path import join as path_join
 from random import randint
 from typing import Any, Optional, Sequence, TextIO
@@ -38,24 +39,73 @@ import yaml
 from input_tool.common.messages import error, warning
 
 
+class EvalNode:
+    """A node that evaluates an expression using eval() with access to previously defined variables."""
+
+    def __init__(self, expr: str) -> None:
+        self.expr = expr
+        self.value: Any | None = None
+        self.currently_evaluating = False
+
+    def __repr__(self) -> str:
+        return f"EvalNode({self.expr!r})"
+
+    def __str__(self) -> str:
+        return self.expr
+
+    def evaluate(self, mapping: dict[str, Any]) -> Any:
+        """Evaluate the expression using the provided mapping."""
+        try:
+            self.value = eval(self.expr, {}, mapping)
+            if isinstance(self.value, float) and self.value.is_integer():
+                self.value = int(self.value)
+        except Exception as e:
+            warning(
+                f"Error evaluating expression: {self.expr}. "
+                + f"Returning the original expression as a string. (reason {e!r})"
+                + (
+                    " Maybe you should topologically sort the arguments?"
+                    if "EvalNode" in str(e)
+                    else ""
+                )
+            )
+            self.value = self.expr
+        return self.value
+
+
 class EvalLoader(yaml.SafeLoader):
-    """custom loader to allow !eval tag"""
+    """Custom loader to allow !eval tag with access to previously defined variables."""
 
     def __init__(self, stream: TextIO) -> None:
         super().__init__(stream)
-        self.add_constructor(tag="!eval", constructor=self.evaluate)
+        self.add_constructor(tag="!eval", constructor=self.construct_eval)
+        self.eval_nodes: list[EvalNode] = []
 
     @staticmethod
-    def evaluate(loader: yaml.Loader, node: yaml.Node) -> Any:
+    def construct_eval(loader: EvalLoader, node: yaml.Node) -> Any:
         # this may fail and raise an exception, this is intended
-        res: Any = loader.construct_scalar(node)  # type: ignore
-        try:
-            res = eval(res)
-            if res == int(res):
-                res = int(res)
-        except Exception:
-            pass
+        expr = loader.construct_scalar(node)
+        res = EvalNode(expr)
+        loader.eval_nodes.append(res)
         return res
+
+    def eval(self, mapping: dict[str, Any]) -> dict[str, Any]:
+        for eval_node in self.eval_nodes:
+            eval_node.evaluate(mapping)
+            # eval nodes other than top level ones will remain as objects because yagni
+            for key, value in mapping.items():  # quadratic but whatever
+                if value == eval_node:
+                    mapping[key] = eval_node.value
+        return mapping
+
+    def get_data(self) -> Any:
+        """inspired by yaml.load(...)"""
+        try:
+            data = self.get_single_data()
+            data = self.eval(data)
+        finally:
+            self.dispose()
+        return data
 
 
 def _int_log(number: int, base: int) -> int:
@@ -114,19 +164,18 @@ class Input:
         self.name = commands.get("class", "") + commands.get("name", self.name)
         self.generator = commands.get("gen", self.generator)
 
-    def _apply_format(self) -> None:
+    def _apply_format(self, ) -> None:
         if not self.effects:
             return
         try:
-            self.text = self.text.format(
-                **{
-                    "batch": self.batch,
-                    "name": self.name,
-                    "id": self.id,
-                    "rand": randint(0, Input.MAXINT - 1),
-                    **self.commands,
-                }
-            )
+            d: dict[str, Any] = {
+                "batch": self.batch,
+                "name": self.name,
+                "id": self.id,
+                "rand": randint(0, Input.MAXINT - 1),
+                **self.commands,
+            }
+            self.text = eval(f"f'{self.text}'", {}, d)
         except KeyError as e:
             error(
                 f"Error in filling IDF variables for input #{self.id}. "
@@ -202,7 +251,7 @@ class Recipe:
     def _parse_commands_v2(self, line: str) -> dict[str, str]:
         line = f"{{{line}}}"
         try:
-            yres = yaml.load(line, EvalLoader)
+            yres = EvalLoader(StringIO(line)).get_data()
         except Exception as e:
             warning(
                 f"Error parsing commands as YAML\n\tCommands: {line}\n\tError: {e!r}"
