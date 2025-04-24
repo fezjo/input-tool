@@ -135,7 +135,8 @@ class Config:
 
     @staticmethod
     def get_cpu_corecount(ratio: float = 1) -> int:
-        return max(1, int(len(os.sched_getaffinity(0)) * ratio))
+        available = os.process_cpu_count() or 1
+        return max(1, int(available * ratio))
 
 
 def get_statistics_header(inputs: Iterable[str]) -> str:
