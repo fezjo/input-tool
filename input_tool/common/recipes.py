@@ -34,6 +34,7 @@ from os.path import join as path_join
 from random import randint
 from typing import Any, Optional, Sequence, TextIO
 
+import math
 import yaml
 
 from input_tool.common.messages import error, warning
@@ -102,6 +103,7 @@ class EvalLoader(yaml.SafeLoader):
         """inspired by yaml.load(...)"""
         try:
             data = self.get_single_data()
+            data.setdefault("math", math)
             data = self.eval(data)
         finally:
             self.dispose()
