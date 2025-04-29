@@ -29,15 +29,17 @@ Format of description files:
 """
 from __future__ import annotations
 
+import math
 from io import StringIO
 from os.path import join as path_join
 from random import randint
 from typing import Any, Optional, Sequence, TextIO
 
-import math
 import yaml
 
 from input_tool.common.messages import error, warning
+
+Commands = dict[str, Any]
 
 
 class EvalNode:
@@ -99,11 +101,12 @@ class EvalLoader(yaml.SafeLoader):
                     mapping[key] = eval_node.value
         return mapping
 
-    def get_data(self) -> Any:
+    def get_data(self, base: dict[str, Any] | None = None) -> Any:
         """inspired by yaml.load(...)"""
         try:
-            data = self.get_single_data()
+            data = dict(base) if base else {}
             data.setdefault("math", math)
+            data.update(self.get_single_data())
             data = self.eval(data)
         finally:
             self.dispose()
@@ -166,7 +169,7 @@ class Input:
         self.name = commands.get("class", "") + commands.get("name", self.name)
         self.generator = commands.get("gen", self.generator)
 
-    def _apply_format(self, ) -> None:
+    def _apply_format(self) -> None:
         if not self.effects:
             return
         try:
@@ -236,10 +239,14 @@ class Recipe:
         self.idf_version = idf_version % len(self._parse_commands_versions)
         self._parse_commands = self._parse_commands_versions[idf_version]
 
-    def _parse_commands_v0(self, line: str) -> dict[str, str]:
+    def _parse_commands_v0(
+        self, line: str, _prev_commands: dict[str, Any] | None
+    ) -> dict[str, str]:
         return {}
 
-    def _parse_commands_v1(self, line: str) -> dict[str, str]:
+    def _parse_commands_v1(
+        self, line: str, _prev_commands: dict[str, Any] | None = None
+    ) -> dict[str, str]:
         commands: dict[str, str] = {}
         parts = line.split()
         for part in parts:
@@ -250,10 +257,13 @@ class Recipe:
                     self.programs.append(v)
         return commands
 
-    def _parse_commands_v2(self, line: str) -> dict[str, str]:
+    def _parse_commands_v2(
+        self, line: str, prev_commands: dict[str, Any] | None
+    ) -> dict[str, str]:
+        prev_commands = {} if prev_commands is None else prev_commands
         line = f"{{{line}}}"
         try:
-            yres = EvalLoader(StringIO(line)).get_data()
+            yres = EvalLoader(StringIO(line)).get_data(prev_commands)
         except Exception as e:
             warning(
                 f"Error parsing commands as YAML\n\tCommands: {line}\n\tError: {e!r}"
@@ -274,7 +284,7 @@ class Recipe:
 
     def _parse_recipe(self) -> None:
         continuingline = False
-        over_commands: dict[str, str] = {}
+        over_commands: dict[str, Any] = {}
         batchid, subid, inputid = 1, 0, 1
 
         for line in self.recipe:
@@ -306,11 +316,11 @@ class Recipe:
                 continue
 
             if line.startswith("$+"):
-                new_commands = self._parse_commands(line[2:])
+                new_commands = self._parse_commands(line[2:], over_commands)
                 over_commands = dict(over_commands, **new_commands)
                 continue
             if line.startswith("$"):
-                over_commands = self._parse_commands(line[1:])
+                over_commands = self._parse_commands(line[1:], None)
                 continue
 
             effects = True
