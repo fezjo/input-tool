@@ -332,7 +332,7 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] =
             "dest": "fail_skip",
             "action": "store_false",
             "help": "don't skip the rest of input files in the same batch "
-            + "after first fail",
+            + "after first fail (excluding TLE)",
         },
         "testing",
     ),

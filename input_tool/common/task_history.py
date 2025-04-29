@@ -93,7 +93,7 @@ class TaskHistory:
         detail = self.tasks[program][key]
         return (
             lambda process: setattr(detail, "process", process),
-            lambda: getattr(detail, "killed"),
+            lambda: detail.killed,
             lambda: self.kill_all(program, batch),
         )
 
