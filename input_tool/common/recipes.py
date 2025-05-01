@@ -180,7 +180,7 @@ class Input:
                 "rand": randint(0, Input.MAXINT - 1),
                 **self.commands,
             }
-            self.text = eval(f"f'{self.text}'", {}, d)
+            self.text = eval(f"f{repr(self.text)}", {}, d)
         except KeyError as e:
             error(
                 f"Error in filling IDF variables for input #{self.id}. "
