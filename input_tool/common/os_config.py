@@ -16,6 +16,7 @@ class OsConfig:
     cmd_timeout: str
     cmd_ulimit: str
     mem_unlimited: str
+    stupid_macos: bool
 
     def check_all_os_utils_exist(self) -> None:
         for cmd in (
@@ -36,6 +37,7 @@ LINUX_OS_CONFIG = OsConfig(
     cmd_timeout="timeout",
     cmd_ulimit="ulimit",
     mem_unlimited="unlimited",
+    stupid_macos=False,
 )
 
 DARWIN_OS_CONFIG = OsConfig(
@@ -46,6 +48,7 @@ DARWIN_OS_CONFIG = OsConfig(
     cmd_timeout="gtimeout",
     cmd_ulimit="ulimit",
     mem_unlimited="hard",
+    stupid_macos=True,
 )
 
 

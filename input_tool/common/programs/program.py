@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import time
 from typing import Optional
 
 from input_tool.common.commands import Config, Langs, is_file_newer, to_base_alnum
@@ -171,8 +172,10 @@ class Program:
     def prepare(self, logger: Optional[Logger] = None) -> None:
         assert self.run_cmd is not None
         logger = default_logger if logger is None else logger
+        fresh_compiled = False
         if self.compilecmd is not None:
             logger.infob(f"Compiling: {self.compilecmd}")
+            fresh_compiled = True
             result = subprocess.run(
                 self.compilecmd,
                 shell=True,
@@ -185,7 +188,10 @@ class Program:
                 logger.infod(stderr)
                 logger.statistics.compilation_warnings += stderr.count("warning:")
             if not self.quiet:
-                logger.plain(result.stdout.decode("utf-8"))
+                stdout = result.stdout.decode("utf-8")
+                if "up to date" in stdout: # TODO: find more robust way
+                    fresh_compiled = False
+                logger.plain(stdout)
             if result.returncode:
                 logger.fatal("Compilation failed.")
 
@@ -208,6 +214,14 @@ class Program:
             and self.run_cmd[0].isalnum()
         ):
             self.run_cmd = "./" + self.run_cmd
+
+        # MacOS is stupid or whatever and it will virus check or sign the binary or something
+        # so we need to run it once and wait for it to do whatever it does (1s should be enough?)
+        if fresh_compiled and Config.os_config.stupid_macos and not self.forceexecute:
+            logger.infob(f"Prewarming binary: {self.run_cmd}")
+            cmd = [Config.os_config.cmd_timeout, "0.001", self.run_cmd]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(1)
 
         self.ready = True
 
