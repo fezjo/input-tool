@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, Optional, Sequence
 
-from input_tool.common.commands import Config, Langs, to_base_alnum
+from input_tool.common.commands import Config, Langs, natural_sort_key, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
@@ -98,8 +98,13 @@ class Solution(Program):
 
         self.compute_time_statistics()
         color, points = self.get_statistics_color_and_points()
-        # NOTE: natural sort would be better
-        batchresults = [v for k, v in sorted(self.statistics.batchresults.items())]
+        batchresults = [
+            v
+            for k, v in sorted(
+                self.statistics.batchresults.items(),
+                key=lambda x: natural_sort_key(x[0]),
+            )
+        ]
         batch_stats = "".join(
             Color.colorize(str(status.set_warntle(False))[0], Color.status[status])
             for status in batchresults

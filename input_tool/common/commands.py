@@ -33,6 +33,7 @@ program.ext      -- If .pyX, run as 'pythonX program.ext. py = py3
 """
 
 import os
+import re
 from datetime import timedelta
 from enum import Enum
 from typing import Iterable, Optional, Union
@@ -50,6 +51,11 @@ def is_file_newer(file1: str, file2: str) -> bool | None:
 def to_base_alnum(s: str) -> str:
     s = s.split("/")[-1]
     return "".join([x for x in s if str.isalnum(x)])
+
+
+# https://stackoverflow.com/a/16090640
+def natural_sort_key(s: str, _nsre: re.Pattern[str] = re.compile(r"(\d+)")):
+    return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 
 class Langs:

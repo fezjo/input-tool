@@ -13,7 +13,12 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Any, Optional, Sequence, Union
 
-from input_tool.common.commands import Config, Langs, get_statistics_header
+from input_tool.common.commands import (
+    Config,
+    Langs,
+    get_statistics_header,
+    natural_sort_key,
+)
 from input_tool.common.messages import (
     BufferedLogger,
     ParallelLoggerManager,
@@ -159,7 +164,10 @@ def print_solutions_run_commands(
 def get_inputs(args: ArgsTester) -> list[str]:
     if not os.path.exists(args.indir):
         fatal(f"Input directory `{args.indir}` doesn't exist.")
-    return sorted(filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)))
+    return sorted(
+        filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)),
+        key=natural_sort_key,
+    )
 
 
 def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
