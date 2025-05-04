@@ -98,17 +98,15 @@ class Solution(Program):
 
         self.compute_time_statistics()
         color, points = self.get_statistics_color_and_points()
-        batchresults = [
-            v
-            for k, v in sorted(
-                self.statistics.batchresults.items(),
-                key=lambda x: natural_sort_key(x[0]),
-            )
-        ]
-        batch_stats = "".join(
-            Color.colorize(str(status.set_warntle(False))[0], Color.status[status])
-            for status in batchresults
+        batchresults = sorted(
+            self.statistics.batchresults.items(), key=lambda x: natural_sort_key(x[0])
         )
+        batch_letters: list[str] = []
+        for batch, status in batchresults:
+            letter = str(status.set_warntle(False))[0]
+            if "sample" in batch:
+                letter = letter.lower()
+            batch_letters.append(Color.colorize(letter, Color.status[status]))
         batch_col_len = max(7, len(batchresults))
         widths = (Config.cmd_maxlen, 8, 9, 6, 6, batch_col_len)
         colnames = [
@@ -117,7 +115,7 @@ class Solution(Program):
             to_miliseconds(self.statistics.sumtime),
             points,
             self.statistics.result,
-            batch_stats,
+            "".join(batch_letters),
         ]
         return table_row(color, colnames, widths, "<>>>><")
 
