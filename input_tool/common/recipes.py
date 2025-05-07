@@ -27,13 +27,14 @@ Format of description files:
         Use {{ }} instead of single brackets or use ~ to turn of effects
 
 """
+
 from __future__ import annotations
 
 import math
 from io import StringIO
 from os.path import join as path_join
 from random import randint
-from typing import Any, Optional, Sequence, TextIO
+from typing import Any, Callable, Optional, Sequence, TextIO
 
 import yaml
 
@@ -150,7 +151,7 @@ class Input:
     def __init__(self, text: str, batchid: int, subid: int, inputid: int):
         self.text = text
         self.effects = True
-        self.commands: dict[str, str] = {}
+        self.commands: dict[str, Any] = {}
         self.batchid = batchid
         self.batch: Optional[str] = None
         self.subid = subid
@@ -229,7 +230,9 @@ class Recipe:
         self.recipe = recipe
         self.programs: list[str] = []
         self.inputs: list[Input] = []
-        self._parse_commands_versions = [
+        self._parse_commands_versions: list[
+            Callable[[str, Optional[dict[str, Any]]], dict[str, Any]]
+        ] = [
             self._parse_commands_v0,
             self._parse_commands_v1,
             self._parse_commands_v2,
@@ -241,13 +244,13 @@ class Recipe:
 
     def _parse_commands_v0(
         self, line: str, _prev_commands: Optional[dict[str, Any]] = None
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         return {}
 
     def _parse_commands_v1(
         self, line: str, _prev_commands: Optional[dict[str, Any]] = None
-    ) -> dict[str, str]:
-        commands: dict[str, str] = {}
+    ) -> dict[str, Any]:
+        commands: dict[str, Any] = {}
         parts = line.split()
         for part in parts:
             if "=" in part:
@@ -259,7 +262,7 @@ class Recipe:
 
     def _parse_commands_v2(
         self, line: str, prev_commands: Optional[dict[str, Any]] = None
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         prev_commands = {} if prev_commands is None else prev_commands
         line = f"{{{line}}}"
         try:
