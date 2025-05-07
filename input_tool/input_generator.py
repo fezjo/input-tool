@@ -20,6 +20,7 @@ from input_tool.common.messages import (
     info,
     infob,
     stylized_tqdm,
+    warning,
 )
 from input_tool.common.parser.parser import Parser
 from input_tool.common.parser.specifications import (
@@ -153,6 +154,16 @@ def run(args: ArgsGenerator) -> None:
         atexit.register(lambda p=programs: cleanup(tuple(p.values())))
 
     setup_indir(args.indir, args.inext, args.clearinput)
+
+    collisions = dict()
+    for path in (get_ifile(i, args) for i in recipe.inputs):
+        collisions.setdefault(
+            path.lower() if Config.os_config.stupid_macos else path, []
+        ).append(path)
+    for key, files in collisions.items():
+        if len(files) > 1:
+            warning(f"Name collision detected for files: {', '.join(files)}")
+
     generate_all(recipe, programs, gencmd, args)
 
     check_data_folder_size(args.indir)
