@@ -141,7 +141,15 @@ class Config:
 
     @staticmethod
     def get_cpu_corecount(ratio: float = 1) -> int:
-        available = os.process_cpu_count() or 1
+        if hasattr(os, "process_cpu_count"):  # python >= 3.13
+            available = os.process_cpu_count()
+        elif hasattr(os, "sched_getaffinity"):  # some unix systems
+            available = len(os.sched_getaffinity(0))
+        elif hasattr(os, "cpu_count"):  # should work on all systems
+            available = os.cpu_count()
+        else:  # wtf
+            available = 1
+        available = available or 1
         return max(1, int(available * ratio))
 
 
