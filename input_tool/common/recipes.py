@@ -38,7 +38,7 @@ from typing import Any, Callable, Optional, Sequence, TextIO
 
 import yaml
 
-from input_tool.common.messages import error, warning
+from input_tool.common.messages import error, fatal, warning
 
 Commands = dict[str, Any]
 
@@ -159,6 +159,7 @@ class Input:
         self.id = inputid
         self.generator: Optional[str] = None
         self.compiled = False
+        self.nofile: bool = False
         Input.maxbatch = max(Input.maxbatch, batchid)
         Input.maxid = max(Input.maxid, subid)
 
@@ -202,6 +203,8 @@ class Input:
             self.name = f".{self.name}"
 
     def get_name(self, path: str = "", ext: str = "") -> str:
+        if self.nofile:
+            return "/dev/null"
         return path_join(path, "%s%s.%s" % (self.batch, self.name, ext))
 
     def get_generation_text(self) -> str:
@@ -241,6 +244,11 @@ class Recipe:
             raise ValueError(f"Invalid idf_version: {idf_version}")
         self.idf_version = idf_version % len(self._parse_commands_versions)
         self._parse_commands = self._parse_commands_versions[idf_version]
+        self.ok = True
+
+    def error(self, message: str) -> None:
+        error(message)
+        self.ok = False
 
     def _parse_commands_v0(
         self, line: str, _prev_commands: Optional[dict[str, Any]] = None
@@ -264,11 +272,11 @@ class Recipe:
         self, line: str, prev_commands: Optional[dict[str, Any]] = None
     ) -> dict[str, Any]:
         prev_commands = {} if prev_commands is None else prev_commands
-        line = f"{{{line}}}"
+        line = f"{{ {line.strip()} }}"
         try:
             yres = EvalLoader(StringIO(line)).get_data(prev_commands)
         except Exception as e:
-            warning(
+            self.error(
                 f"Error parsing commands as YAML\n\tCommands: {line}\n\tError: {e!r}"
             )
             return {}
@@ -280,7 +288,7 @@ class Recipe:
                 warning(f"None value in commands\n\tCommands: {line}\n\tYAML: {yres}")
             return dres
         except Exception as e:
-            warning(
+            self.error(
                 f"Error parsing YAML output as dict\n\tYAML: {yres}\n\tError: {e!r}"
             )
             return {}
@@ -318,12 +326,17 @@ class Recipe:
                 self.inputs[-1].text += "\n" + line
                 continue
 
-            if line.startswith("$+"):
-                new_commands = self._parse_commands(line[2:], over_commands)
-                over_commands = dict(over_commands, **new_commands)
-                continue
             if line.startswith("$"):
-                over_commands = self._parse_commands(line[1:], None)
+                if line.startswith("$+"):
+                    new_commands = self._parse_commands(line[2:], over_commands)
+                    over_commands = dict(over_commands, **new_commands)
+                else:
+                    over_commands = self._parse_commands(line[1:], None)
+                nofile = over_commands.get("nofile", False)
+                if not isinstance(nofile, bool):
+                    self.error(
+                        f"Error: nofile must be boolean, got `{nofile}` in line `{line}`"
+                    )
                 continue
 
             effects = True
@@ -336,9 +349,12 @@ class Recipe:
             inputid += 1
             self.inputs[-1].effects = effects
             self.inputs[-1].commands = over_commands
+            self.inputs[-1].nofile = over_commands.get("nofile", False)
 
     def process(self) -> None:
         self._parse_recipe()
+        if not self.ok:
+            fatal("Errors in recipe, exiting")
         for input in self.inputs:
             input.compile()
 

@@ -116,6 +116,7 @@ Konfigurovať vieme:
 - názov vstupu v sade (`name`)
 - prefix pre názov vstupu (`class`)
 - generátor (`gen`)
+- či sa výstup programu zapíše do súboru (`nofile: True/False`)
 - ľubovoľé vlastné premenné v YAML formáte, príklady:
   - formát `$ key1: value1, key2: value2, ...` &ndash; teda oddeľovač parametrov je `,`, za `:` musí byť medzera
   - `$ premenna: 5`
@@ -217,6 +218,10 @@ cat sutazne-vstupy/02.a.in
 $
 {id} 1000000
 {id} 1000000
+
+# a nakoniec jedným vrzom celú tretiu sadu
+$ gen: sh, nofile: True
+cp sutazne-vstupy/03.*.in test/
 ```
 
 ## Viacriadkové vstupy
