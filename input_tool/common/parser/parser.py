@@ -2,7 +2,7 @@
 # © 2022 fezjo
 import argparse
 from importlib.metadata import version
-from typing import Sequence, Type, TypeVar
+from typing import Sequence, Type, TypeVar, Union
 
 import argcomplete
 
@@ -84,9 +84,9 @@ class Parser:
         }
 
         for arg in arguments:
-            full_parser_group: argparse.ArgumentParser | argparse._ArgumentGroup = (
-                self.fh_parser
-            )
+            full_parser_group: Union[
+                argparse.ArgumentParser, argparse._ArgumentGroup
+            ] = self.fh_parser
             args, kwargs, group = argument_options.get(arg, (None, None, None))
             if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")
@@ -262,9 +262,9 @@ class UnifiedParser:
         }
 
         for arg in arguments:
-            full_parser_group: argparse.ArgumentParser | argparse._ArgumentGroup = (
-                fh_parser
-            )
+            full_parser_group: Union[
+                argparse.ArgumentParser, argparse._ArgumentGroup
+            ] = fh_parser
             args, kwargs, group = argument_options.get(arg, (None, None, None))
             if args is None or kwargs is None:
                 raise NameError(f"Unrecognized option {arg}")

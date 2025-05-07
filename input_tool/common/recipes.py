@@ -47,7 +47,7 @@ class EvalNode:
 
     def __init__(self, expr: str) -> None:
         self.expr = expr
-        self.value: Any | None = None
+        self.value: Optional[Any] = None
         self.currently_evaluating = False
 
     def __repr__(self) -> str:
@@ -101,7 +101,7 @@ class EvalLoader(yaml.SafeLoader):
                     mapping[key] = eval_node.value
         return mapping
 
-    def get_data(self, base: dict[str, Any] | None = None) -> Any:
+    def get_data(self, base: Optional[dict[str, Any]] = None) -> Any:
         """inspired by yaml.load(...)"""
         try:
             data = dict(base) if base else {}
@@ -152,7 +152,7 @@ class Input:
         self.effects = True
         self.commands: dict[str, str] = {}
         self.batchid = batchid
-        self.batch: str | None = None
+        self.batch: Optional[str] = None
         self.subid = subid
         self.name: str = ""
         self.id = inputid
@@ -240,12 +240,12 @@ class Recipe:
         self._parse_commands = self._parse_commands_versions[idf_version]
 
     def _parse_commands_v0(
-        self, line: str, _prev_commands: dict[str, Any] | None
+        self, line: str, _prev_commands: Optional[dict[str, Any]] = None
     ) -> dict[str, str]:
         return {}
 
     def _parse_commands_v1(
-        self, line: str, _prev_commands: dict[str, Any] | None = None
+        self, line: str, _prev_commands: Optional[dict[str, Any]] = None
     ) -> dict[str, str]:
         commands: dict[str, str] = {}
         parts = line.split()
@@ -258,7 +258,7 @@ class Recipe:
         return commands
 
     def _parse_commands_v2(
-        self, line: str, prev_commands: dict[str, Any] | None
+        self, line: str, prev_commands: Optional[dict[str, Any]] = None
     ) -> dict[str, str]:
         prev_commands = {} if prev_commands is None else prev_commands
         line = f"{{{line}}}"

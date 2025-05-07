@@ -42,7 +42,7 @@ from input_tool.common.messages import table_header
 from input_tool.common.os_config import OsConfig
 
 
-def is_file_newer(file1: str, file2: str) -> bool | None:
+def is_file_newer(file1: str, file2: str) -> Optional[bool]:
     if not os.path.exists(file1) or not os.path.exists(file2):
         return None
     return os.path.getctime(file1) > os.path.getctime(file2)

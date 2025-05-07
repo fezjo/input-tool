@@ -189,7 +189,7 @@ class Program:
                 logger.statistics.compilation_warnings += stderr.count("warning:")
             if not self.quiet:
                 stdout = result.stdout.decode("utf-8")
-                if "up to date" in stdout: # TODO: find more robust way
+                if "up to date" in stdout:  # TODO: find more robust way
                     fresh_compiled = False
                 logger.plain(stdout)
             if result.returncode:

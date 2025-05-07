@@ -88,7 +88,7 @@ def check_text(text: str) -> None:
 def process_lines(lines: Sequence[str]) -> tuple[list[str], list[str]]:
     samples_in: list[str] = []
     samples_out: list[str] = []
-    active: list[str] | None = None
+    active: Optional[list[str]] = None
     active_lines = ""
     for line in lines:
         if line.strip() == "```vstup":

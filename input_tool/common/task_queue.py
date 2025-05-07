@@ -50,7 +50,7 @@ class TaskQueue(queue.SimpleQueue):
 
     def __init__(self, task_history: TaskHistory):
         self._lock = threading.Lock()
-        self._queue: deque[_WorkItem | None] = deque()
+        self._queue: deque[Optional[_WorkItem]] = deque()
         self._count = threading.Semaphore(0)
         self._task_history = task_history
 

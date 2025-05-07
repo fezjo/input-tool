@@ -132,7 +132,7 @@ class Color:
         return Color.ANSI_ESCAPE.sub("", text)
 
 
-_codemap: dict[str, str | int] = {
+_codemap: dict[str, Union[str, int]] = {
     "OK": "green",
     "tOK": "green",
     "WA": "red",

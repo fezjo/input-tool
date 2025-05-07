@@ -1,5 +1,5 @@
 # © 2024 fezjo
-from typing import Any, Type, TypedDict
+from typing import Any, Optional, Type, TypedDict
 
 
 class ParserOptions(TypedDict, total=False):
@@ -13,7 +13,7 @@ class ParserOptions(TypedDict, total=False):
     type: Type[Any]
 
 
-argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, str | None]] = {
+argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, Optional[str]]] = {
     # actions
     "help": (
         ("-h", "--help"),
