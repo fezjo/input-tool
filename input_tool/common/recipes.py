@@ -299,7 +299,6 @@ class Recipe:
         batchid, subid, inputid = 1, 0, 1
 
         for line in self.recipe:
-            line = line.strip()
             if line.startswith("#"):  # comment
                 if continuingline:
                     warning("Continuing line with comment, ignoring")
