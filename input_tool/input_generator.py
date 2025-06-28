@@ -168,7 +168,8 @@ def run(args: ArgsGenerator) -> None:
     generate_all(recipe, programs, gencmd, args)
 
     check_data_folder_size(args.indir)
-    check_for_updates()
+    if args.update_check:
+        check_for_updates()
     info(str(default_logger.statistics))
 
 
