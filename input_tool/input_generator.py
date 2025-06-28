@@ -61,9 +61,9 @@ def get_recipe(file: Optional[str], idf_version: int) -> Recipe:
         if os.path.isdir(file):
             file = find_idf(file)
         with open(file, "r") as f:
-            text = f.readlines()
+            text = f.read().splitlines()
     else:
-        text = sys.stdin.readlines()
+        text = sys.stdin.read().splitlines()
     return Recipe(text, idf_version)
 
 
