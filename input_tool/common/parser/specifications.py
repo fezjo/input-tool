@@ -47,6 +47,7 @@ short_description_generator = "Generate inputs based on input description file."
 options_generator = [
     "help",
     "full_help",
+    "update_check",
     "indir",
     "progdir",
     "inext",
@@ -67,6 +68,7 @@ options_generator = [
 @dataclass
 class ArgsGenerator:
     full_help: bool
+    update_check: bool
     indir: str
     progdir: str
     inext: str
