@@ -133,9 +133,15 @@ class Program:
                 ]
                 setup_compile_by_make(option_list)
             elif self.lang is Langs.Lang.pascal:
+                outdir = get_tmpdir(progdir)
+                os.mkdir(outdir)
+                options = f"-O1 -Sg -FU{outdir} -o{outdir}/{self.run_cmd}"
+                self.compilecmd = (
+                    f"fpc {options} {self.source}"
+                    f" && mv {outdir}/{self.run_cmd} {progdir}/{self.run_cmd}"
+                ) # TODO hacky and not cross platform
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
-                options = f"-O1 -Sg -o{self.run_cmd}"
-                self.compilecmd = f"fpc {options} {self.source}"
+                self.filestoclear.append(outdir)
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.rust:
                 options = f"-C opt-level=2 --out-dir {progdir}"
