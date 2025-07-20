@@ -128,7 +128,9 @@ class Program:
                 setup_compile_by_make(option_list)
             elif self.lang is Langs.Lang.pascal:
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
-                setup_compile_by_make(['PFLAGS="-O2 $PFLAGS"'])
+                options = f"-O1 -Sg -o{self.run_cmd}"
+                self.compilecmd = f"fpc {options} {self.source}"
+                self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.java:
                 outdir = os.path.join(
                     progdir,

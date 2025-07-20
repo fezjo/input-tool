@@ -76,7 +76,7 @@ class Langs:
         Lang.unknown: [],
         Lang.c: ["c"],
         Lang.cpp: ["cpp", "cxx", "c++", "cp", "cc"],
-        Lang.pascal: ["pas"],
+        Lang.pascal: ["pas", "p"],
         Lang.java: ["java"],
         Lang.python: ["py"],
         Lang.rust: ["rs"],
