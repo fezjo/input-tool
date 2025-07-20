@@ -31,7 +31,7 @@ class TaskQueue(queue.SimpleQueue):
     be running on a different input. If we deduce that the already running
     program might time out for some reason, running this task would be a waste
     of time. We can not know for sure if it will time out, so we need to keep it
-    in the queue. We will find a task we think has a better change of being
+    in the queue. We will find a task we think has a better chance of being
     relevant, or fall back on the first in queue if no such task exists. Because
     of this out of order picking, the queue may contain None items, which will
     be ignored.
