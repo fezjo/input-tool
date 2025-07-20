@@ -41,6 +41,15 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, Optional[str]]
         },
         "actions",
     ),
+    "update_check": (
+        ("--no-update-check",),
+        {
+            "dest": "update_check",
+            "action": "store_false",
+            "help": "[?] do not check for updates (useful when running in scripts)",
+        },
+        "actions",
+    ),
     # naming
     "indir": (
         ("--input",),
