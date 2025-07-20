@@ -110,6 +110,12 @@ class Program:
                 self.run_cmd = os.path.join(Config.progdir, exe)
             self.filestoclear.append(self.run_cmd)
 
+        def get_tmpdir(base: str):
+            return os.path.join(
+                base,
+                ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid()),
+            )
+
         if docompile:
             progdir = Config.progdir or os.path.curdir
             if self.lang is Langs.Lang.c:
@@ -137,10 +143,7 @@ class Program:
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.haskell:
-                outdir = os.path.join(
-                    progdir,
-                    ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid()),
-                )
+                outdir = get_tmpdir(progdir)
                 os.mkdir(outdir)
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
                 options = (
@@ -151,10 +154,7 @@ class Program:
                 self.filestoclear.append(outdir)
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.java:
-                outdir = os.path.join(
-                    progdir,
-                    ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid()),
-                )
+                outdir = get_tmpdir(progdir)
                 os.mkdir(outdir)
                 self.compilecmd = f"javac {self.source} -d {outdir}"
                 self.filestoclear.append(outdir)
