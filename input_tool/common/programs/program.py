@@ -131,6 +131,11 @@ class Program:
                 options = f"-O1 -Sg -o{self.run_cmd}"
                 self.compilecmd = f"fpc {options} {self.source}"
                 self.filestoclear.append(self.run_cmd)
+            elif self.lang is Langs.Lang.rust:
+                options = f"-C opt-level=2 --out-dir {progdir}"
+                self.compilecmd = f"rustc {options} {self.source}"
+                self.run_cmd = os.path.join(progdir, self.run_cmd)
+                self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.java:
                 outdir = os.path.join(
                     progdir,
@@ -140,11 +145,6 @@ class Program:
                 self.compilecmd = f"javac {self.source} -d {outdir}"
                 self.filestoclear.append(outdir)
                 self.run_cmd = f"java -Xss256m -cp {outdir} {self.run_cmd}"
-            elif self.lang is Langs.Lang.rust:
-                options = f"-C opt-level=2 --out-dir {progdir}"
-                self.compilecmd = f"rustc {options} {self.source}"
-                self.run_cmd = os.path.join(progdir, self.run_cmd)
-                self.filestoclear.append(self.run_cmd)
 
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
