@@ -136,6 +136,20 @@ class Program:
                 self.compilecmd = f"rustc {options} {self.source}"
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
                 self.filestoclear.append(self.run_cmd)
+            elif self.lang is Langs.Lang.haskell:
+                outdir = os.path.join(
+                    progdir,
+                    ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid()),
+                )
+                os.mkdir(outdir)
+                self.run_cmd = os.path.join(progdir, self.run_cmd)
+                options = (
+                    "-O2 -static -rtsopts --make"
+                    f" -tmpdir {outdir} -outputdir {outdir} -o {self.run_cmd}"
+                )
+                self.compilecmd = f"ghc {options} {self.source}"
+                self.filestoclear.append(outdir)
+                self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.java:
                 outdir = os.path.join(
                     progdir,

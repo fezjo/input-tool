@@ -67,8 +67,9 @@ class Langs:
         java = "java"
         python = "py3"
         rust = "rs"
+        haskell = "hs"
 
-    lang_compiled = (Lang.c, Lang.cpp, Lang.pascal, Lang.java, Lang.rust)
+    lang_compiled = (Lang.c, Lang.cpp, Lang.pascal, Lang.java, Lang.rust, Lang.haskell)
     lang_script = (Lang.python,)
     lang_all = lang_compiled + lang_script
 
@@ -80,6 +81,7 @@ class Langs:
         Lang.java: ["java"],
         Lang.python: ["py"],
         Lang.rust: ["rs"],
+        Lang.haskell: ["hs"],
     }
 
     expected_performance_ranking = (
@@ -88,6 +90,7 @@ class Langs:
         Lang.c,
         Lang.java,
         Lang.pascal,
+        Lang.haskell,
         Lang.python,
         Lang.unknown,
     )
