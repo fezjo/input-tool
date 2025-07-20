@@ -115,7 +115,7 @@ class Program:
                 compiler = Config.os_config.cmd_cpp_compiler
                 option_list = [
                     f'CC="{compiler}"' if compiler else "",
-                    'CFLAGS="-O2 -g a-std=c17 $CFLAGS"',
+                    'CFLAGS="-O2 -g -std=c17 $CFLAGS"',
                 ]
                 setup_compile_by_make(option_list)
             elif self.lang is Langs.Lang.cpp:
