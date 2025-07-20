@@ -93,7 +93,7 @@ class Program:
             /dir/exe, ~/dir/exe, ../dir/exe, ./dir/exe, dir/exe, exe,
             and needs to work with includes.
             """
-            if Config.progdir is None:
+            if not Config.progdir:
                 self.compilecmd = f"make {options} {self.run_cmd}"
             else:
                 path, exe = os.path.split(self.run_cmd)
@@ -107,10 +107,11 @@ class Program:
                 self.compilecmd = (
                     f'cd {Config.progdir}; make VPATH="{path}" {option_str} {exe}'
                 )
-                self.run_cmd = f"{Config.progdir}/{exe}"
+                self.run_cmd = os.path.join(Config.progdir, exe)
             self.filestoclear.append(self.run_cmd)
 
         if docompile:
+            progdir = Config.progdir or os.path.curdir
             if self.lang is Langs.Lang.c:
                 compiler = Config.os_config.cmd_cpp_compiler
                 option_list = [
@@ -126,19 +127,21 @@ class Program:
                 ]
                 setup_compile_by_make(option_list)
             elif self.lang is Langs.Lang.pascal:
+                self.run_cmd = os.path.join(progdir, self.run_cmd)
                 setup_compile_by_make(['PFLAGS="-O2 $PFLAGS"'])
             elif self.lang is Langs.Lang.java:
-                class_dir = "{}/.classdir-{}-{}.tmp".format(
-                    Config.progdir, to_base_alnum(self.name), os.getpid()
+                outdir = os.path.join(
+                    progdir,
+                    ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid()),
                 )
-                os.mkdir(class_dir)
-                self.compilecmd = f"javac {self.source} -d {class_dir}"
-                self.filestoclear.append(class_dir)
-                self.run_cmd = f"java -Xss256m -cp {class_dir} {self.run_cmd}"
+                os.mkdir(outdir)
+                self.compilecmd = f"javac {self.source} -d {outdir}"
+                self.filestoclear.append(outdir)
+                self.run_cmd = f"java -Xss256m -cp {outdir} {self.run_cmd}"
             elif self.lang is Langs.Lang.rust:
-                options = f"-C opt-level=2 --out-dir {Config.progdir}"
-                self.compilecmd = f"rustc {options} {self.run_cmd}.rs"
-                self.run_cmd = f"{Config.progdir}/{self.run_cmd}"
+                options = f"-C opt-level=2 --out-dir {progdir}"
+                self.compilecmd = f"rustc {options} {self.source}"
+                self.run_cmd = os.path.join(progdir, self.run_cmd)
                 self.filestoclear.append(self.run_cmd)
 
         if not os.access(self.run_cmd, os.X_OK):
