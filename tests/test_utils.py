@@ -92,7 +92,7 @@ def parse_statistics(output: str) -> list[tuple[str, int, int, str, str]]:
     if table is None:
         return []
     rows = table.group(1).splitlines()[2:]
-    return [line_to_stat(row) for row in rows if row.strip()]
+    return [line_to_stat(row) for row in rows if row.startswith('|')]
 
 
 def clean() -> None:

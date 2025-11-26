@@ -59,7 +59,10 @@ def test_sidebyside(setup_directory: None) -> None:
     result_gen = run("input-generator . -g cat")
     print(result_gen.stdout.decode("utf-8"))
 
-    result_test = run("input-tester -FD sol-a.py sol-b.py")
+    result_gen_out = run("input-tester sol-a.py")
+    print(result_gen_out.stdout.decode("utf-8"))
+
+    result_test = run("input-tester -FD sol-b.py")
     print(result_test.stdout.decode("utf-8"))
 
     def normalize_whitespace(text: str) -> list[str]:
@@ -78,9 +81,9 @@ def test_sidebyside(setup_directory: None) -> None:
 
     result_text = filter_out_ansi_escape_codes(result_test.stdout.decode("utf-8"))
     result_lines = normalize_whitespace(result_text)
-    offset = 7
+    end_offset = 8
     last_diff_lines_real = result_lines[
-        -len(last_diff_lines_expected) - offset : -offset
+        -len(last_diff_lines_expected) - end_offset : -end_offset
     ]
     assert last_diff_lines_real == last_diff_lines_expected
 
