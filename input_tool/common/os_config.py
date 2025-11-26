@@ -12,6 +12,7 @@ class OsConfig:
     cmd_cpp_compiler: Optional[str]
     cmd_date: str
     cmd_python: str
+    cmd_node: str
     cmd_time: str
     cmd_timeout: str
     cmd_ulimit: str
@@ -23,7 +24,11 @@ class OsConfig:
             self.cmd_cpp_compiler,
             self.cmd_timeout,
             self.cmd_time,
+            self.cmd_timeout,
+            self.cmd_ulimit,
             self.cmd_date,
+            self.cmd_python,
+            self.cmd_node,
         ):
             if cmd is not None and not shutil.which(cmd):
                 warning(f"Command '{cmd}' not found, some features may not work.")
@@ -33,6 +38,7 @@ LINUX_OS_CONFIG = OsConfig(
     cmd_cpp_compiler=None,
     cmd_date="date",
     cmd_python="python3",
+    cmd_node="node",
     cmd_time="/usr/bin/time",
     cmd_timeout="timeout",
     cmd_ulimit="ulimit",
@@ -44,6 +50,7 @@ DARWIN_OS_CONFIG = OsConfig(
     cmd_cpp_compiler=None,
     cmd_date="gdate",
     cmd_python="python3",
+    cmd_node="node",
     cmd_time="gtime",
     cmd_timeout="gtimeout",
     cmd_ulimit="ulimit",

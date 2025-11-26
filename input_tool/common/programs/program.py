@@ -169,6 +169,8 @@ class Program:
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
                 self.run_cmd = f"{Config.os_config.cmd_python} {self.source}"
+            elif self.lang is Langs.Lang.javascript:
+                self.run_cmd = f"{Config.os_config.cmd_node} {self.source}"
 
     @staticmethod
     def get_possible_locations_of_executable(run_cmd: str, source: str) -> list[str]:

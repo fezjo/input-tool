@@ -68,9 +68,10 @@ class Langs:
         python = "py3"
         rust = "rs"
         haskell = "hs"
+        javascript = "js"
 
     lang_compiled = (Lang.c, Lang.cpp, Lang.pascal, Lang.java, Lang.rust, Lang.haskell)
-    lang_script = (Lang.python,)
+    lang_script = (Lang.python, Lang.javascript)
     lang_all = lang_compiled + lang_script
 
     ext: dict[Lang, list[str]] = {
@@ -82,6 +83,7 @@ class Langs:
         Lang.python: ["py"],
         Lang.rust: ["rs"],
         Lang.haskell: ["hs"],
+        Lang.javascript: ["js"],
     }
 
     expected_performance_ranking = (
@@ -92,6 +94,7 @@ class Langs:
         Lang.pascal,
         Lang.haskell,
         Lang.python,
+        Lang.javascript,
         Lang.unknown,
     )
 
