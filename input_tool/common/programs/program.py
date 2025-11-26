@@ -146,7 +146,10 @@ class Program:
             elif self.lang is Langs.Lang.rust:
                 options = f"-C opt-level=2 --out-dir {progdir}"
                 self.compilecmd = f"rustc {options} {self.source}"
-                self.run_cmd = os.path.join(progdir, self.run_cmd)
+
+                _, exe = os.path.split(self.run_cmd)
+                self.run_cmd = os.path.join(progdir, exe)
+
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.haskell:
                 outdir = get_tmpdir(progdir)

@@ -88,6 +88,23 @@ def test_sidebyside(setup_directory: None) -> None:
     assert last_diff_lines_real == last_diff_lines_expected
 
 
+@pytest.mark.parametrize("path", ["languages"])
+def test_progdir(setup_directory: None) -> None:
+    """
+    test if supported languages work
+    """
+    result_gen = run("input-generator .")
+    print(result_gen.stdout.decode("utf-8"))
+
+    # java takes time to start
+    result_test = run("input-tester sols/")
+    print(result_test.stdout.decode("utf-8"))
+
+    statistics = parse_statistics(result_test.stdout.decode("utf-8"))
+    assert len(statistics) == 6
+    assert all(map(lambda row: row[4] == "OK" or row[4] == "tOK", statistics))
+
+
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.parametrize("path", ["nameconflict"])
 def test_nameconflict(setup_directory: None) -> None:
