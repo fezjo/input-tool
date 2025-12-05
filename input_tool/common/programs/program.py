@@ -167,7 +167,8 @@ class Program:
                 os.mkdir(outdir)
                 self.compilecmd = f"javac {self.source} -d {outdir}"
                 self.filestoclear.append(outdir)
-                self.run_cmd = f"java -Xss256m -cp {outdir} {self.name}"
+                _, exe = os.path.split(self.run_cmd)
+                self.run_cmd = f"java -Xss256m -cp {outdir} {exe}"
 
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
