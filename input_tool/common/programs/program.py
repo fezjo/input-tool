@@ -146,7 +146,10 @@ class Program:
             elif self.lang is Langs.Lang.rust:
                 options = f"-C opt-level=2 --out-dir {progdir}"
                 self.compilecmd = f"rustc {options} {self.source}"
-                self.run_cmd = os.path.join(progdir, self.run_cmd)
+
+                _, exe = os.path.split(self.run_cmd)
+                self.run_cmd = os.path.join(progdir, exe)
+
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.haskell:
                 outdir = get_tmpdir(progdir)
@@ -164,11 +167,14 @@ class Program:
                 os.mkdir(outdir)
                 self.compilecmd = f"javac {self.source} -d {outdir}"
                 self.filestoclear.append(outdir)
-                self.run_cmd = f"java -Xss256m -cp {outdir} {self.run_cmd}"
+                _, exe = os.path.split(self.run_cmd)
+                self.run_cmd = f"java -Xss256m -cp {outdir} {exe}"
 
         if not os.access(self.run_cmd, os.X_OK):
             if self.lang is Langs.Lang.python:
                 self.run_cmd = f"{Config.os_config.cmd_python} {self.source}"
+            elif self.lang is Langs.Lang.javascript:
+                self.run_cmd = f"{Config.os_config.cmd_node} {self.source}"
 
     @staticmethod
     def get_possible_locations_of_executable(run_cmd: str, source: str) -> list[str]:
