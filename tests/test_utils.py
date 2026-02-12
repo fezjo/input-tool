@@ -41,10 +41,10 @@ Program sol-b.cpp   is ran as `./prog/sol-b`
     sol-a.cpp       3ms OK
     sol-b.cpp       3ms OK
 
-| Solution  | Max time | Times sum | Pt   3 | Status |
-|-----------|----------|-----------|--------|--------|
-| sol-a.cpp |        5 |        32 |      3 | OK     |
-| sol-b.cpp |        6 |        33 |      3 | OK     |
+| Solution  | Max time | Times sum | Pt   3 | Status | Batches |
+|-----------|----------|-----------|--------|--------|---------|
+| sol-a.cpp |        5 |        32 |      3 | OK     | OOO     |
+| sol-b.cpp |        6 |        33 |      3 | OK     | OOO     |
 
 """
 
@@ -56,10 +56,10 @@ def filter_out_ansi_escape_codes(text: str) -> str:
 
 def line_to_stat(line: str) -> tuple[str, int, int, str, str]:
     """
-    | sol-a.cpp |        5 |        32 |      3 | OK     |
+    | sol-a.cpp |        5 |        32 |      3 | OK     | OOO     |
     """
     items = [item.strip() for item in line.split("|")[1:-1]]
-    return (items[0], int(items[1]), int(items[2]), items[3], items[4])
+    return (items[0], int(items[1]), int(items[2]), items[3], items[4], items[5])
 
 
 def parse_statistics(output: str) -> list[tuple[str, int, int, str, str]]:
@@ -67,32 +67,32 @@ def parse_statistics(output: str) -> list[tuple[str, int, int, str, str]]:
     <start of file>
     ...
 
-    | Solution  | Max time | Times sum | Pt   3 | Status |
-    |-----------|----------|-----------|--------|--------|
-    | sol-a.cpp |        5 |        32 |      3 | OK     |
-    | sol-b.cpp |        6 |        33 |      3 | OK     |
-    | val.cpp   |        6 |        16 |  VALID | OK     |
+    | Solution  | Max time | Times sum | Pt   3 | Status | Batches |
+    |-----------|----------|-----------|--------|--------|---------|
+    | sol-a.cpp |        5 |        32 |      3 | OK     | OOO     |
+    | sol-b.cpp |        6 |        33 |      3 | OK     | OOO     |
+    | val.cpp   |        6 |        16 |  VALID | OK     | VVV     |
     <end of file>
 
     parse out the table and return it
 
     [
-        ("sol-a.cpp", 5, 32,    "3",  "OK"),
-        ("sol-b.cpp", 6, 33,    "3",  "OK"),
-        ("val.cpp",   6, 16, "VALID", "OK"),
+        ("sol-a.cpp", 5, 32,    "3",  "OK", "OOO"),
+        ("sol-b.cpp", 6, 33,    "3",  "OK", "OOO"),
+        ("val.cpp",   6, 16, "VALID", "OK", "VVV"),
     ]
     """
 
     output = filter_out_ansi_escape_codes(output)
     table = re.search(
-        r"^(\|\s*Solution[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|.*)",
+        r"^(\|\s*Solution[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|.*)",
         output,
         re.MULTILINE | re.DOTALL,
     )
     if table is None:
         return []
-    rows = table.group(1).splitlines()[2:]
-    return [line_to_stat(row) for row in rows if row.strip()]
+    rows = tuple(map(str.strip, table.group(1).splitlines()[2:]))
+    return [line_to_stat(row) for row in rows if row.startswith("|")]
 
 
 def clean() -> None:
