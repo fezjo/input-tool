@@ -1,16 +1,15 @@
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]
+[project]
 name = "input-tool"
 version = "2.0.3"
 description = "Tool which simplifies creating and testing inputs for programming contests."
-license = "MIT"
-authors = ["jablkoj (Ján Hozza)", "fezjo (Jozef Číž)"]
-maintainers = []
+license = { text = "MIT" }
+authors = [{ name = "jablkoj (Ján Hozza)" }, { name = "fezjo (Jozef Číž)" }]
 readme = "README.md"
-repository = "https://github.com/fezjo/input-tool/"
+requires-python = ">=3.9,<4"
 keywords = ["benchmark", "contests", "competitive-programming", "tool"]
 classifiers = [
     "Environment :: Console",
@@ -21,40 +20,47 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Benchmark",
     "Typing :: Typed",
 ]
-exclude = ["tests", ".git*"]
+dependencies = [
+    "argcomplete>=3.5.0,<4",
+    "pyyaml>=6.0.2,<7",
+    "requests>=2.32.3,<3",
+    "tqdm>=4.66.5,<5",
+]
 
-[tool.poetry.scripts]
+[project.urls]
+Repository = "https://github.com/fezjo/input-tool/"
+
+[project.scripts]
 input-sample = "input_tool.input_sample:main"
 input-generator = "input_tool.input_generator:main"
 input-tester = "input_tool.input_tester:main"
 itool = "input_tool.itool:main"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-argcomplete = "^3.6.2"
-pyyaml = "^6.0.2"
-requests = "^2.32.3"
-tqdm = "^4.67.1"
+[dependency-groups]
+dev = [
+    "black>=24.8.0,<26",
+    "mypy>=1.11.2,<2",
+    "poethepoet>=0.23.0,<0.35",
+    "ruff>=0.6.2,<0.12",
+    "types-pyyaml>=6.0.12.20240808,<7",
+    "types-requests>=2.32.0.20240712,<3",
+    "types-tqdm>=4.66.0.20240417,<5",
+]
+test = [
+    "pytest>=8.3.2,<9",
+    "pytest-black>=0.3.12,<0.7",
+    "pytest-mypy>=1.0.0,<2",
+    "pytest-ruff>=0.1.1,<0.5",
+    "pytest-sugar>=1.0.0,<2",
+]
 
-[tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
-mypy = "^1.15.0"
-poethepoet = "^0.34.0"
-ruff = "^0.11.7"
-types-pyyaml = "^6.0.12.20250402"
-types-requests = "^2.32.0.20250328"
-types-tqdm = "^4.67.0.20250417"
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.3.5"
-pytest-black = "^0.6.0"
-pytest-mypy = "^1.0.1"
-pytest-ruff = "^0.4.1"
-pytest-sugar = "^1.0.0"
+[tool.hatch.build.targets.sdist]
+exclude = ["tests", ".git*"]
 
 [tool.poe.tasks]
 black = "black ."
