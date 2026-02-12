@@ -54,6 +54,22 @@ class TaskQueue(queue.SimpleQueue):
         self._count = threading.Semaphore(0)
         self._task_history = task_history
 
+    @staticmethod
+    def _get_task_item(work_item: _WorkItem) -> Optional[TaskItem]:
+        # Python <3.14 stores callable directly in `_WorkItem.fn`.
+        fn = getattr(work_item, "fn", None)
+        if isinstance(fn, TaskItem):
+            return fn
+
+        # Python >=3.14 stores `(fn, args, kwargs)` in `_WorkItem.task`.
+        task = getattr(work_item, "task", None)
+        if isinstance(task, tuple) and task:
+            task_fn = task[0]
+            if isinstance(task_fn, TaskItem):
+                return task_fn
+
+        return None
+
     def __repr__(self) -> str:
         return f"TaskQueue({self._lock!r}, {self._count!r}, {len(self._queue)!r})"
 
@@ -85,7 +101,8 @@ class TaskQueue(queue.SimpleQueue):
             for i, work_item in enumerate(self._queue):
                 if work_item is None:
                     continue
-                if not self.skip(work_item.fn, self._task_history):  # type: ignore
+                task_item = self._get_task_item(work_item)
+                if task_item is None or not self.skip(task_item, self._task_history):
                     res = work_item
                     self._queue[i] = None
                     break
