@@ -45,7 +45,6 @@ itool = "input_tool.itool:main"
 dev = [
     "black>=24.8.0,<26",
     "mypy>=1.11.2,<2",
-    "poethepoet>=0.23.0,<0.35",
     "ruff>=0.6.2,<0.12",
     "types-pyyaml>=6.0.12.20240808,<7",
     "types-requests>=2.32.0.20240712,<3",
@@ -61,17 +60,6 @@ test = [
 
 [tool.hatch.build.targets.sdist]
 exclude = ["tests", ".git*"]
-
-[tool.poe.tasks]
-black = "black ."
-mypy = "mypy ."
-ruff = "ruff check --fix ."
-test = "pytest ."
-lint = ["black", "ruff"]
-typecheck.sequence = ["mypy"]
-typecheck.ignore_fail = true
-checkall = ["lint", "typecheck"]
-testall = "pytest --black --ruff --mypy ."
 
 [tool.pytest.ini_options]
 cache_dir = ".cache/.pytest_cache"
