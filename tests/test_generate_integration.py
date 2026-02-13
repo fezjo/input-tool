@@ -118,3 +118,31 @@ def test_generate_clear_bin_removes_generator_binaries(case_dir):
 
     assert not (workdir / "gprog").exists()
     assert (workdir / "test" / "1.in").read_text() == "3\n"
+
+
+def test_generate_no_update_check_suppresses_update_probe(case_dir):
+    workdir = copy_fixture_tree("generate_basic", case_dir)
+
+    result = run_itool(
+        ["g", ".", "-g", "cat", "--no-update-check", "-j", "1"], cwd=workdir
+    )
+
+    assert result.returncode == 0
+    assert "Could not check for updates!" not in result.stdout
+    assert (workdir / "test" / "1.a.in").read_text() == "10\n"
+    assert (workdir / "test" / "1.b.in").read_text() == "20\n"
+
+
+def test_generate_threads_parallel_generation(case_dir):
+    workdir = copy_fixture_tree("generate_basic", case_dir)
+
+    run_itool(
+        ["g", ".", "-g", "cat", "--threads", "2", "--no-update-check"], cwd=workdir
+    )
+
+    assert sorted(p.name for p in (workdir / "test").glob("*.in")) == [
+        "1.a.in",
+        "1.b.in",
+    ]
+    assert (workdir / "test" / "1.a.in").read_text() == "10\n"
+    assert (workdir / "test" / "1.b.in").read_text() == "20\n"

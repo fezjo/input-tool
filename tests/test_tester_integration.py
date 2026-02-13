@@ -178,3 +178,20 @@ def test_validator_reports_exc_when_input_fails_validation(case_dir):
         "val-positive.py": "EXC",
         "sol-copy.py": "OK",
     }
+
+
+def test_json_normalized_snapshot_contract(case_dir):
+    workdir = copy_fixture_tree("batch_letters", case_dir)
+
+    _result, data = run_itool_json(["t", "sol.py", "-t", "0", "-j", "1"], cwd=workdir)
+    normalized = normalize_results_for_assertions(data)
+
+    assert normalized == [
+        {
+            "name": "sol.py",
+            "points": "1",
+            "result": "OK",
+            "batchresults": {"00.sample": "OK", "1": "OK"},
+            "failedbatches": [],
+        }
+    ]

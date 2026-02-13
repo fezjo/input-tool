@@ -29,7 +29,7 @@ Status legend:
 | `--outext EXT`    | BEHAVIOR | custom output extension covered    |
 | `--force-multi`   | BEHAVIOR | writes `.a` sample files           |
 | `--batch NAME`    | BEHAVIOR | custom batch name covered          |
-| `--boring`        | PLANNED  |                                    |
+| `--boring`        | BEHAVIOR | ANSI colors disabled               |
 | `task` positional | BEHAVIOR | `task.md` and directory autodetect |
 | unknown flag      | SMOKE    | non-zero                           |
 
@@ -39,7 +39,7 @@ Status legend:
 | ------------------------ | -------- | ------------------------------------ |
 | `-h`, `--help`           | SMOKE    | CLI smoke                            |
 | `--help-all`             | SMOKE    | CLI smoke                            |
-| `--no-update-check`      | PLANNED  |                                      |
+| `--no-update-check`      | BEHAVIOR | update probe suppression covered     |
 | `--input DIR`            | BEHAVIOR | custom directory covered             |
 | `--progdir DIR`          | BEHAVIOR | custom compile dir covered           |
 | `--inext EXT`            | BEHAVIOR | custom extension covered             |
@@ -80,14 +80,14 @@ Status legend:
 | `--keep-temp`            | BEHAVIOR | temp files retained                     |
 | `--clear-bin`            | BEHAVIOR | compiled artifacts cleared              |
 | `-R`, `--Reset`          | BEHAVIOR | recompute outputs                       |
-| `--rustime`              | PLANNED  |                                         |
+| `--rustime`              | BEHAVIOR | detailed runtime components printed     |
 | `-t`, `--time`           | BEHAVIOR | status/timelimit semantics              |
 | `--wtime`                | BEHAVIOR | low/high thresholds for `t*` statuses   |
 | `-m`, `--memory`         | BEHAVIOR | env-guarded (`xfail` when not enforced) |
 | `-d`, `--diff`           | BEHAVIOR | `diff` and `check.py` paths             |
 | `-D`, `--show-diff`      | BEHAVIOR | side-by-side diff assertions            |
 | `-F`, `--no-fail-skip`   | BEHAVIOR | fail-skip toggling                      |
-| `--ioram`                | PLANNED  |                                         |
+| `--ioram`                | BEHAVIOR | ramdisk execution path covered          |
 | `--pythoncmd CMD`        | BEHAVIOR | fallback warning + execution            |
 | `-j`, `--threads`        | BEHAVIOR | deterministic serial runs               |
 | `programs...` positional | BEHAVIOR | file and directory forms                |
@@ -95,46 +95,47 @@ Status legend:
 
 ### `itool compile` / `itool c`
 
-| Flag / input             | Status   | Notes                       |
-| ------------------------ | -------- | --------------------------- |
-| `-h`, `--help`           | SMOKE    | CLI smoke                   |
-| `--help-all`             | SMOKE    | CLI smoke                   |
-| `--progdir DIR`          | BEHAVIOR | custom compile dir covered  |
-| `--boring`               | PLANNED  |                             |
-| `-q`, `--quiet`          | BEHAVIOR | compiler stdout suppressed  |
-| `--pythoncmd CMD`        | PLANNED  |                             |
-| `-j`, `--threads`        | BEHAVIOR | compile success/failure     |
-| `programs...` positional | BEHAVIOR | multiple and invalid source |
-| unknown flag             | SMOKE    | non-zero                    |
+| Flag / input             | Status   | Notes                        |
+| ------------------------ | -------- | ---------------------------- |
+| `-h`, `--help`           | SMOKE    | CLI smoke                    |
+| `--help-all`             | SMOKE    | CLI smoke                    |
+| `--progdir DIR`          | BEHAVIOR | custom compile dir covered   |
+| `--boring`               | BEHAVIOR | ANSI colors disabled         |
+| `-q`, `--quiet`          | BEHAVIOR | compiler stdout suppressed   |
+| `--pythoncmd CMD`        | BEHAVIOR | interpreter fallback warning |
+| `-j`, `--threads`        | BEHAVIOR | compile success/failure      |
+| `programs...` positional | BEHAVIOR | multiple and invalid source  |
+| unknown flag             | SMOKE    | non-zero                     |
 
 ### `itool autogenerate` / `itool ag`
 
-| Flag / input             | Status   | Notes                             |
-| ------------------------ | -------- | --------------------------------- |
-| `-h`, `--help`           | SMOKE    | CLI smoke                         |
-| `--help-all`             | SMOKE    | CLI smoke                         |
-| `--input DIR`            | BEHAVIOR | custom input dir covered          |
-| `--output DIR`           | BEHAVIOR | custom output dir covered         |
-| `--progdir DIR`          | BEHAVIOR | custom compile dir covered        |
-| `--inext EXT`            | BEHAVIOR | custom input extension covered    |
-| `--outext EXT`           | BEHAVIOR | custom output extension covered   |
-| `--tempext EXT`          | PLANNED  |                                   |
-| `--no-compile`           | BEHAVIOR | prebuilt requirement path covered |
-| `--execute`              | BEHAVIOR | shell-command mode covered        |
-| `--boring`               | PLANNED  |                                   |
-| `-q`, `--quiet`          | PLANNED  |                                   |
-| `--no-statistics`        | BEHAVIOR | summary table hidden              |
-| `--json FILE`            | BEHAVIOR | output assertions                 |
-| `--keep-inputs`          | PLANNED  |                                   |
-| `--keep-temp`            | PLANNED  |                                   |
-| `--clear-bin`            | PLANNED  |                                   |
-| `-g`, `--gen`            | BEHAVIOR | deterministic generation          |
-| `--idf-version`          | BEHAVIOR | v1 switch covered                 |
-| `--pythoncmd CMD`        | BEHAVIOR | fallback warning + execution      |
-| `-j`, `--threads`        | BEHAVIOR | deterministic serial run          |
-| `description` positional | BEHAVIOR | directory/idf handling            |
-| `programs...` positional | BEHAVIOR | best-only tested solution path    |
-| unknown flag             | SMOKE    | non-zero                          |
+| Flag / input             | Status   | Notes                              |
+| ------------------------ | -------- | ---------------------------------- |
+| `-h`, `--help`           | SMOKE    | CLI smoke                          |
+| `--help-all`             | SMOKE    | CLI smoke                          |
+| `--no-update-check`      | BEHAVIOR | update probe suppression covered   |
+| `--input DIR`            | BEHAVIOR | custom input dir covered           |
+| `--output DIR`           | BEHAVIOR | custom output dir covered          |
+| `--progdir DIR`          | BEHAVIOR | custom compile dir covered         |
+| `--inext EXT`            | BEHAVIOR | custom input extension covered     |
+| `--outext EXT`           | BEHAVIOR | custom output extension covered    |
+| `--tempext EXT`          | PLANNED  |                                    |
+| `--no-compile`           | BEHAVIOR | prebuilt requirement path covered  |
+| `--execute`              | BEHAVIOR | shell-command mode covered         |
+| `--boring`               | PLANNED  |                                    |
+| `-q`, `--quiet`          | PLANNED  |                                    |
+| `--no-statistics`        | BEHAVIOR | summary table hidden               |
+| `--json FILE`            | BEHAVIOR | output assertions                  |
+| `--keep-inputs`          | BEHAVIOR | legacy input preservation covered  |
+| `--keep-temp`            | BEHAVIOR | temporary files retention covered  |
+| `--clear-bin`            | BEHAVIOR | compiled artifacts cleanup covered |
+| `-g`, `--gen`            | BEHAVIOR | deterministic generation           |
+| `--idf-version`          | BEHAVIOR | v1 switch covered                  |
+| `--pythoncmd CMD`        | BEHAVIOR | fallback warning + execution       |
+| `-j`, `--threads`        | BEHAVIOR | deterministic serial run           |
+| `description` positional | BEHAVIOR | directory/idf handling             |
+| `programs...` positional | BEHAVIOR | best-only tested solution path     |
+| unknown flag             | SMOKE    | non-zero                           |
 
 ### `itool colortest`
 
@@ -167,6 +168,7 @@ Status legend:
 - `test_tester_fails_on_unsupported_checker_format`
 - `test_validator_reports_valid_status_when_inputs_pass`
 - `test_validator_reports_exc_when_input_fails_validation`
+- `test_json_normalized_snapshot_contract`
 
 ### `tests/test_tester_runtime_integration.py`
 - `test_tester_wtime_marks_t_statuses`
@@ -181,6 +183,8 @@ Status legend:
 - `test_statistics_table_header_contract`
 - `test_statistics_table_row_alignment_contract`
 - `test_statistics_table_batch_letters_contract`
+- `test_tester_rustime_prints_rus_columns`
+- `test_tester_ioram_executes_in_ramdisk`
 
 ### `tests/test_checker_integration.py`
 - `test_explicit_diff_checker_matches_expected_wa`
@@ -208,6 +212,10 @@ Status legend:
 - `test_idf_v2_rejects_nonboolean_nofile`
 - `test_generate_directory_fails_when_multiple_idf_files_exist`
 
+### `tests/test_language_support_integration.py`
+- `test_supported_languages_can_be_compiled`
+- `test_supported_languages_can_be_tested`
+
 ### `tests/test_generate_integration.py`
 - `test_generate_custom_input_dir_and_extension`
 - `test_generate_keep_inputs_preserves_existing_files`
@@ -217,6 +225,8 @@ Status legend:
 - `test_generate_pythoncmd_override_is_used`
 - `test_generate_progdir_override_compiles_to_custom_dir`
 - `test_generate_clear_bin_removes_generator_binaries`
+- `test_generate_no_update_check_suppresses_update_probe`
+- `test_generate_threads_parallel_generation`
 
 ### `tests/test_sample_compile_integration.py`
 - `test_sample_extracts_io_blocks_into_files`
@@ -230,6 +240,9 @@ Status legend:
 - `test_compile_progdir_override`
 - `test_compile_quiet_suppresses_compiler_stdout`
 - `test_compile_fails_when_progdir_path_is_existing_file` (negative)
+- `test_sample_boring_disables_colors`
+- `test_compile_pythoncmd_override_for_python_targets`
+- `test_compile_boring_disables_colors`
 
 ### `tests/test_autogenerate_integration.py`
 - `test_autogenerate_generates_and_tests_best_solution_only`
@@ -242,50 +255,22 @@ Status legend:
 - `test_autogenerate_execute_nonexistent_solution_is_not_ok` (negative)
 - `test_autogenerate_progdir_override`
 - `test_autogenerate_no_statistics_hides_summary`
-
-## Planned Tests (Backlog)
-
-### Planned for `test` command
-- `test_tester_rustime_prints_rus_columns`
-- `test_tester_ioram_executes_in_ramdisk`
-
-### Planned for `generate` command
-- `test_generate_no_update_check_suppresses_update_probe`
-- `test_generate_threads_parallel_generation`
-
-### Planned for `sample` command
-- `test_sample_boring_disables_colors`
-
-### Planned for `compile` command
-- `test_compile_pythoncmd_override_for_python_targets`
-- `test_compile_boring_disables_colors`
-
-### Planned for `autogenerate` command
+- `test_autogenerate_no_update_check_suppresses_update_probe`
 - `test_autogenerate_keep_inputs_preserves_existing_files`
 - `test_autogenerate_keep_temp_preserves_temp_files`
 - `test_autogenerate_clear_bin_removes_artifacts`
 
-### Planned for output rendering contract
-- `test_json_normalized_snapshot_contract`
+## Planned Tests (Backlog)
+
+None currently.
 
 ## Next implementation batches
-1. Runtime and environment-sensitive coverage:
-   - `test_tester_rustime_prints_rus_columns`
-   - `test_tester_ioram_executes_in_ramdisk`
-2. Generator depth coverage:
-   - `test_generate_no_update_check_suppresses_update_probe`
-   - `test_generate_threads_parallel_generation`
-3. Remaining command-flag coverage:
-   - `test_compile_pythoncmd_override_for_python_targets`
-   - `test_autogenerate_keep_inputs_preserves_existing_files`
-   - `test_autogenerate_keep_temp_preserves_temp_files`
-   - `test_autogenerate_clear_bin_removes_artifacts`
-4. Optional polish:
-   - `test_json_normalized_snapshot_contract`
-   - `test_sample_boring_disables_colors`
-   - `test_compile_boring_disables_colors`
+1. Completed: runtime and environment-sensitive coverage.
+2. Completed: generator depth coverage.
+3. Completed: supported-language compile/test coverage.
+4. Optional polish: stricter unavailable-toolchain assertions and more boring-mode checks.
 
 ## Current totals
-- Integration test functions implemented: 72
-- Full suite status: 90 passed, 1 xfailed
-- Planned tests in backlog: 11
+- Integration test functions implemented: 86
+- Full suite status: 104 passed, 1 xfailed
+- Planned tests in backlog: 0

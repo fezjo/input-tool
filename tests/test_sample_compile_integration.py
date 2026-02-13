@@ -1,4 +1,4 @@
-from test_utils import copy_fixture_tree, run_itool
+from test_utils import copy_fixture_tree, filter_out_ansi_escape_codes, run_itool
 
 
 def test_sample_extracts_io_blocks_into_files(case_dir):
@@ -113,3 +113,32 @@ def test_compile_fails_when_progdir_path_is_existing_file(case_dir):
 
     assert result.returncode != 0
     assert "FileExistsError" in result.stdout or "NotADirectoryError" in result.stdout
+
+
+def test_sample_boring_disables_colors(case_dir):
+    workdir = copy_fixture_tree("sample_ok", case_dir)
+
+    result = run_itool(["s", "task.md", "--boring", "--force-multi"], cwd=workdir)
+
+    assert filter_out_ansi_escape_codes(result.stdout) == result.stdout
+
+
+def test_compile_pythoncmd_override_for_python_targets(case_dir):
+    workdir = copy_fixture_tree("tester_pythoncmd", case_dir)
+
+    result = run_itool(
+        ["c", "sol.py", "--pythoncmd", "definitely_missing_python", "-j", "1"],
+        cwd=workdir,
+    )
+
+    assert result.returncode == 0
+    assert "Python interpreter 'definitely_missing_python' not found" in result.stdout
+
+
+def test_compile_boring_disables_colors(case_dir):
+    workdir = copy_fixture_tree("progdir", case_dir)
+
+    result = run_itool(["c", "sol-a.cpp", "--boring", "-j", "1"], cwd=workdir)
+
+    assert result.returncode == 0
+    assert filter_out_ansi_escape_codes(result.stdout) == result.stdout

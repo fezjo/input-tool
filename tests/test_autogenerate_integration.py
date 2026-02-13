@@ -162,3 +162,72 @@ def test_autogenerate_no_statistics_hides_summary(case_dir):
     )
 
     assert "| Solution" not in result.stdout
+
+
+def test_autogenerate_no_update_check_suppresses_update_probe(case_dir):
+    workdir = copy_fixture_tree("autogen_custom", case_dir)
+
+    result = run_itool(
+        ["ag", "idf", "sol.py", "-g", "cat", "--no-update-check", "-j", "1"],
+        cwd=workdir,
+    )
+
+    assert result.returncode == 0
+    assert "Could not check for updates!" not in result.stdout
+
+
+def test_autogenerate_keep_inputs_preserves_existing_files(case_dir):
+    workdir = copy_fixture_tree("generate_keep_inputs", case_dir)
+
+    run_itool(
+        ["ag", "idf", "cat", "-g", "cat", "--execute", "--keep-inputs", "-j", "1"],
+        cwd=workdir,
+    )
+
+    assert (workdir / "test" / "9.z.in").exists()
+    assert (workdir / "test" / "9.z.in").read_text() == "legacy\n"
+    assert (workdir / "test" / "1.in").read_text() == "30\n"
+
+
+def test_autogenerate_keep_temp_preserves_temp_files(case_dir):
+    workdir = copy_fixture_tree("autogen_validator", case_dir)
+
+    run_itool(
+        [
+            "ag",
+            "idf",
+            "val-positive.py",
+            "sol-copy.py",
+            "-g",
+            "cat",
+            "--keep-temp",
+            "-j",
+            "1",
+        ],
+        cwd=workdir,
+    )
+
+    assert any((workdir / "test").glob("*.temp"))
+
+
+def test_autogenerate_clear_bin_removes_artifacts(case_dir):
+    workdir = copy_fixture_tree("autogen_cpp", case_dir)
+
+    run_itool(
+        [
+            "ag",
+            "idf",
+            "sol.cpp",
+            "-g",
+            "cat",
+            "--progdir",
+            "build",
+            "--clear-bin",
+            "-j",
+            "1",
+        ],
+        cwd=workdir,
+    )
+
+    assert not (workdir / "build").exists()
+    assert (workdir / "test" / "1.out").read_text() == "9\n"

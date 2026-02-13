@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 
 from test_utils import (
     copy_fixture_tree,
@@ -214,3 +215,28 @@ def test_statistics_table_batch_letters_contract(case_dir):
     assert len(rows) == 1
     assert rows[0][0] == "sol.py"
     assert rows[0][5] == "oO"
+
+
+def test_tester_rustime_prints_rus_columns(case_dir):
+    workdir = copy_fixture_tree("progdir", case_dir)
+
+    result = run_itool(
+        ["t", "sol-a.cpp", "--rustime", "-t", "0", "-j", "1"], cwd=workdir
+    )
+
+    assert result.returncode == 0
+    assert "[" in result.stdout
+    assert "+" in result.stdout
+    assert "]" in result.stdout
+
+
+def test_tester_ioram_executes_in_ramdisk(case_dir):
+    if not Path("/dev/shm").exists():
+        pytest.xfail("/dev/shm is not available in this environment.")
+
+    workdir = copy_fixture_tree("progdir", case_dir)
+
+    result = run_itool(["t", "sol-a.cpp", "--ioram", "-t", "0", "-j", "1"], cwd=workdir)
+
+    assert result.returncode == 0
+    assert "Using /dev/shm/input_tool/" in result.stdout
