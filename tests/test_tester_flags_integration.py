@@ -34,6 +34,7 @@ def test_checker_is_auto_detected_without_diff_flag(case_dir):
     workdir = copy_fixture_tree("checker_approx", case_dir)
 
     _result, data = run_itool_json(["t", ".", "-F", "-j", "1", "-t", "0"], cwd=workdir)
+    assert len(data) == 3
     by_name = {row["name"]: row["result"] for row in data}
 
     assert by_name == {
@@ -50,3 +51,14 @@ def test_tester_fails_when_multiple_checkers_found(case_dir):
 
     assert result.returncode != 0
     assert "More than one checker found" in result.stdout
+
+
+def test_tester_clear_bin_removes_compiled_artifacts(case_dir):
+    workdir = copy_fixture_tree("progdir", case_dir)
+
+    run_itool(
+        ["t", "sol-a.cpp", "--progdir", "build", "--clear-bin", "-t", "0", "-j", "1"],
+        cwd=workdir,
+    )
+
+    assert not (workdir / "build").exists()
