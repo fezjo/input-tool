@@ -1,0 +1,4 @@
+$ batch=legacy name=a
+{id} hello
+$ name=b
+{id} world
