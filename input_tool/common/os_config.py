@@ -15,9 +15,10 @@ class OsConfig:
     cmd_time: str
     cmd_timeout: str
     cmd_ulimit: str
-    cmd_python: str
-    cmd_cpp_compiler: Optional[str]
+    cmd_cpp_compiler: Optional[str] = None
     cmd_haskell: str = "ghc -dynamic"  # or "ghc -static" or "ghc"
+    cmd_node: str = "node"
+    cmd_python: str = "python3"
 
     def check_all_os_utils_exist(self) -> None:
         for cmd in (
@@ -37,8 +38,6 @@ LINUX_OS_CONFIG = OsConfig(
     cmd_time="/usr/bin/time",
     cmd_timeout="timeout",
     cmd_ulimit="ulimit",
-    cmd_python="python3",
-    cmd_cpp_compiler=None,
 )
 
 DARWIN_OS_CONFIG = OsConfig(
@@ -48,8 +47,6 @@ DARWIN_OS_CONFIG = OsConfig(
     cmd_time="gtime",
     cmd_timeout="gtimeout",
     cmd_ulimit="ulimit",
-    cmd_python="python3",
-    cmd_cpp_compiler=None,
 )
 
 
@@ -71,6 +68,14 @@ def find_pythoncmd(argcmd: str, alternatives: Iterable[str] = ()) -> str:
     res = next((x for x in cmds if shutil.which(x)), "NO_PYTHON_INTERPRETER_FOUND")
     if res != argcmd:
         warning(f"Python interpreter '{argcmd}' not found, using '{res}'")
+    return res
+
+
+def find_nodecmd(argcmd: str, alternatives: Iterable[str] = ()) -> str:
+    cmds = [argcmd] + list(alternatives) + ["node", "nodejs"]
+    res = next((x for x in cmds if shutil.which(x)), "NO_NODE_INTERPRETER_FOUND")
+    if res != argcmd:
+        warning(f"Node interpreter '{argcmd}' not found, using '{res}'")
     return res
 
 

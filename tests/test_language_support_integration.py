@@ -46,6 +46,11 @@ def _language_programs_and_missing() -> tuple[list[str], list[str]]:
     else:
         missing.append("Python (requires python3/python/pypy3)")
 
+    if shutil.which("node") or shutil.which("nodejs"):
+        programs.append("sol_js.js")
+    else:
+        missing.append("JavaScript (requires node/nodejs)")
+
     return programs, missing
 
 

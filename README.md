@@ -98,7 +98,7 @@ Na **Linuxe** a **MacOS** je to dosť jednoduché. Windows nie je podporovaný, 
 - Na **MacOS** potrebujete nainštalovať `coreutils` a `gcc`
   - všetko potrebné získate napríklad pomocou `brew install coreutils gcc make python3`
 - Potrebujete `python3` ($\geq 3.8$) a `make`
-- Potrebujete kompilátory C/C++ (`gcc/clang/...`), Pascalu (`fpc`), Javy, Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
+- Potrebujete kompilátory C/C++ (`gcc/clang/...`), Haskellu (ghc), Javy (javac), JavaScriptu (`node`/`nodejs`), Pascalu (`fpc`) a Rustu (`rustc`) &ndash; samozrejme iba pre jazyky ktoré plánujete spúštať
 - _Nepovinne_ `time` (Linux) / `gnu-time` (MacOS) (nestačí bashová funkcia) ak chceme _Real/User/System_ časy
 
 ### Inštalácia na Ubuntu

@@ -65,12 +65,13 @@ class Langs:
         cpp = "cpp"
         pascal = "pas"
         java = "java"
+        javascript = "js"
         python = "py3"
         rust = "rs"
         haskell = "hs"
 
     lang_compiled = (Lang.c, Lang.cpp, Lang.pascal, Lang.java, Lang.rust, Lang.haskell)
-    lang_script = (Lang.python,)
+    lang_script = (Lang.javascript, Lang.python)
     lang_all = lang_compiled + lang_script
 
     ext: dict[Lang, list[str]] = {
@@ -79,6 +80,7 @@ class Langs:
         Lang.cpp: ["cpp", "cxx", "c++", "cp", "cc"],
         Lang.pascal: ["pas", "p"],
         Lang.java: ["java"],
+        Lang.javascript: ["js"],
         Lang.python: ["py"],
         Lang.rust: ["rs"],
         Lang.haskell: ["hs"],
@@ -91,6 +93,7 @@ class Langs:
         Lang.java,
         Lang.pascal,
         Lang.haskell,
+        Lang.javascript,
         Lang.python,
         Lang.unknown,
     )

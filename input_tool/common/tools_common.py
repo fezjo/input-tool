@@ -45,6 +45,7 @@ def setup_config(
 
     Config.os_config = os_config.find_os_config()
     Config.os_config.cmd_python = os_config.find_pythoncmd(args.pythoncmd)
+    Config.os_config.cmd_node = os_config.find_nodecmd(Config.os_config.cmd_node)
     Config.os_config.check_all_os_utils_exist()
 
     for key in config_keys:
