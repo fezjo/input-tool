@@ -9,46 +9,47 @@ from input_tool.common.messages import warning
 
 @dataclass
 class OsConfig:
-    cmd_cpp_compiler: Optional[str]
+    stupid_macos: bool
+    mem_unlimited: str
     cmd_date: str
-    cmd_python: str
     cmd_time: str
     cmd_timeout: str
     cmd_ulimit: str
-    mem_unlimited: str
-    stupid_macos: bool
+    cmd_python: str
+    cmd_cpp_compiler: Optional[str]
+    cmd_haskell: str = "ghc -dynamic"  # or "ghc -static" or "ghc"
 
     def check_all_os_utils_exist(self) -> None:
         for cmd in (
-            self.cmd_cpp_compiler,
-            self.cmd_timeout,
-            self.cmd_time,
             self.cmd_date,
+            self.cmd_time,
+            self.cmd_timeout,
+            self.cmd_cpp_compiler,
         ):
             if cmd is not None and not shutil.which(cmd):
                 warning(f"Command '{cmd}' not found, some features may not work.")
 
 
 LINUX_OS_CONFIG = OsConfig(
-    cmd_cpp_compiler=None,
+    stupid_macos=False,
+    mem_unlimited="unlimited",
     cmd_date="date",
-    cmd_python="python3",
     cmd_time="/usr/bin/time",
     cmd_timeout="timeout",
     cmd_ulimit="ulimit",
-    mem_unlimited="unlimited",
-    stupid_macos=False,
+    cmd_python="python3",
+    cmd_cpp_compiler=None,
 )
 
 DARWIN_OS_CONFIG = OsConfig(
-    cmd_cpp_compiler=None,
+    stupid_macos=True,
+    mem_unlimited="hard",
     cmd_date="gdate",
-    cmd_python="python3",
     cmd_time="gtime",
     cmd_timeout="gtimeout",
     cmd_ulimit="ulimit",
-    mem_unlimited="hard",
-    stupid_macos=True,
+    cmd_python="python3",
+    cmd_cpp_compiler=None,
 )
 
 

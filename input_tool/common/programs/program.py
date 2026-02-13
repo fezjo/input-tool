@@ -139,7 +139,7 @@ class Program:
                 self.compilecmd = (
                     f"fpc {options} {self.source}"
                     f" && mv {outdir}/{self.run_cmd} {progdir}/{self.run_cmd}"
-                ) # TODO hacky and not cross platform
+                )  # TODO hacky and not cross platform
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
                 self.filestoclear.append(outdir)
                 self.filestoclear.append(self.run_cmd)
@@ -153,10 +153,12 @@ class Program:
                 os.mkdir(outdir)
                 self.run_cmd = os.path.join(progdir, self.run_cmd)
                 options = (
-                    "-O2 -static -rtsopts --make"
+                    "-O2 -rtsopts --make"
                     f" -tmpdir {outdir} -outputdir {outdir} -o {self.run_cmd}"
                 )
-                self.compilecmd = f"ghc {options} {self.source}"
+                self.compilecmd = (
+                    f"{Config.os_config.cmd_haskell} {options} {self.source}"
+                )
                 self.filestoclear.append(outdir)
                 self.filestoclear.append(self.run_cmd)
             elif self.lang is Langs.Lang.java:
