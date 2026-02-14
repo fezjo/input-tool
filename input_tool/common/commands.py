@@ -63,14 +63,14 @@ class Langs:
         unknown = None
         c = "c"
         cpp = "cpp"
-        pascal = "pas"
+        haskell = "hs"
         java = "java"
         javascript = "js"
+        pascal = "pas"
         python = "py3"
         rust = "rs"
-        haskell = "hs"
 
-    lang_compiled = (Lang.c, Lang.cpp, Lang.pascal, Lang.java, Lang.rust, Lang.haskell)
+    lang_compiled = (Lang.c, Lang.cpp, Lang.haskell, Lang.java, Lang.pascal, Lang.rust)
     lang_script = (Lang.javascript, Lang.python)
     lang_all = lang_compiled + lang_script
 
@@ -78,12 +78,12 @@ class Langs:
         Lang.unknown: [],
         Lang.c: ["c"],
         Lang.cpp: ["cpp", "cxx", "c++", "cp", "cc"],
-        Lang.pascal: ["pas", "p"],
+        Lang.haskell: ["hs"],
         Lang.java: ["java"],
         Lang.javascript: ["js"],
+        Lang.pascal: ["pas", "p"],
         Lang.python: ["py"],
         Lang.rust: ["rs"],
-        Lang.haskell: ["hs"],
     }
 
     expected_performance_ranking = (

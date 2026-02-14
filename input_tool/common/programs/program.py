@@ -83,6 +83,12 @@ class Program:
         if self.lang is Langs.Lang.unknown:
             return
 
+        def get_tmpdir(base: Path):
+            path = base / ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid())
+            path.mkdir(exist_ok=True)
+            self.files_to_clear.append(path)
+            return path
+
         def setup_compile_by_make(options: list[str]) -> None:
             """
             self.run_cmd and Config.progdir can be:
@@ -106,12 +112,6 @@ class Program:
                     f'cd {Config.progdir}; make VPATH="{path}" {option_str} {exe}'
                 )
                 self.executable_path = Path(os.path.join(Config.progdir, exe))
-
-        def get_tmpdir(base: Path):
-            path = base / ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid())
-            path.mkdir(exist_ok=True)
-            self.files_to_clear.append(path)
-            return path
 
         def setup_with_compiled_executable() -> None:
             assert self.executable_path is not None
@@ -139,20 +139,6 @@ class Program:
                 ]
                 setup_compile_by_make(option_list)
                 setup_with_compiled_executable()
-            elif self.lang is Langs.Lang.pascal:
-                outdir = get_tmpdir(progdir)
-                options = f"-O1 -Sg -FU{outdir} -o{outdir}/{basename}"
-                self.compile_cmd = (
-                    f"fpc {options} {self.source_path}"
-                    f" && mv {outdir}/{basename} {progdir}/{basename}"
-                )  # TODO hacky and not cross platform
-                self.executable_path = Path(progdir) / basename
-                setup_with_compiled_executable()
-            elif self.lang is Langs.Lang.rust:
-                options = f"-C opt-level=2 --out-dir {progdir}"
-                self.compile_cmd = f"rustc {options} {self.source_path}"
-                self.executable_path = Path(progdir) / basename
-                setup_with_compiled_executable()
             elif self.lang is Langs.Lang.haskell:
                 outdir = get_tmpdir(progdir)
                 self.executable_path = Path(progdir) / basename
@@ -168,6 +154,20 @@ class Program:
                 outdir = get_tmpdir(progdir)
                 self.compile_cmd = f"javac {self.source_path} -d {outdir}"
                 self.run_cmd = f"java -Xss256m -cp {outdir} {basename}"
+            elif self.lang is Langs.Lang.pascal:
+                outdir = get_tmpdir(progdir)
+                options = f"-O1 -Sg -FU{outdir} -o{outdir}/{basename}"
+                self.compile_cmd = (
+                    f"fpc {options} {self.source_path}"
+                    f" && mv {outdir}/{basename} {progdir}/{basename}"
+                )  # TODO hacky and not cross platform
+                self.executable_path = Path(progdir) / basename
+                setup_with_compiled_executable()
+            elif self.lang is Langs.Lang.rust:
+                options = f"-C opt-level=2 --out-dir {progdir}"
+                self.compile_cmd = f"rustc {options} {self.source_path}"
+                self.executable_path = Path(progdir) / basename
+                setup_with_compiled_executable()
             else:
                 assert False, "unreachable"
 
