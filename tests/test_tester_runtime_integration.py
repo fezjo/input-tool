@@ -43,15 +43,19 @@ def test_tester_memorylimit_triggers_failure(case_dir):
     workdir = copy_fixture_tree("tester_memory", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-mem.py", "-m", "8", "-t", "0", "-j", "1"], cwd=workdir
+        ["t", ".", "-m", "100", "-t", "0", "-j", "1", "-q"], cwd=workdir
     )
-    assert len(data) == 1
-    assert data[0]["name"] == "sol-mem.py"
-    statuses = {row["result"] for row in data}
-
-    if statuses == {"OK"}:
-        pytest.xfail("Memory limit is not enforced in this environment.")
-    assert statuses != {"OK"}
+    assert len(data) == 2
+    assert {row["name"] for row in data} == {"sol-mem.cpp", "sol-mem.py"}
+    batch_results = [
+        "".join(row["batchresults"][str(i)][0] for row in data) for i in range(1, 6)
+    ]
+    print(batch_results)
+    assert batch_results[0] == "OO"  # first test is very easy
+    assert "O" in batch_results[1]  # python has some issues, but C++ should be fine
+    assert "E" in batch_results[2]  # at least one should fail the stack limit
+    assert "E" in batch_results[3]  # at least one should fail the heap limit
+    assert batch_results[4] == "EE"  # test allocates a lot of memory, both should fail
 
 
 def test_tester_no_compile_requires_prebuilt_binary(case_dir):

@@ -394,6 +394,12 @@ def run(args: ArgsTester) -> None:
     )
     Config.threads = args.threads if args.threads else Config.get_cpu_corecount(0.25)
 
+    if 0 < Config.memorylimit < 100:
+        warning(
+            f"Memory limit ({Config.memorylimit}MB) is <100MB; "
+            "this can cause Python to just crash!"
+        )
+
     os.system(f"{Config.os_config.cmd_python} --version")
 
     files = get_relevant_prog_files_deeper(args.programs)

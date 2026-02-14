@@ -172,10 +172,15 @@ class Solution(Program):
         timefile = f_timefile.name
 
         osc = Config.os_config
-        str_memorylimit = int(memorylimit * 1024) if memorylimit else osc.mem_unlimited
+        memorylimit_kb = int(memorylimit * 1024) if memorylimit else osc.mem_unlimited
+        # -d = Data segment (heap), -m = Resident memory (RSS), -s = Stack size, -v = Virtual memory
         ulimit_cmd = (
-            f"{osc.cmd_ulimit} -m {str_memorylimit}; "
-            f"{osc.cmd_ulimit} -s {str_memorylimit}"
+            # f"{osc.cmd_ulimit} -s {osc.mem_unlimited}; " # NOTE: if you remove the below limits, uncomment this
+            f"{osc.cmd_ulimit} -d {memorylimit_kb}; "
+            f"{osc.cmd_ulimit} -m {memorylimit_kb}; "
+            f"{osc.cmd_ulimit} -s {memorylimit_kb}; "
+            f"{osc.cmd_ulimit} -v {memorylimit_kb}; "
+            ":"  # noop
         )
         timelimit_cmd = (
             f"{osc.cmd_timeout} {timelimit.total_seconds()}" if timelimit else ""
