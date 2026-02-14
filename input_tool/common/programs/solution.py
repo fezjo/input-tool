@@ -158,7 +158,7 @@ class Solution(Program):
         self.statistics.result = new_status
 
     def get_timelimit(self, timelimits: Config.Timelimit) -> timedelta:
-        return Config.get_timelimit(timelimits, self.ext, self.lang)
+        return Config.get_timelimit(timelimits, self.extension, self.lang)
 
     def get_exec_cmd(
         self,

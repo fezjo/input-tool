@@ -104,7 +104,7 @@ class Langs:
         return Langs.from_ext(ext)
 
     @staticmethod
-    def from_ext(ext: Union[str, None]) -> Lang:
+    def from_ext(ext: str) -> Lang:
         for lang in Langs.Lang:
             if ext in Langs.ext[lang]:
                 return lang

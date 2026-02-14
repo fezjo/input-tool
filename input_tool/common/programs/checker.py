@@ -20,7 +20,7 @@ class Checker(Program):
                 "-y -W 80 --strip-trailing-cr" if show_output else "-q"
             )
             self.compilecmd = None
-            self.forceexecute = True
+            self.force_execute = True
 
     @staticmethod
     def filename_befits(filename: str) -> bool:

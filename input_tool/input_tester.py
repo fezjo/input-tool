@@ -138,6 +138,7 @@ def deduplicate_solutions(
     res: list[Union[Solution, Validator]] = []
     for s in solutions:
         key = s.run_cmd
+        assert key is not None
         if key in d:
             warning(
                 f"Solution {d[key].name} and {s.name} have the same run command. "

@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import time
+from pathlib import Path
 from typing import Optional
 
 from input_tool.common.commands import Config, Langs, is_file_newer, to_base_alnum
@@ -15,12 +16,26 @@ from input_tool.common.messages import Logger, default_logger, fatal
 class Program:
     def __init__(self, name: str):
         self.name = name
+
         self.quiet: bool = Config.quiet
-        self.cancompile: bool = Config.compile
-        self.forceexecute: bool = Config.execute
+        self.can_compile: bool = Config.compile
+        self.force_execute: bool = Config.execute
         self.ready = False
 
-        # compute run_cmd, compilecmd and filestoclear
+        # `extensions` is either easily extracted from `name`
+        # or if it's missing, we try to guess it.
+        self.extension: Optional[str] = None
+        # it's either `name` or we try to find it by adding extensions
+        self.source_path: Optional[Path] = None
+        # the executable can be compiled into a different directory
+        self.executable_path: Optional[Path] = None
+
+        self.lang: Langs.Lang = Langs.Lang.unknown
+        self.compile_cmd: Optional[str] = None
+        self.run_cmd: Optional[str] = None
+        self.files_to_clear: list[Path] = []
+
+        # compute run_cmd, compile_cmd and files_to_clear
         self._transform()
 
     @staticmethod
@@ -31,15 +46,10 @@ class Program:
         return (0, 0, self.name)
 
     def _transform(self) -> None:
-        self.compilecmd = None
-        self.source = None
-        self.ext = None
-        self.run_cmd = self.name
-        self.filestoclear: list[str] = []
-        self.lang: Langs.Lang = Langs.Lang.unknown
+        self.run_cmd = self.name  # default if no transformation applies
 
         # if it is final command, dont do anything
-        if self.forceexecute:
+        if self.force_execute:
             return
         if len(self.name.split()) > 1:
             if os.path.exists(self.name):
@@ -54,38 +64,24 @@ class Program:
                 for ext in Langs.collect_exts(ext_category):
                     if os.path.exists(self.name + "." + ext):
                         valid.append(ext)
-            if valid:
-                self.ext = valid[0]
-                self.source = self.name + "." + self.ext
-                if os.path.exists(self.name):
-                    valid.append("<noextension>")
+            if not valid:
+                # could not guess the extension, so we don't know how to compile or run it
+                return
+            self.source_path = Path(self.name + "." + valid[0])
+            if os.path.exists(self.name):
+                valid.append("<noextension>")
             if len(valid) > 1:
                 default_logger.warning(
                     f"Warning: multiple possible sources for {self.name}, "
                     f"using first {valid}"
                 )
         else:
-            self.source = self.name
-            self.run_cmd, self.ext = self.name.rsplit(".", 1)
+            self.source_path = Path(self.name)
 
-        self.lang = Langs.from_ext(self.ext)
-        if self.lang is Langs.Lang.unknown or not self.source:
-            self.run_cmd = self.name
+        self.extension = self.source_path.suffix.lstrip(".").lower()
+        self.lang = Langs.from_ext(self.extension)
+        if self.lang is Langs.Lang.unknown:
             return
-
-        # compute run_cmd
-        if self.lang in Langs.lang_script:
-            self.run_cmd = self.source
-
-        docompile = (
-            self.cancompile
-            and self.lang in Langs.lang_compiled
-            and (
-                self.source == self.name
-                or not os.path.exists(self.run_cmd)
-                or is_file_newer(self.source, self.run_cmd)
-            )
-        )
 
         def setup_compile_by_make(options: list[str]) -> None:
             """
@@ -93,38 +89,48 @@ class Program:
             /dir/exe, ~/dir/exe, ../dir/exe, ./dir/exe, dir/exe, exe,
             and needs to work with includes.
             """
+            assert self.source_path is not None
+            exe = self.source_path.with_suffix("")
             if not Config.progdir:
-                self.compilecmd = f"make {options} {self.run_cmd}"
+                self.compile_cmd = f"make {options} {exe}"
+                self.executable_path = Path(exe)
             else:
-                path, exe = os.path.split(self.run_cmd)
-                path = path if path else "."
+                path, exe = exe.parent, exe.name
                 path = min(
                     os.path.relpath(path, Config.progdir),
                     os.path.abspath(path),
                     key=len,
                 )
                 option_str = " ".join(filter(bool, options))
-                self.compilecmd = (
+                self.compile_cmd = (
                     f'cd {Config.progdir}; make VPATH="{path}" {option_str} {exe}'
                 )
-                self.run_cmd = os.path.join(Config.progdir, exe)
-            self.filestoclear.append(self.run_cmd)
+                self.executable_path = Path(os.path.join(Config.progdir, exe))
 
-        def get_tmpdir(base: str):
-            return os.path.join(
-                base,
-                ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid()),
-            )
+        def get_tmpdir(base: Path):
+            path = base / ".dir-{}-{}.tmp".format(to_base_alnum(self.name), os.getpid())
+            path.mkdir(exist_ok=True)
+            self.files_to_clear.append(path)
+            return path
 
-        if docompile:
-            progdir = Config.progdir or os.path.curdir
-            if self.lang is Langs.Lang.c:
+        def setup_with_compiled_executable() -> None:
+            assert self.executable_path is not None
+            self.files_to_clear.append(self.executable_path)
+            self.run_cmd = str(self.executable_path)
+
+        if self.lang in Langs.lang_compiled:
+            progdir = Path(Config.progdir or ".")
+            basename = self.source_path.stem
+            if not self.can_compile:
+                self.run_cmd = basename
+            elif self.lang is Langs.Lang.c:
                 compiler = Config.os_config.cmd_cpp_compiler
                 option_list = [
                     f'CC="{compiler}"' if compiler else "",
                     'CFLAGS="-O2 -g -std=c17 $CFLAGS"',
                 ]
                 setup_compile_by_make(option_list)
+                setup_with_compiled_executable()
             elif self.lang is Langs.Lang.cpp:
                 compiler = Config.os_config.cmd_cpp_compiler
                 option_list = [
@@ -132,47 +138,66 @@ class Program:
                     'CXXFLAGS="-O2 -g -std=c++20 $CXXFLAGS"',
                 ]
                 setup_compile_by_make(option_list)
+                setup_with_compiled_executable()
             elif self.lang is Langs.Lang.pascal:
                 outdir = get_tmpdir(progdir)
-                os.mkdir(outdir)
-                options = f"-O1 -Sg -FU{outdir} -o{outdir}/{self.run_cmd}"
-                self.compilecmd = (
-                    f"fpc {options} {self.source}"
-                    f" && mv {outdir}/{self.run_cmd} {progdir}/{self.run_cmd}"
+                options = f"-O1 -Sg -FU{outdir} -o{outdir}/{basename}"
+                self.compile_cmd = (
+                    f"fpc {options} {self.source_path}"
+                    f" && mv {outdir}/{basename} {progdir}/{basename}"
                 )  # TODO hacky and not cross platform
-                self.run_cmd = os.path.join(progdir, self.run_cmd)
-                self.filestoclear.append(outdir)
-                self.filestoclear.append(self.run_cmd)
+                self.executable_path = Path(progdir) / basename
+                setup_with_compiled_executable()
             elif self.lang is Langs.Lang.rust:
                 options = f"-C opt-level=2 --out-dir {progdir}"
-                self.compilecmd = f"rustc {options} {self.source}"
-                self.run_cmd = os.path.join(progdir, self.run_cmd)
-                self.filestoclear.append(self.run_cmd)
+                self.compile_cmd = f"rustc {options} {self.source_path}"
+                self.executable_path = Path(progdir) / basename
+                setup_with_compiled_executable()
             elif self.lang is Langs.Lang.haskell:
                 outdir = get_tmpdir(progdir)
-                os.mkdir(outdir)
-                self.run_cmd = os.path.join(progdir, self.run_cmd)
+                self.executable_path = Path(progdir) / basename
                 options = (
                     "-O2 -rtsopts --make"
-                    f" -tmpdir {outdir} -outputdir {outdir} -o {self.run_cmd}"
+                    f" -tmpdir {outdir} -outputdir {outdir} -o {self.executable_path}"
                 )
-                self.compilecmd = (
-                    f"{Config.os_config.cmd_haskell} {options} {self.source}"
+                self.compile_cmd = (
+                    f"{Config.os_config.cmd_haskell} {options} {self.source_path}"
                 )
-                self.filestoclear.append(outdir)
-                self.filestoclear.append(self.run_cmd)
+                setup_with_compiled_executable()
             elif self.lang is Langs.Lang.java:
                 outdir = get_tmpdir(progdir)
-                os.mkdir(outdir)
-                self.compilecmd = f"javac {self.source} -d {outdir}"
-                self.filestoclear.append(outdir)
-                self.run_cmd = f"java -Xss256m -cp {outdir} {self.run_cmd}"
+                self.compile_cmd = f"javac {self.source_path} -d {outdir}"
+                self.run_cmd = f"java -Xss256m -cp {outdir} {basename}"
+            else:
+                assert False, "unreachable"
 
-        if not os.access(self.run_cmd, os.X_OK):
-            if self.lang is Langs.Lang.python:
-                self.run_cmd = f"{Config.os_config.cmd_python} {self.source}"
+            # user asked us to run:
+            need_compilation = self.executable_path is None or (
+                # source/executable, but the associated executable doesn't exist
+                not os.path.exists(self.executable_path)
+                # a source file and it is newer than the executable
+                or (
+                    self.name == str(self.source_path)
+                    and is_file_newer(str(self.source_path), str(self.executable_path))
+                )
+                # so if user specified an executable (not source, but guessed something),
+                # we will not recompile even if it is comparatively stale
+            )
+            if not need_compilation:
+                self.compile_cmd = None
+                default_logger.infob(f"Executable {self.run_cmd} is up to date.")
+
+        elif self.lang in Langs.lang_script:
+            if os.access(self.source_path, os.X_OK):
+                # even if they are scripts, we prefer to run them if they are executable
+                # because they might have shebangs or something, and we want to respect that
+                self.run_cmd = str(self.source_path)
+            elif self.lang is Langs.Lang.python:
+                self.run_cmd = f"{Config.os_config.cmd_python} {self.source_path}"
             elif self.lang is Langs.Lang.javascript:
-                self.run_cmd = f"{Config.os_config.cmd_node} {self.source}"
+                self.run_cmd = f"{Config.os_config.cmd_node} {self.source_path}"
+            else:
+                assert False, "unreachable"
 
     @staticmethod
     def get_possible_locations_of_executable(run_cmd: str, source: str) -> list[str]:
@@ -202,11 +227,11 @@ class Program:
         assert self.run_cmd is not None
         logger = default_logger if logger is None else logger
         fresh_compiled = False
-        if self.compilecmd is not None:
-            logger.infob(f"Compiling: {self.compilecmd}")
+        if self.compile_cmd is not None:
+            logger.infob(f"Compiling: {self.compile_cmd}")
             fresh_compiled = True
             result = subprocess.run(
-                self.compilecmd,
+                self.compile_cmd,
                 shell=True,
                 stdout=subprocess.PIPE,
                 # TODO if stderr=subprocess.STDOUT, it would stream during compilation
@@ -238,7 +263,7 @@ class Program:
                     self.run_cmd = found_cmd
 
         if (
-            not self.forceexecute
+            not self.force_execute
             and os.access(self.run_cmd, os.X_OK)
             and self.run_cmd[0].isalnum()
         ):
@@ -246,7 +271,7 @@ class Program:
 
         # MacOS is stupid or whatever and it will virus check or sign the binary or something
         # so we need to run it once and wait for it to do whatever it does (1s should be enough?)
-        if fresh_compiled and Config.os_config.stupid_macos and not self.forceexecute:
+        if fresh_compiled and Config.os_config.stupid_macos and not self.force_execute:
             logger.infob(f"Prewarming binary: {self.run_cmd}")
             cmd = [Config.os_config.cmd_timeout, "0.001", self.run_cmd]
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -255,7 +280,7 @@ class Program:
         self.ready = True
 
     def clear_files(self) -> None:
-        for f in self.filestoclear:
+        for f in self.files_to_clear:
             if os.path.exists(f):
                 if os.path.isdir(f):
                     shutil.rmtree(f)
