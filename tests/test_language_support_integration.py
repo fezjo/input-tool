@@ -51,6 +51,11 @@ def _language_programs_and_missing() -> tuple[list[str], list[str]]:
     else:
         missing.append("JavaScript (requires node/nodejs)")
 
+    if shutil.which("sh") and shutil.which("cat"):
+        programs.append("sol_py_exe.py")
+    else:
+        missing.append("Executable Python (requires sh + cat)")
+
     return programs, missing
 
 
@@ -92,6 +97,49 @@ def test_supported_languages_can_be_tested(case_dir):
         pytest.xfail(
             "No supported language toolchains are available in this environment."
         )
+
+    _result, data = run_itool_json(
+        ["t", *programs, "--progdir", "build", "--no-statistics", "-t", "0", "-j", "1"],
+        cwd=workdir,
+    )
+
+    assert len(data) == len(programs)
+    assert {row["name"] for row in data} == set(programs)
+    print(data)
+    assert all(row["result"] == "OK" for row in data)
+
+
+def test_supported_languages_in_dir_can_be_compiled(case_dir):
+    workdir = copy_fixture_tree("lang_matrix_dir", case_dir)
+    programs, missing = _language_programs_and_missing()
+
+    _warn_missing_toolchains(missing)
+
+    if not programs:
+        pytest.xfail(
+            "No supported language toolchains are available in this environment."
+        )
+    programs = [f"src/{p}" for p in programs]
+
+    result = run_itool(
+        ["c", *programs, "--progdir", "build", "-j", "1"],
+        cwd=workdir,
+    )
+
+    assert result.returncode == 0
+
+
+def test_supported_languages_in_dir_can_be_tested(case_dir):
+    workdir = copy_fixture_tree("lang_matrix_dir", case_dir)
+    programs, missing = _language_programs_and_missing()
+
+    _warn_missing_toolchains(missing)
+
+    if not programs:
+        pytest.xfail(
+            "No supported language toolchains are available in this environment."
+        )
+    programs = [f"src/{p}" for p in programs]
 
     _result, data = run_itool_json(
         ["t", *programs, "--progdir", "build", "--no-statistics", "-t", "0", "-j", "1"],
