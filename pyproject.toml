@@ -56,6 +56,7 @@ test = [
     "pytest-mypy>=1.0.0,<2",
     "pytest-ruff>=0.1.1,<0.5",
     "pytest-sugar>=1.0.0,<2",
+    "pytest-xdist>=3.6.1,<4",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -63,9 +64,12 @@ exclude = ["tests", ".git*"]
 
 [tool.pytest.ini_options]
 cache_dir = ".cache/.pytest_cache"
+addopts = "--dist=loadfile -n 4"
+norecursedirs = ["tests/fixtures"]
 
 [tool.mypy]
 cache_dir = ".cache/.mypy_cache"
+exclude = ["^tests/fixtures/"]
 
 [tool.ruff]
 cache-dir = ".cache/.ruff_cache"

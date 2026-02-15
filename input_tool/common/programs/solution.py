@@ -109,7 +109,7 @@ class Solution(Program):
             batch_letters.append(Color.colorize(letter, Color.status[status]))
         batch_col_len = max(7, len(batchresults))
         widths = (Config.cmd_maxlen, 8, 9, 6, 6, batch_col_len)
-        colnames = [
+        values: list[str | int | Status] = [
             self.name,
             to_miliseconds(self.statistics.maxtime),
             to_miliseconds(self.statistics.sumtime),
@@ -117,7 +117,7 @@ class Solution(Program):
             self.statistics.result,
             "".join(batch_letters),
         ]
-        return table_row(color, colnames, widths, "<>>>><")
+        return table_row(color, values, widths, "<>>>><")
 
     def get_json(self) -> dict[str, Any]:
         self.compute_time_statistics()
@@ -174,13 +174,12 @@ class Solution(Program):
         osc = Config.os_config
         memorylimit_kb = int(memorylimit * 1024) if memorylimit else osc.mem_unlimited
         # -d = Data segment (heap), -m = Resident memory (RSS), -s = Stack size, -v = Virtual memory
-        ulimit_cmd = (
-            # f"{osc.cmd_ulimit} -s {osc.mem_unlimited}; " # NOTE: if you remove the below limits, uncomment this
-            f"{osc.cmd_ulimit} -d {memorylimit_kb}; "
-            f"{osc.cmd_ulimit} -m {memorylimit_kb}; "
-            f"{osc.cmd_ulimit} -s {memorylimit_kb}; "
-            f"{osc.cmd_ulimit} -v {memorylimit_kb}; "
-            ":"  # noop
+        ulimit_cmds = (
+            # f"{osc.cmd_ulimit} -s {osc.mem_unlimited}", # NOTE: if you remove the below limits, uncomment this
+            f"{osc.cmd_ulimit} -d {memorylimit_kb}",
+            f"{osc.cmd_ulimit} -m {memorylimit_kb}",
+            f"{osc.cmd_ulimit} -s {memorylimit_kb}",
+            f"{osc.cmd_ulimit} -v {memorylimit_kb}",
         )
         timelimit_cmd = (
             f"{osc.cmd_timeout} {timelimit.total_seconds()}" if timelimit else ""
@@ -192,11 +191,15 @@ class Solution(Program):
         )
         date_cmd = f"{osc.cmd_date} +%s%N >> {timefile}"
         prog_cmd = f"{self.run_cmd} {self.run_args(ifile)} < {ifile} > {tfile}"
-        cmd = (
-            f"{ulimit_cmd}; {date_cmd}; "
-            f"{time_cmd} {timelimit_cmd} {prog_cmd}; "
-            f"rc=$?; {date_cmd}; exit $rc"
+        cmds = (
+            *ulimit_cmds,
+            date_cmd,
+            f"{time_cmd} {timelimit_cmd} {prog_cmd}",
+            "rc=$?",
+            date_cmd,
+            "exit $rc",
         )
+        cmd = "; ".join(cmds)
         return timefile, cmd
 
     def run_args(self, ifile: str) -> str:

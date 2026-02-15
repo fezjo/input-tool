@@ -160,7 +160,7 @@ def run(args: ArgsGenerator) -> None:
         collisions.setdefault(
             path.lower() if Config.os_config.stupid_macos else path, []
         ).append(path)
-    collisions["/dev/null"] = [] # ignore /dev/null
+    collisions["/dev/null"] = []  # ignore /dev/null
     for key, files in collisions.items():
         if len(files) > 1:
             warning(f"Name collision detected for files: {', '.join(files)}")
