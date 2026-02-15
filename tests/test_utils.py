@@ -76,7 +76,7 @@ def project_root() -> Path:
 
 
 def fixture_path(name: str) -> Path:
-    return Path(__file__).resolve().parent / name
+    return Path(__file__).resolve().parent / "fixtures" / name
 
 
 @pytest.fixture
