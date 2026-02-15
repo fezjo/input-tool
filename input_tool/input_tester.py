@@ -335,11 +335,22 @@ def test_all(
                         task_item, sol, result_file, is_generator, logger
                     )
                     if is_generator:
+
+                        def mark_output_ready(_, output_ready=output_ready):
+                            output_ready.set()
+
                         testcase_logger.infob(get_output_creation_message(output_file))
                         generating_output = True
-                        future.add_done_callback(lambda _, o=output_ready: o.set())
-                    future.add_done_callback(lambda _, log=logger: logger_finalize(log))
-                    future.add_done_callback(lambda _: progress_bar.update())
+                        future.add_done_callback(mark_output_ready)
+
+                    def finalize_logger(_, logger=logger):
+                        logger_finalize(logger)
+
+                    def update_progress(_):
+                        progress_bar.update()
+
+                    future.add_done_callback(finalize_logger)
+                    future.add_done_callback(update_progress)
 
                 if not generating_output:
                     output_ready.set()
@@ -428,8 +439,11 @@ def run(args: ArgsTester) -> None:
         ][:1]
     programs = [checker] + solutions
 
+    def cleanup_programs() -> None:
+        cleanup(programs)
+
     if args.clearbin:
-        atexit.register(lambda p=programs: cleanup(p))
+        atexit.register(cleanup_programs)
 
     prepare_programs(programs, max(4, Config.threads))
     # multiple solutions can have same run command after compilation

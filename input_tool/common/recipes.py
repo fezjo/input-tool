@@ -87,7 +87,9 @@ class EvalLoader(yaml.SafeLoader):
 
     @staticmethod
     def construct_eval(loader: EvalLoader, node: yaml.Node) -> Any:
-        # this may fail and raise an exception, this is intended
+        assert isinstance(
+            node, (yaml.ScalarNode, yaml.MappingNode)
+        ), f"Unsupported YAML node type for !eval: {type(node)!r}"
         expr = loader.construct_scalar(node)
         res = EvalNode(expr)
         loader.eval_nodes.append(res)

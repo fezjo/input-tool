@@ -7,7 +7,7 @@ import atexit
 import os
 import sys
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Optional
+from typing import Any, Optional
 
 from input_tool.common.check_updates import check_for_updates
 from input_tool.common.commands import Config
@@ -129,7 +129,7 @@ def generate_all(
         with ThreadPoolExecutor(max_workers=Config.threads) as executor:
             futures = [(submit_input(executor, inp), inp) for inp in recipe.inputs]
             for future, _ in futures:
-                future.add_done_callback(lambda _future: progress_bar.update(1))
+                future.add_done_callback(lambda _: progress_bar.update(1))
             for future, inp in futures:
                 message = future.result()
                 progress_bar.clear()
@@ -151,8 +151,13 @@ def run(args: ArgsGenerator) -> None:
     gencmd = args.gencmd
     programs[gencmd] = Generator(gencmd)
     prepare_programs(programs.values(), max(4, Config.threads))
+
     if args.clearbin:
-        atexit.register(lambda p=programs: cleanup(tuple(p.values())))
+
+        def cleanup_programs(programs=programs) -> None:
+            cleanup(tuple(programs.values()))
+
+        atexit.register(cleanup_programs)
 
     setup_indir(args.indir, args.inext, args.clearinput)
 
