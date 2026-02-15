@@ -4,14 +4,13 @@
 # © 2022 fezjo
 # Complex script that can test solutions
 import atexit
-import itertools
 import json
 import os
 import shutil
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Callable, Iterable, Optional, Sequence, Union
 
 from input_tool.common.commands import (
     Config,
@@ -52,6 +51,7 @@ from input_tool.common.tools_common import (
     register_quit_with_executor,
     setup_config,
 )
+from input_tool.common.types import Directory, Path, RelativePath, TempFile
 
 # ----------------- configuration ----------------
 
@@ -82,43 +82,42 @@ def parse_warntimelimit(
 # --------------- prepare programs ---------------
 
 
-def get_relevant_prog_files_in_directory(directory: str) -> list[str]:
+def get_relevant_prog_files_in_directory(directory: Directory) -> list[Path]:
     classes = (Solution, Validator, Checker)
     return [
-        os.path.normpath(de.path)
+        Path(directory) / os.path.normpath(de.path)  # TODO verify
         for de in os.scandir(directory)
         if de.is_file() and any(cl.filename_befits(de.name) for cl in classes)
     ]
 
 
-def get_relevant_prog_files_deeper(candidates: Sequence[str]) -> list[str]:
-    return list(
-        itertools.chain.from_iterable(
-            get_relevant_prog_files_in_directory(p) if os.path.isdir(p) else [p]
-            for p in candidates
-        )
+def get_relevant_prog_files_deeper(candidates: Iterable[str]) -> list[Path]:
+    subresults = (
+        get_relevant_prog_files_in_directory(p) if p.is_dir() else [p]
+        for p in map(Path, candidates)
     )
+    return sum(subresults, [])
 
 
 def create_programs_from_files(
-    files: Sequence[str], deduplicate: bool
-) -> tuple[list[Union[Solution, Validator]], list[str]]:
+    files: Iterable[Path], deduplicate: bool
+) -> tuple[list[Union[Solution, Validator]], list[Path]]:
     solutions: list[Union[Solution, Validator]] = []
-    checker_files: list[str] = []
+    checker_files: list[Path] = []
     if deduplicate:  # remove duplicate paths keeping order
         files = list(dict.fromkeys(files))
     for p in files:
-        if Validator.filename_befits(p):
-            solutions.append(Validator(p))
-        elif Checker.filename_befits(p):
+        if Validator.filename_befits(p.name):
+            solutions.append(Validator(str(p)))
+        elif Checker.filename_befits(p.name):
             checker_files.append(p)
         else:
-            solutions.append(Solution(p))
+            solutions.append(Solution(str(p)))
     return solutions, checker_files
 
 
 def create_checker(
-    checker_files: list[str], default_checker: str, show_diff_output: bool
+    checker_files: Sequence[str], default_checker: str, show_diff_output: bool
 ) -> Checker:
     if default_checker:
         checker_files = [default_checker]
@@ -132,7 +131,7 @@ def create_checker(
 
 
 def deduplicate_solutions(
-    solutions: Sequence[Union[Solution, Validator]],
+    solutions: Iterable[Union[Solution, Validator]],
 ) -> list[Union[Solution, Validator]]:
     d: dict[str, Program] = {}
     res: list[Union[Solution, Validator]] = []
@@ -151,7 +150,7 @@ def deduplicate_solutions(
 
 
 def print_solutions_run_commands(
-    solutions: Sequence[Union[Solution, Validator]],
+    solutions: Iterable[Union[Solution, Validator]],
 ) -> None:
     infob("----- Run commands -----")
     for s in solutions:
@@ -162,22 +161,33 @@ def print_solutions_run_commands(
 # --------------- prepare io files ---------------
 
 
-def get_inputs(args: ArgsTester) -> list[str]:
-    if not os.path.exists(args.indir):
-        fatal(f"Input directory `{args.indir}` doesn't exist.")
+def sorted_with_ext(
+    files: Iterable[Path], ext: str, key: Optional[Callable] = None
+) -> list[Path]:
+    ext = f".{ext.lstrip('.')}"
     return sorted(
-        filter(lambda x: x.endswith(args.inext), os.listdir(args.indir)),
-        key=natural_sort_key,
+        (f for f in files if f.suffix == ext),
+        key=key,
     )
 
 
-def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
+def get_inputs(args: ArgsTester) -> list[RelativePath]:
+    if not os.path.exists(args.indir):
+        fatal(f"Input directory `{args.indir}` doesn't exist.")
+    return sorted_with_ext(
+        map(Path, os.listdir(args.indir)),
+        args.inext,
+        lambda p: natural_sort_key(str(p)),
+    )
+
+
+def get_outputs(
+    inputs: Sequence[Path], args: ArgsTester
+) -> Optional[list[RelativePath]]:
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
     if args.outext != args.tempext and not args.reset:
-        outputs = sorted(
-            filter(lambda x: x.endswith(args.outext), os.listdir(args.outdir))
-        )
+        outputs = sorted_with_ext(map(Path, os.listdir(args.outdir)), args.outext)
         if len(outputs) > 0 and len(outputs) < len(inputs):
             warning("Incomplete output files.")
         return outputs
@@ -187,9 +197,9 @@ def get_outputs(inputs: Sequence[str], args: ArgsTester) -> Optional[list[str]]:
 
 
 def setup_ioram(
-    args: ArgsTester, inputs: list[str], _outputs: Optional[list[str]]
+    args: ArgsTester, inputs: list[RelativePath], _outputs: Optional[list[RelativePath]]
 ) -> None:
-    ramdir = "/dev/shm/input_tool/{0}".format(os.getpid())
+    ramdir = Directory("/dev/shm/input_tool/{0}".format(os.getpid()))
     try:
         os.makedirs(ramdir)
     except Exception as e:
@@ -205,9 +215,7 @@ def setup_ioram(
 
 
 def temp_clear(args: ArgsTester) -> None:
-    tempfiles = sorted(
-        filter(lambda x: x.endswith(args.tempext), os.listdir(args.outdir))
-    )
+    tempfiles = sorted_with_ext(map(Path, os.listdir(args.outdir)), args.tempext)
     if len(tempfiles):
         info(f"Deleting all .{args.tempext} files")
         for tempfile in tempfiles:
@@ -218,8 +226,11 @@ def temp_clear(args: ArgsTester) -> None:
 
 
 def get_result_file(
-    out_file: str, temp_file: str, isvalidator: bool, force: str = "none"
-) -> str:
+    out_file: Path,
+    temp_file: TempFile,
+    isvalidator: bool,
+    force: str = "none",
+) -> Path:
     if isvalidator or force == "temp":
         return temp_file
     if not os.path.exists(out_file) or force == "out":
@@ -227,16 +238,16 @@ def get_result_file(
     return temp_file
 
 
-def get_output_creation_message(output_file: str) -> str:
+def get_output_creation_message(output_file: Path) -> str:
     reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
     return f"File {output_file} will be created now ({reason})."
 
 
 def general_run_sol(
     sol: Solution,
-    ifile: str,
-    ofile: str,
-    rfile: str,
+    ifile: Path,
+    ofile: Path,
+    rfile: TempFile,
     checker: Checker,
     cleartemp: bool,
     *rargs: Any,
@@ -253,7 +264,7 @@ def general_run_sol(
 def test_all(
     solutions: Sequence[Union[Solution, Validator]],
     checker: Checker,
-    inputs: Sequence[str],
+    inputs: Sequence[RelativePath],
     threads: int,
     args: ArgsTester,
 ) -> None:
@@ -280,10 +291,10 @@ def test_all(
             register_quit_with_executor(executor)
             executor._work_queue = TaskQueue(TASK_HISTORY)
             for input in inputs:
-                input_file = os.path.join(args.indir, input)
-                prefix = os.path.join(args.outdir, input.rsplit(".", 1)[0])
-                output_file = prefix + "." + args.outext
-                temp_file = prefix + ".s{:0>2}." + args.tempext
+                input_file = args.indir / input
+                prefix = str(args.outdir / input.with_suffix(""))
+                output_file = Path(prefix + "." + args.outext)
+                temp_file_template = prefix + ".s{:0>2}." + args.tempext
 
                 testcase_logger = parallel_logger_manager.get_sink()
                 if len(solutions) > 1:
@@ -291,10 +302,10 @@ def test_all(
 
                 def run_sol(
                     sol: Solution,
-                    rfile: str,
+                    rfile: Path,
                     *rargs: Any,
-                    ifile: str = input_file,
-                    ofile: str = output_file,
+                    ifile: Path = input_file,
+                    ofile: Path = output_file,
                     checker: Checker = checker,
                     cleartemp: bool = args.cleartemp,
                 ) -> None:
@@ -311,7 +322,7 @@ def test_all(
                     )
                     result_file = get_result_file(
                         output_file,
-                        temp_file.format(si),
+                        Path(temp_file_template.format(si)),
                         isinstance(sol, Validator),
                         result_force,
                     )
@@ -319,7 +330,7 @@ def test_all(
                     is_generator = result_file == output_file
                     logger = parallel_logger_manager.get_sink()
                     batch = Solution.parse_batch(input)
-                    task_item = TaskItem(sol.name, batch, input, run_sol)
+                    task_item = TaskItem(sol.name, batch, str(input), run_sol)
                     future = executor.submit(
                         task_item, sol, result_file, is_generator, logger
                     )
@@ -348,7 +359,7 @@ def test_all(
 
 
 def print_summary(
-    solutions: Sequence[Union[Solution, Validator]], inputs: Sequence[str]
+    solutions: Iterable[Union[Solution, Validator]], inputs: Iterable[RelativePath]
 ) -> None:
     info("")
     info(get_statistics_header(inputs))
@@ -357,7 +368,7 @@ def print_summary(
 
 
 def check_too_long_tests(
-    solutions: Sequence[Union[Solution, Validator]], timelitmit: timedelta
+    solutions: Iterable[Union[Solution, Validator]], timelitmit: timedelta
 ) -> None:
     accepted = [s for s in solutions if s.statistics.result == Status.ok]
     if not accepted:
@@ -406,7 +417,9 @@ def run(args: ArgsTester) -> None:
     solutions, checker_files = create_programs_from_files(files, not args.dupprog)
     if not checker_files and not args.diffcmd:
         args.diffcmd = "diff"
-    checker = create_checker(checker_files, args.diffcmd, args.showdiff)
+    checker = create_checker(
+        tuple(map(str, checker_files)), args.diffcmd, args.showdiff
+    )
     if args.sort:
         solutions.sort(reverse=True, key=lambda s: s.compare_mask())
     if args.bestonly:
@@ -434,7 +447,7 @@ def run(args: ArgsTester) -> None:
         setup_ioram(args, inputs, _outputs)
 
     temp_clear(args)
-    Config.inside_inputmaxlen = max(map(len, inputs)) if inputs else 0
+    Config.inside_inputmaxlen = max(len(str(p)) for p in inputs) if inputs else 0
 
     test_all(solutions, checker, inputs, Config.threads, args)
     if args.stats:

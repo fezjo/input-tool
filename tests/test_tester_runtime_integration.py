@@ -1,6 +1,6 @@
-import pytest
 from pathlib import Path
 
+import pytest
 from test_utils import (
     copy_fixture_tree,
     filter_out_ansi_escape_codes,

@@ -6,6 +6,7 @@ from input_tool.common.commands import to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.solution import Solution
+from input_tool.common.types import Path, TempFile
 
 
 class Validator(Solution):
@@ -32,14 +33,14 @@ class Validator(Solution):
         color = Color.score_color(self.statistics.result == Status.valid, 1)
         return color, ""
 
-    def run_args(self, ifile: str) -> str:
-        return " ".join(ifile.split("/")[-1].split(".")) + " "
+    def run_args(self, ifile: Path) -> str:
+        return " ".join(ifile.name.split(".")) + " "
 
     def run(
         self,
-        ifile: str,
-        ofile: str,
-        tfile: str,
+        ifile: Path,
+        ofile: Path,
+        tfile: TempFile,
         checker: Checker,
         is_output_generator: bool = False,
         logger: Optional[Logger] = None,

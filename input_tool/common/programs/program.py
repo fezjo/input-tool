@@ -6,11 +6,11 @@ import os
 import shutil
 import subprocess
 import time
-from pathlib import Path
 from typing import Optional
 
 from input_tool.common.commands import Config, Langs, is_file_newer, to_base_alnum
 from input_tool.common.messages import Logger, default_logger, fatal
+from input_tool.common.types import ExecutableFile, Path, ShellCommand
 
 
 class Program:
@@ -31,8 +31,8 @@ class Program:
         self.executable_path: Optional[Path] = None
 
         self.lang: Langs.Lang = Langs.Lang.unknown
-        self.compile_cmd: Optional[str] = None
-        self.run_cmd: Optional[str] = None
+        self.compile_cmd: Optional[ShellCommand] = None
+        self.run_cmd: Optional[ShellCommand] = None
         self.files_to_clear: list[Path] = []
 
         # compute run_cmd, compile_cmd and files_to_clear
@@ -46,7 +46,7 @@ class Program:
         return (0, 0, self.name)
 
     def _transform(self) -> None:
-        self.run_cmd = self.name  # default if no transformation applies
+        self.run_cmd = ShellCommand(self.name)  # default if no transformation applies
 
         # if it is final command, dont do anything
         if self.force_execute:
@@ -98,17 +98,17 @@ class Program:
             assert self.source_path is not None
             exe = self.source_path.with_suffix("")
             if not Config.progdir:
-                self.compile_cmd = f"make {options} {exe}"
-                self.executable_path = Path(exe)
+                self.compile_cmd = ShellCommand(f"make {options} {exe}")
+                self.executable_path = exe
             else:
-                path, exe = exe.parent, exe.name
+                source_dir, exe = exe.parent, Path(exe.name)
                 path = min(
-                    os.path.relpath(path, Config.progdir),
-                    os.path.abspath(path),
+                    os.path.relpath(source_dir, Config.progdir),
+                    os.path.abspath(source_dir),
                     key=len,
                 )
                 option_str = " ".join(filter(bool, options))
-                self.compile_cmd = (
+                self.compile_cmd = ShellCommand(
                     f'cd {Config.progdir}; make VPATH="{path}" {option_str} {exe}'
                 )
                 self.executable_path = Path(os.path.join(Config.progdir, exe))
@@ -116,13 +116,13 @@ class Program:
         def setup_with_compiled_executable() -> None:
             assert self.executable_path is not None
             self.files_to_clear.append(self.executable_path)
-            self.run_cmd = str(self.executable_path)
+            self.run_cmd = ShellCommand(str(self.executable_path))
 
         if self.lang in Langs.lang_compiled:
             progdir = Path(Config.progdir or ".")
             basename = self.source_path.stem
             if not self.can_compile:
-                self.run_cmd = basename
+                self.run_cmd = ShellCommand(basename)
             elif self.lang is Langs.Lang.c:
                 compiler = Config.os_config.cmd_cpp_compiler
                 option_list = [
@@ -146,18 +146,18 @@ class Program:
                     "-O2 -rtsopts --make"
                     f" -tmpdir {outdir} -outputdir {outdir} -o {self.executable_path}"
                 )
-                self.compile_cmd = (
+                self.compile_cmd = ShellCommand(
                     f"{Config.os_config.cmd_haskell} {options} {self.source_path}"
                 )
                 setup_with_compiled_executable()
             elif self.lang is Langs.Lang.java:
                 outdir = get_tmpdir(progdir)
-                self.compile_cmd = f"javac {self.source_path} -d {outdir}"
-                self.run_cmd = f"java -Xss256m -cp {outdir} {basename}"
+                self.compile_cmd = ShellCommand(f"javac {self.source_path} -d {outdir}")
+                self.run_cmd = ShellCommand(f"java -Xss256m -cp {outdir} {basename}")
             elif self.lang is Langs.Lang.pascal:
                 outdir = get_tmpdir(progdir)
                 options = f"-O1 -Sg -FU{outdir} -o{outdir}/{basename}"
-                self.compile_cmd = (
+                self.compile_cmd = ShellCommand(
                     f"fpc {options} {self.source_path}"
                     f" && mv {outdir}/{basename} {progdir}/{basename}"
                 )  # TODO hacky and not cross platform
@@ -165,7 +165,7 @@ class Program:
                 setup_with_compiled_executable()
             elif self.lang is Langs.Lang.rust:
                 options = f"-C opt-level=2 --out-dir {progdir}"
-                self.compile_cmd = f"rustc {options} {self.source_path}"
+                self.compile_cmd = ShellCommand(f"rustc {options} {self.source_path}")
                 self.executable_path = Path(progdir) / basename
                 setup_with_compiled_executable()
             else:
@@ -191,20 +191,27 @@ class Program:
             if os.access(self.source_path, os.X_OK):
                 # even if they are scripts, we prefer to run them if they are executable
                 # because they might have shebangs or something, and we want to respect that
-                self.run_cmd = str(self.source_path)
+                self.run_cmd = ShellCommand(str(self.source_path))
             elif self.lang is Langs.Lang.python:
-                self.run_cmd = f"{Config.os_config.cmd_python} {self.source_path}"
+                self.run_cmd = ShellCommand(
+                    f"{Config.os_config.cmd_python} {self.source_path}"
+                )
             elif self.lang is Langs.Lang.javascript:
-                self.run_cmd = f"{Config.os_config.cmd_node} {self.source_path}"
+                self.run_cmd = ShellCommand(
+                    f"{Config.os_config.cmd_node} {self.source_path}"
+                )
             else:
                 assert False, "unreachable"
 
     @staticmethod
-    def get_possible_locations_of_executable(run_cmd: str, source: str) -> list[str]:
+    def get_possible_locations_of_executable(
+        executable: ExecutableFile | None, run_cmd: ShellCommand, source: Path
+    ) -> list[Path]:
         source_dir, source_basename = os.path.split(source)
         source_name, _source_ext = os.path.splitext(source_basename)
         _run_cmd_dir, run_cmd_basename = os.path.split(run_cmd)
         possibilities = [
+            executable,
             run_cmd,
             os.path.join(source_dir, run_cmd_basename),
             os.path.join(source_dir, source_name),
@@ -214,13 +221,15 @@ class Program:
             source_basename,
         ]
         # keep unique in original order
-        return list(dict.fromkeys(possibilities))
+        return [Path(p) for p in dict.fromkeys(possibilities) if p]
 
     @staticmethod
-    def try_possible_locations_of_executable(possibilities: list[str]) -> Optional[str]:
+    def try_possible_locations_of_executable(
+        possibilities: list[Path],
+    ) -> Optional[ExecutableFile]:
         for cmd in possibilities:
             if os.access(cmd, os.X_OK):
-                return cmd
+                return ExecutableFile(cmd)
         return None
 
     def prepare(self, logger: Optional[Logger] = None) -> None:
@@ -251,7 +260,7 @@ class Program:
 
             if self.lang is not Langs.Lang.java:
                 possible_cmds = self.get_possible_locations_of_executable(
-                    self.run_cmd, self.name
+                    self.executable_path, self.run_cmd, Path(self.name)
                 )
                 found_cmd = self.try_possible_locations_of_executable(possible_cmds)
                 if found_cmd is None:
@@ -260,14 +269,14 @@ class Program:
                     logger.warning(
                         f"Warning: {self.run_cmd} not found, using {found_cmd} instead."
                     )
-                    self.run_cmd = found_cmd
+                    self.run_cmd = ShellCommand(str(found_cmd))
 
         if (
             not self.force_execute
             and os.access(self.run_cmd, os.X_OK)
             and self.run_cmd[0].isalnum()
         ):
-            self.run_cmd = "./" + self.run_cmd
+            self.run_cmd = ShellCommand("./" + self.run_cmd)
 
         # MacOS is stupid or whatever and it will virus check or sign the binary or something
         # so we need to run it once and wait for it to do whatever it does (1s should be enough?)

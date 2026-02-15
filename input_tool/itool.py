@@ -2,7 +2,10 @@
 # PYTHON_ARGCOMPLETE_OK
 # © 2024 fezjo
 # Unified script for input-tool
+from typing import Sequence
+
 import input_tool.common.parser.parser as itool_parser
+from input_tool.common.programs.program import Program
 
 
 def run_sample(args: itool_parser.specs.ArgsSample):
@@ -40,7 +43,9 @@ def run_compile(args: itool_parser.specs.ArgsCompile):
 
     files = get_relevant_prog_files_deeper(args.programs)
     solutions, checker_files = create_programs_from_files(files, True)
-    programs = solutions + [Checker(file, False) for file in checker_files]
+    programs: Sequence[Program] = solutions + [
+        Checker(str(file), False) for file in checker_files
+    ]
 
     prepare_programs(programs, Config.threads)
 

@@ -40,17 +40,18 @@ from typing import Iterable, Optional, Union
 
 from input_tool.common.messages import table_header
 from input_tool.common.os_config import OsConfig
+from input_tool.common.types import Directory, Path, RelativePath
 
 
-def is_file_newer(file1: str, file2: str) -> Optional[bool]:
+def is_file_newer(file1: Path | str, file2: Path | str) -> Optional[bool]:
     if not os.path.exists(file1) or not os.path.exists(file2):
         return None
     return os.path.getctime(file1) > os.path.getctime(file2)
 
 
-def to_base_alnum(s: str) -> str:
-    s = s.split("/")[-1]
-    return "".join([x for x in s if str.isalnum(x)])
+def to_base_alnum(p: Path | str) -> str:
+    """Get basename without special characters and whitespace"""
+    return "".join([x for x in Path(p).name if str.isalnum(x)])
 
 
 # https://stackoverflow.com/a/16090640
@@ -118,7 +119,7 @@ class Langs:
 class Config:
     Timelimit = dict[Union[Langs.Lang, str], timedelta]
 
-    progdir: Optional[str] = None
+    progdir: Optional[Directory] = None
     compile: bool
     execute: bool
     quiet: bool
@@ -147,6 +148,7 @@ class Config:
 
     @staticmethod
     def get_cpu_corecount(ratio: float = 1) -> int:
+        available: int | None
         if hasattr(os, "process_cpu_count"):  # python >= 3.13
             available = os.process_cpu_count()
         elif hasattr(os, "sched_getaffinity"):  # some unix systems
@@ -159,7 +161,8 @@ class Config:
         return max(1, int(available * ratio))
 
 
-def get_statistics_header(inputs: Iterable[str]) -> str:
+def get_statistics_header(input_paths: Iterable[RelativePath]) -> str:
+    inputs: list[str] = [str(i) for i in input_paths]
     has_samples = any("sample" in x for x in inputs)
     batches = set([x.rsplit(".", 2)[0] for x in inputs if "sample" not in x])
     pts = len(batches)

@@ -32,13 +32,13 @@ from __future__ import annotations
 
 import math
 from io import StringIO
-from os.path import join as path_join
 from random import randint
 from typing import Any, Callable, Optional, Sequence, TextIO
 
 import yaml
 
 from input_tool.common.messages import error, fatal, warning
+from input_tool.common.types import Directory, Path
 
 Commands = dict[str, Any]
 
@@ -202,10 +202,11 @@ class Input:
         if self.name:
             self.name = f".{self.name}"
 
-    def get_name(self, path: str = "", ext: str = "") -> str:
+    def get_name(self, path: Directory, ext: str = "") -> Path:
         if self.nofile:
-            return "/dev/null"
-        return path_join(path, "%s%s.%s" % (self.batch, self.name, ext))
+            return Path("/dev/null")
+        filename = "%s%s.%s" % (self.batch, self.name, ext)
+        return path / filename
 
     def get_generation_text(self) -> str:
         return self.text + "\n"
@@ -216,7 +217,14 @@ class Input:
 
 
 class Sample(Input):
-    def __init__(self, lines: str, path: str, batchname: str, id: int, ext: str):
+    def __init__(
+        self,
+        lines: str,
+        path: Directory,
+        batchname: str,
+        id: int,
+        ext: str,
+    ):
         super().__init__(lines, 0, id, id)
         self.path = path
         self.ext = ext

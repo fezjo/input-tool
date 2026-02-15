@@ -5,7 +5,7 @@
 # Script that creates sample inputs from task statements or vice versa
 import os
 import sys
-from typing import Optional, Sequence
+from typing import Iterable, Optional, Sequence
 
 from input_tool.common.messages import (
     Color,
@@ -22,6 +22,7 @@ from input_tool.common.parser.specifications import (
     options_sample,
 )
 from input_tool.common.recipes import Input, Sample, prepare_cumber
+from input_tool.common.types import Directory, Path
 
 # TODO Can be used in opposite direction.
 # TODO smart -- detect prefix and multi.
@@ -32,7 +33,7 @@ def parse_args() -> ArgsSample:
     return parser.parse(ArgsSample)
 
 
-def read_recipe(path: Optional[str]) -> list[str]:
+def read_recipe(path: Optional[Path]) -> list[str]:
     if path:
         if not os.path.exists(path):
             fatal(f"Path '{path}' does not exist.")
@@ -45,7 +46,7 @@ def read_recipe(path: Optional[str]) -> list[str]:
                     f"Path '{path}' contains more than one `zadanie.md`."
                     f"Specify which one to use {consider}."
                 )
-            path = os.path.join(path, consider[0])
+            path = path / consider[0]
         return open(path, "r").readlines()
     return sys.stdin.readlines()
 
@@ -85,7 +86,7 @@ def check_text(text: str) -> None:
             TIPS.append("bl-end")
 
 
-def process_lines(lines: Sequence[str]) -> tuple[list[str], list[str]]:
+def process_lines(lines: Iterable[str]) -> tuple[list[str], list[str]]:
     samples_in: list[str] = []
     samples_out: list[str] = []
     active: Optional[list[str]] = None
@@ -123,7 +124,7 @@ def get_samples(
     return samples
 
 
-def prepare_samples(samples: Sequence[Sample]) -> None:
+def prepare_samples(samples: Iterable[Sample]) -> None:
     for sample in samples:
         check_text(sample.text)
         sample.compile()
@@ -137,7 +138,7 @@ def print_tips() -> None:
         warning(message)
 
 
-def prepare_dirs(dirs: Sequence[str]) -> None:
+def prepare_dirs(dirs: Iterable[Directory]) -> None:
     for d in dirs:
         if not os.path.exists(d):
             infob(f"Creating directory '{d}'")

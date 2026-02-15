@@ -36,6 +36,7 @@ from input_tool.common.tools_common import (
     prepare_programs,
     setup_config,
 )
+from input_tool.common.types import Directory, Path
 
 
 def parse_args() -> ArgsGenerator:
@@ -43,11 +44,11 @@ def parse_args() -> ArgsGenerator:
     return parser.parse(ArgsGenerator)
 
 
-def find_idf(directory: str) -> str:
-    idfs: list[str] = []
-    for de in os.scandir(directory):
-        if de.is_file() and de.name.startswith("idf"):
-            idfs.append(de.path)
+def find_idf(directory: Directory) -> Path:
+    idfs: list[Path] = []
+    for file in directory.iterdir():
+        if file.is_file() and file.name.startswith("idf"):
+            idfs.append(file)
     if len(idfs) != 1:
         fatal(
             f"Found {len(idfs)} idf files {idfs} in directory '{directory}'.\n"
@@ -56,7 +57,7 @@ def find_idf(directory: str) -> str:
     return idfs[0]
 
 
-def get_recipe(file: Optional[str], idf_version: int) -> Recipe:
+def get_recipe(file: Optional[Path], idf_version: int) -> Recipe:
     if file is not None:
         if os.path.isdir(file):
             file = find_idf(file)
@@ -67,7 +68,7 @@ def get_recipe(file: Optional[str], idf_version: int) -> Recipe:
     return Recipe(text, idf_version)
 
 
-def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
+def setup_indir(indir: Directory, inext: str, clear_input: bool) -> None:
     if not os.path.exists(indir):
         infob(f"Creating directory '{indir}'")
         os.makedirs(indir)
@@ -86,14 +87,14 @@ def setup_indir(indir: str, inext: str, clear_input: bool) -> None:
                 os.remove(f"{indir}/{file}")
 
 
-def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> str:
-    return x.get_name(path=args.indir if path else "", ext=args.inext)
+def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> Path:
+    return x.get_name(path=args.indir if path else Path(""), ext=args.inext)
 
 
 def print_message_for_input(
     leftw: int, status: Status, input: Input, prev: Optional[Input], args: ArgsGenerator
 ) -> None:
-    short = ("{:>" + str(leftw) + "s}").format(get_ifile(input, args))
+    short = ("{:>" + str(leftw) + "s}").format(str(get_ifile(input, args)))
 
     if prev and prev.batch != input.batch:
         info(" " * (leftw + 4) + ".")
@@ -120,7 +121,7 @@ def generate_all(
         )
 
     infob("Generating:")
-    leftw = max([len(get_ifile(i, args)) for i in recipe.inputs])
+    leftw = max([len(str(get_ifile(i, args))) for i in recipe.inputs])
     prev = None
 
     ntasks = len(recipe.inputs)
@@ -128,7 +129,7 @@ def generate_all(
         with ThreadPoolExecutor(max_workers=Config.threads) as executor:
             futures = [(submit_input(executor, inp), inp) for inp in recipe.inputs]
             for future, _ in futures:
-                future.add_done_callback(lambda _: progress_bar.update(1))
+                future.add_done_callback(lambda _future: progress_bar.update(1))
             for future, inp in futures:
                 message = future.result()
                 progress_bar.clear()
@@ -155,13 +156,13 @@ def run(args: ArgsGenerator) -> None:
 
     setup_indir(args.indir, args.inext, args.clearinput)
 
-    collisions = dict()
-    for path in (get_ifile(i, args) for i in recipe.inputs):
+    collisions: dict[str, list[str]] = {}
+    for path in (str(get_ifile(i, args)) for i in recipe.inputs):
         collisions.setdefault(
             path.lower() if Config.os_config.stupid_macos else path, []
         ).append(path)
     collisions["/dev/null"] = []  # ignore /dev/null
-    for key, files in collisions.items():
+    for files in collisions.values():
         if len(files) > 1:
             warning(f"Name collision detected for files: {', '.join(files)}")
 

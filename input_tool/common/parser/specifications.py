@@ -3,6 +3,8 @@ from argparse import Namespace
 from dataclasses import dataclass, field
 from typing import Any, Type, TypeVar, Union
 
+from input_tool.common.types import Directory, Path
+
 ArgsGeneric = Namespace
 
 description_sample = """
@@ -27,15 +29,20 @@ options_sample = [
 @dataclass
 class ArgsSample:
     full_help: bool
-    indir: str
-    outdir: str
+    indir: Directory
+    outdir: Directory
     inext: str
     outext: str
     multi: bool
     batchname: str
     colorful: bool
-    task: Union[str, None]
+    task: Union[Path, None]
     deprecated: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.indir = Path(self.indir)
+        self.outdir = Path(self.outdir)
+        self.task = Path(self.task) if self.task else None
 
 
 description_generator = """
@@ -69,8 +76,8 @@ options_generator = [
 class ArgsGenerator:
     full_help: bool
     update_check: bool
-    indir: str
-    progdir: str
+    indir: Directory
+    progdir: Directory
     inext: str
     compile: bool
     execute: bool
@@ -82,8 +89,13 @@ class ArgsGenerator:
     idf_version: int
     pythoncmd: str
     threads: int
-    description: str
+    description: Union[Path, None]
     deprecated: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.indir = Path(self.indir)
+        self.progdir = Path(self.progdir)
+        self.description = Path(self.description) if self.description else None
 
 
 description_tester = """
@@ -131,9 +143,9 @@ options_tester = [
 @dataclass
 class ArgsTester:
     full_help: bool
-    indir: str
-    outdir: str
-    progdir: str
+    indir: Directory
+    outdir: Directory
+    progdir: Directory
     inext: str
     outext: str
     tempext: str
@@ -145,7 +157,7 @@ class ArgsTester:
     colorful: bool
     quiet: bool
     stats: bool
-    json: Union[str, None]
+    json: Union[Path, None]
     cleartemp: bool
     clearbin: bool
     reset: bool
@@ -161,6 +173,12 @@ class ArgsTester:
     threads: int
     programs: list[str]
     deprecated: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.indir = Path(self.indir)
+        self.outdir = Path(self.outdir)
+        self.progdir = Path(self.progdir)
+        self.json = Path(self.json) if self.json else None
 
 
 description_compile = """
@@ -183,13 +201,16 @@ options_compile = [
 @dataclass
 class ArgsCompile:
     full_help: bool
-    progdir: str
+    progdir: Directory
     colorful: bool
     quiet: bool
     pythoncmd: str
     threads: int
     programs: list[str]
     deprecated: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.progdir = Path(self.progdir)
 
 
 short_description_autogenerate = "Generate inputs and outputs with one command."
@@ -230,9 +251,9 @@ options_autogenerate = [
 class ArgsAutogenerate:
     full_help: bool
     update_check: bool
-    indir: str
-    outdir: str
-    progdir: str
+    indir: Directory
+    outdir: Directory
+    progdir: Directory
     inext: str
     outext: str
     tempext: str
@@ -241,7 +262,7 @@ class ArgsAutogenerate:
     colorful: bool
     quiet: bool
     stats: bool
-    json: Union[str, None]
+    json: Union[Path, None]
     clearinput: bool
     cleartemp: bool
     clearbin: bool
@@ -249,9 +270,16 @@ class ArgsAutogenerate:
     idf_version: int
     pythoncmd: str
     threads: int
-    description: str
+    description: Union[Path, None]
     programs: list[str]
     deprecated: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.indir = Path(self.indir)
+        self.outdir = Path(self.outdir)
+        self.progdir = Path(self.progdir)
+        self.json = Path(self.json) if self.json else None
+        self.description = Path(self.description) if self.description else None
 
 
 description_colortest = """

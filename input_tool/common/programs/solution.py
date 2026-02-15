@@ -6,13 +6,14 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Optional, Sequence
+from typing import Any, Iterable, Optional
 
 from input_tool.common.commands import Config, Langs, natural_sort_key, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.program import Program
 from input_tool.common.task_history import TASK_HISTORY, TaskHistory
+from input_tool.common.types import Path, ShellCommand, TempFile
 
 
 class Solution(Program):
@@ -134,13 +135,15 @@ class Solution(Program):
         }
 
     @staticmethod
-    def parse_batch(ifile: str) -> str:
-        name = os.path.basename(ifile)
-        inp, _ext = os.path.splitext(name)
+    def parse_batch(ifile: Path) -> str:
+        inp, _ext = os.path.splitext(ifile.name)
         return inp if inp.endswith("sample") else inp.rsplit(".", 1)[0]
 
     def record(
-        self, ifile: str, status: Status, times: Optional[Sequence[timedelta]]
+        self,
+        ifile: Path,
+        status: Status,
+        times: Optional[Iterable[timedelta]],
     ) -> None:
         batch = self.parse_batch(ifile)
         batchresults = self.statistics.batchresults
@@ -162,14 +165,14 @@ class Solution(Program):
 
     def get_exec_cmd(
         self,
-        ifile: str,
-        tfile: str,
+        ifile: Path,
+        tfile: TempFile,
         timelimit: timedelta = timedelta(0),
         memorylimit: float = 0.0,
-    ) -> tuple[str, str]:
+    ) -> tuple[TempFile, ShellCommand]:
         f_timefile = tempfile.NamedTemporaryFile(delete=False)
         f_timefile.close()
-        timefile = f_timefile.name
+        timefile = TempFile(f_timefile.name)
 
         osc = Config.os_config
         memorylimit_kb = int(memorylimit * 1024) if memorylimit else osc.mem_unlimited
@@ -199,10 +202,10 @@ class Solution(Program):
             date_cmd,
             "exit $rc",
         )
-        cmd = "; ".join(cmds)
+        cmd = ShellCommand("; ".join(cmds))
         return timefile, cmd
 
-    def run_args(self, ifile: str) -> str:
+    def run_args(self, ifile: Path) -> str:
         return ""
 
     def translate_exit_code_to_status(self, exit_code: int) -> Status:
@@ -215,7 +218,7 @@ class Solution(Program):
         return Status.err
 
     def get_times(
-        self, timefile: str, logger: Logger = default_logger
+        self, timefile: TempFile, logger: Logger = default_logger
     ) -> Optional[list[timedelta]]:
         try:
             with open(timefile, "r") as tf:
@@ -230,9 +233,9 @@ class Solution(Program):
 
     def _run(
         self,
-        ifile: str,
-        ofile: str,
-        tfile: str,
+        ifile: Path,
+        ofile: Path,
+        tfile: TempFile,
         checker: Optional[Checker],
         is_output_generator: bool,
         logger: Logger,
@@ -259,7 +262,7 @@ class Solution(Program):
                 process.wait()
                 if cb_was_killed():
                     return None, Status.tle
-                TASK_HISTORY.end(self.name, self.parse_batch(ifile), ifile)
+                TASK_HISTORY.end(self.name, self.parse_batch(ifile), str(ifile))
                 if not self.quiet and process.stderr:
                     logger.infod(process.stderr.read().decode("utf-8"))
                 status = self.translate_exit_code_to_status(process.returncode)
@@ -285,9 +288,9 @@ class Solution(Program):
 
     def output_testcase_summary(
         self,
-        ifile: str,
+        ifile: Path,
         status: Status,
-        run_times: Optional[Sequence[timedelta]],
+        run_times: Optional[Iterable[timedelta]],
         logger: Logger,
     ) -> None:
         run_cmd = ("{:<" + str(Config.cmd_maxlen) + "s}").format(self.name)
@@ -300,7 +303,7 @@ class Solution(Program):
 
         if Config.inside_oneline:
             input = ("{:" + str(Config.inside_inputmaxlen) + "s}").format(
-                (ifile.rsplit("/", 1)[1])
+                (str(ifile).rsplit("/", 1)[1])
             )
             summary = "{} < {} {}".format(run_cmd, input, time)
         else:
@@ -315,20 +318,21 @@ class Solution(Program):
 
     def run(
         self,
-        ifile: str,
-        ofile: str,
-        tfile: str,
+        ifile: Path,
+        ofile: Path,
+        tfile: TempFile,
         checker: Checker,
         is_output_generator: bool = False,
         logger: Optional[Logger] = None,
     ) -> None:
         batch = self.parse_batch(ifile)
-        TASK_HISTORY.start(self.name, batch, ifile)
+        task = str(ifile)
+        TASK_HISTORY.start(self.name, batch, task)
         if Config.fail_skip and batch in self.statistics.failedbatches:
-            TASK_HISTORY.end(self.name, batch, ifile, True)
+            TASK_HISTORY.end(self.name, batch, task, True)
             return
 
-        callbacks = TASK_HISTORY.get_callbacks(self.name, batch, ifile)
+        callbacks = TASK_HISTORY.get_callbacks(self.name, batch, task)
         logger = default_logger if logger is None else logger
         run_times, status = self._run(
             ifile, ofile, tfile, checker, is_output_generator, logger, callbacks

@@ -2,7 +2,7 @@
 # © 2022 fezjo
 import argparse
 from importlib.metadata import version
-from typing import Sequence, Type, TypeVar, Union
+from typing import Iterable, Sequence, Type, TypeVar, Union
 
 import argcomplete
 
@@ -58,7 +58,7 @@ def MyHelpFormatterFactory(_full_mode: bool) -> Type[argparse.HelpFormatter]:
 
 
 class Parser:
-    def __init__(self, description: str, arguments: Sequence[str]):
+    def __init__(self, description: str, arguments: Iterable[str]):
         self.parser = argparse.ArgumentParser(
             description=description,
             formatter_class=MyHelpFormatterFactory(False),

@@ -4,7 +4,7 @@ import os
 import signal
 import sys
 from concurrent.futures import Executor, ThreadPoolExecutor
-from typing import Iterable, Sequence, Union
+from typing import Iterable, Union
 
 from input_tool.common import os_config
 from input_tool.common.commands import Config
@@ -21,6 +21,7 @@ from input_tool.common.parser.specifications import (
     ArgsTester,
 )
 from input_tool.common.programs.program import Program
+from input_tool.common.types import Directory
 
 
 def register_quit_with_executor(executor: Executor) -> None:
@@ -68,7 +69,7 @@ def cleanup_progdir(warn: bool = False) -> None:
             warning(f"Program directory not empty {os.listdir(Config.progdir)}")
 
 
-def cleanup(programs: Sequence[Program]) -> None:
+def cleanup(programs: Iterable[Program]) -> None:
     for p in programs:
         p.clear_files()
     cleanup_progdir(True)
@@ -89,7 +90,7 @@ def prepare_programs(programs: Iterable[Program], threads: int) -> None:
     default_logger.statistics += parallel_logger_manager.statistics
 
 
-def check_data_folder_size(path: str, max_size_mb: int = 42) -> None:
+def check_data_folder_size(path: Directory, max_size_mb: int = 42) -> None:
     if not os.path.exists(path):
         return
     # get total size of all files in the directory recursively
