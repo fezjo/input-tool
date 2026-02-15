@@ -6,7 +6,7 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Union
 
 from input_tool.common.commands import Config, Langs, natural_sort_key, to_base_alnum
 from input_tool.common.messages import Color, Logger, Status, default_logger, table_row
@@ -110,7 +110,7 @@ class Solution(Program):
             batch_letters.append(Color.colorize(letter, Color.status[status]))
         batch_col_len = max(7, len(batchresults))
         widths = (Config.cmd_maxlen, 8, 9, 6, 6, batch_col_len)
-        values: list[str | int | Status] = [
+        values: list[Union[str, int, Status]] = [
             self.name,
             to_miliseconds(self.statistics.maxtime),
             to_miliseconds(self.statistics.sumtime),

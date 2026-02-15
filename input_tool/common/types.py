@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import NewType, TypeAlias
+from typing import NewType
 
-RelativePath: TypeAlias = Path
-Directory: TypeAlias = Path
-ExecutableFile: TypeAlias = Path
-TempFile: TypeAlias = Path
+# Type aliases
+RelativePath = Path
+Directory = Path
+ExecutableFile = Path
+TempFile = Path
 
 ShellCommand = NewType("ShellCommand", str)

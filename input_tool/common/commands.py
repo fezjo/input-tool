@@ -43,13 +43,13 @@ from input_tool.common.os_config import OsConfig
 from input_tool.common.types import Directory, Path, RelativePath
 
 
-def is_file_newer(file1: Path | str, file2: Path | str) -> Optional[bool]:
+def is_file_newer(file1: Union[Path, str], file2: Union[Path, str]) -> Optional[bool]:
     if not os.path.exists(file1) or not os.path.exists(file2):
         return None
     return os.path.getctime(file1) > os.path.getctime(file2)
 
 
-def to_base_alnum(p: Path | str) -> str:
+def to_base_alnum(p: Union[Path, str]) -> str:
     """Get basename without special characters and whitespace"""
     return "".join([x for x in Path(p).name if str.isalnum(x)])
 
@@ -148,7 +148,7 @@ class Config:
 
     @staticmethod
     def get_cpu_corecount(ratio: float = 1) -> int:
-        available: int | None
+        available: Optional[int]
         if hasattr(os, "process_cpu_count"):  # python >= 3.13
             available = os.process_cpu_count()
         elif hasattr(os, "sched_getaffinity"):  # some unix systems
