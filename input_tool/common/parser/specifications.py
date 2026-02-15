@@ -201,6 +201,7 @@ Combined generator and tester with best solution only.
 options_autogenerate = [
     "help",
     "full_help",
+    "update_check",
     "indir",
     "outdir",
     "progdir",
@@ -228,6 +229,7 @@ options_autogenerate = [
 @dataclass
 class ArgsAutogenerate:
     full_help: bool
+    update_check: bool
     indir: str
     outdir: str
     progdir: str
