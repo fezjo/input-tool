@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,24 @@ from test_utils import (
     run_itool,
     run_itool_json,
 )
+
+
+def _measure_tester_wall_time(workdir: Path, threads: int, timeout: float) -> float:
+    start = time.monotonic()
+    run_itool(
+        [
+            "t",
+            ".",
+            "-j",
+            str(threads),
+            "-t",
+            str(timeout),
+            "-R",
+            "-q",
+        ],
+        cwd=workdir,
+    )
+    return time.monotonic() - start
 
 
 def test_tester_wtime_marks_t_statuses(case_dir):
@@ -244,3 +263,39 @@ def test_tester_ioram_executes_in_ramdisk(case_dir):
 
     assert result.returncode == 0
     assert "Using /dev/shm/input_tool/" in result.stdout
+
+
+def test_parallel_testing_linear_fixture_is_faster_with_more_threads(case_dir):
+    workdir = copy_fixture_tree("parallel_finish_order_linear", case_dir)
+    run_itool(["g", ".", "-g", "cat", "-q", "--no-update-check"], cwd=workdir)
+
+    single_thread = _measure_tester_wall_time(workdir, threads=1, timeout=0.2)
+    three_threads = _measure_tester_wall_time(workdir, threads=3, timeout=0.2)
+
+    assert three_threads < single_thread * 0.5
+
+
+def test_parallel_testing_poly_fixture_is_faster_with_more_threads(case_dir):
+    workdir = copy_fixture_tree("parallel_finish_order_poly", case_dir)
+    run_itool(["g", ".", "-g", "cat", "-q", "--no-update-check"], cwd=workdir)
+
+    single_thread = _measure_tester_wall_time(workdir, threads=1, timeout=0.2)
+    three_threads = _measure_tester_wall_time(workdir, threads=3, timeout=0.2)
+
+    assert three_threads < single_thread * 0.5
+
+
+def test_parallel_testing_takes_minimal_amount_of_time(case_dir):
+    """
+    The input has 12 batches by 4 testcases each,
+    where one program finishes instantly and the other times out after 1 second.
+    When ran with 7 threads, the minimum amount of time needed to finish:
+    - the fast program is 12*4*(python startup=~15ms) = 720ms
+    - the slow program is 2 seconds (we can't TLE on all 12 batches with just 7 threads)
+    With clairvoyant scheduling, we could finish in 2 seconds, but with a reasonable scheduling
+    we expect to finish under 2.5 seconds.
+    """
+    workdir = copy_fixture_tree("parallel_finish_order", case_dir)
+    run_itool(["g", ".", "-g", "cat", "-q", "--no-update-check"], cwd=workdir)
+
+    assert _measure_tester_wall_time(workdir, threads=7, timeout=1) < 2.7

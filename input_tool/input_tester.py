@@ -10,7 +10,7 @@ import shutil
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from typing import Any, Callable, Iterable, Optional, Sequence, Union
+from typing import Callable, Iterable, Optional, Sequence, Union
 
 from input_tool.common.commands import (
     Config,
@@ -20,6 +20,7 @@ from input_tool.common.commands import (
 )
 from input_tool.common.messages import (
     BufferedLogger,
+    Logger,
     ParallelLoggerManager,
     Status,
     default_logger,
@@ -241,17 +242,18 @@ def get_output_creation_message(output_file: Path) -> str:
     return f"File {output_file} will be created now ({reason})."
 
 
-def general_run_sol(
-    sol: Solution,
+def run_sol(
+    sol: Union[Solution, Validator],
     ifile: Path,
     ofile: Path,
     rfile: TempFile,
     checker: Checker,
     cleartemp: bool,
-    *rargs: Any,
+    is_output_generator: bool,
+    logger: Optional[Logger] = None,
 ) -> None:
     try:
-        sol.run(ifile, ofile, rfile, checker, *rargs)
+        sol.run(ifile, ofile, rfile, checker, is_output_generator, logger)
         if cleartemp and ofile != rfile and rfile.exists():
             rfile.unlink()
     except Exception as e:
@@ -259,11 +261,117 @@ def general_run_sol(
         fatal(repr(e))
 
 
+def build_test_tasks(
+    solutions: Sequence[Union[Solution, Validator]],
+    checker: Checker,
+    inputs: Sequence[RelativePath],
+    args: ArgsTester,
+    parallel_logger_manager: ParallelLoggerManager,
+    logger_finalize: Callable[[BufferedLogger], None],
+) -> list[TaskItem]:
+    tasks: list[TaskItem] = []
+    for input in inputs:
+        input_file = args.indir / input
+        prefix = str(args.outdir / input.with_suffix(""))
+        output_file = Path(prefix + "." + args.outext)
+        temp_file_template = prefix + ".s{:0>2}." + args.tempext
+
+        testcase_logger = parallel_logger_manager.get_sink()
+        if len(solutions) > 1:
+            testcase_logger.info(f"{input} >")
+
+        output_ready = checker.output_ready[input_file]
+        output_ready.clear()
+        generating_output = False
+        for si, sol in enumerate(solutions):
+            result_force = (
+                "temp" if generating_output else "out" if args.reset else "none"
+            )
+            result_file = get_result_file(
+                output_file,
+                Path(temp_file_template.format(si)),
+                isinstance(sol, Validator),
+                result_force,
+            )
+
+            is_generator = result_file == output_file
+            logger = parallel_logger_manager.get_sink()
+            batch = Solution.parse_batch(input)
+            callbacks: list[Callable] = []
+            if is_generator:
+                testcase_logger.infob(get_output_creation_message(output_file))
+                generating_output = True
+                callbacks.append(lambda _, o=output_ready: o.set())
+
+            callbacks.append(lambda _, logger=logger: logger_finalize(logger))
+
+            def run_task(
+                sol=sol,
+                ifile=input_file,
+                ofile=output_file,
+                rfile=result_file,
+                checker=checker,
+                cleartemp=args.cleartemp,
+                is_generator=is_generator,
+                logger=logger,
+            ):
+                run_sol(
+                    sol, ifile, ofile, rfile, checker, cleartemp, is_generator, logger
+                )
+
+            task_item = TaskItem(sol.name, batch, str(input), run_task, callbacks)
+            tasks.append(task_item)
+
+        if not generating_output:
+            output_ready.set()
+        logger_finalize(testcase_logger)
+
+    return tasks
+
+
+def run_task_queue(
+    queue: TaskQueue,
+    num_threads: int,
+    parallel_logger_manager: ParallelLoggerManager,
+) -> None:
+    with stylized_tqdm(desc="Testing", total=len(queue)) as progress_bar:
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            register_quit_with_executor(executor)
+
+            def get_new_task(_=None):
+                task = queue.pop()
+                if task is None:
+                    return
+                task.callbacks.append(lambda _, p=progress_bar: p.update())
+                try:
+                    future = executor.submit(task.func)
+                except RuntimeError:
+                    for callback in task.callbacks:
+                        callback(None)
+                    # don't submit new tasks if executor is already shutting down
+                else:
+                    for callback in task.callbacks:
+                        future.add_done_callback(callback)
+                    future.add_done_callback(get_new_task)
+
+            for _ in range(num_threads):
+                executor.submit(get_new_task)
+
+            while parallel_logger_manager.last_open < len(
+                parallel_logger_manager.sinks
+            ):
+                parallel_logger_manager.closed_event.wait()
+                parallel_logger_manager.closed_event.clear()
+                progress_bar.clear()
+                plain(parallel_logger_manager.read_closed())
+                progress_bar.display()
+
+
 def test_all(
     solutions: Sequence[Union[Solution, Validator]],
     checker: Checker,
     inputs: Sequence[RelativePath],
-    threads: int,
+    num_threads: int,
     args: ArgsTester,
 ) -> None:
     """
@@ -283,88 +391,19 @@ def test_all(
         logger.close()
         parallel_logger_manager.closed_event.set()
 
-    ntasks = len(inputs) * len(solutions)
-    with stylized_tqdm(desc="Testing", total=ntasks) as progress_bar:
-        with ThreadPoolExecutor(max_workers=threads) as executor:
-            register_quit_with_executor(executor)
-            executor._work_queue = TaskQueue(TASK_HISTORY)
-            for input in inputs:
-                input_file = args.indir / input
-                prefix = str(args.outdir / input.with_suffix(""))
-                output_file = Path(prefix + "." + args.outext)
-                temp_file_template = prefix + ".s{:0>2}." + args.tempext
+    tasks = build_test_tasks(
+        solutions,
+        checker,
+        inputs,
+        args,
+        parallel_logger_manager,
+        logger_finalize,
+    )
+    queue = TaskQueue(tasks, TASK_HISTORY)
+    run_task_queue(queue, num_threads, parallel_logger_manager)
 
-                testcase_logger = parallel_logger_manager.get_sink()
-                if len(solutions) > 1:
-                    testcase_logger.info(f"{input} >")
-
-                def run_sol(
-                    sol: Solution,
-                    rfile: Path,
-                    *rargs: Any,
-                    ifile: Path = input_file,
-                    ofile: Path = output_file,
-                    checker: Checker = checker,
-                    cleartemp: bool = args.cleartemp,
-                ) -> None:
-                    general_run_sol(
-                        sol, ifile, ofile, rfile, checker, cleartemp, *rargs
-                    )
-
-                output_ready = checker.output_ready[input_file]
-                output_ready.clear()
-                generating_output = False
-                for si, sol in enumerate(solutions):
-                    result_force = (
-                        "temp" if generating_output else "out" if args.reset else "none"
-                    )
-                    result_file = get_result_file(
-                        output_file,
-                        Path(temp_file_template.format(si)),
-                        isinstance(sol, Validator),
-                        result_force,
-                    )
-
-                    is_generator = result_file == output_file
-                    logger = parallel_logger_manager.get_sink()
-                    batch = Solution.parse_batch(input)
-                    task_item = TaskItem(sol.name, batch, str(input), run_sol)
-                    future = executor.submit(
-                        task_item, sol, result_file, is_generator, logger
-                    )
-                    if is_generator:
-
-                        def mark_output_ready(_, output_ready=output_ready):
-                            output_ready.set()
-
-                        testcase_logger.infob(get_output_creation_message(output_file))
-                        generating_output = True
-                        future.add_done_callback(mark_output_ready)
-
-                    def finalize_logger(_, logger=logger):
-                        logger_finalize(logger)
-
-                    def update_progress(_):
-                        progress_bar.update()
-
-                    future.add_done_callback(finalize_logger)
-                    future.add_done_callback(update_progress)
-
-                if not generating_output:
-                    output_ready.set()
-                logger_finalize(testcase_logger)
-
-            while parallel_logger_manager.last_open < len(
-                parallel_logger_manager.sinks
-            ):
-                parallel_logger_manager.closed_event.wait()
-                parallel_logger_manager.closed_event.clear()
-                progress_bar.clear()
-                plain(parallel_logger_manager.read_closed())
-                progress_bar.display()
-
-        register_quit_signal()
-        default_logger.statistics += parallel_logger_manager.statistics
+    register_quit_signal()
+    default_logger.statistics += parallel_logger_manager.statistics
 
 
 def print_summary(
