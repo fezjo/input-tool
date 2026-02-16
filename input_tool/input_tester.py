@@ -85,9 +85,9 @@ def parse_warntimelimit(
 def get_relevant_prog_files_in_directory(directory: Directory) -> list[Path]:
     classes = (Solution, Validator, Checker)
     return [
-        Path(directory) / os.path.normpath(de.path)  # TODO verify
-        for de in os.scandir(directory)
-        if de.is_file() and any(cl.filename_befits(de.name) for cl in classes)
+        path
+        for path in directory.iterdir()
+        if path.is_file() and any(cl.filename_befits(path.name) for cl in classes)
     ]
 
 
@@ -161,33 +161,31 @@ def print_solutions_run_commands(
 # --------------- prepare io files ---------------
 
 
-def sorted_with_ext(
-    files: Iterable[Path], ext: str, key: Optional[Callable] = None
+def sorted_files_with_ext(
+    dir: Directory, ext: str, key: Optional[Callable] = None
 ) -> list[Path]:
     ext = f".{ext.lstrip('.')}"
     return sorted(
-        (f for f in files if f.suffix == ext),
+        (Path(f.name) for f in dir.iterdir() if f.suffix == ext),
         key=key,
     )
 
 
 def get_inputs(args: ArgsTester) -> list[RelativePath]:
-    if not os.path.exists(args.indir):
+    if not args.indir.exists():
         fatal(f"Input directory `{args.indir}` doesn't exist.")
-    return sorted_with_ext(
-        map(Path, os.listdir(args.indir)),
-        args.inext,
-        lambda p: natural_sort_key(str(p)),
+    return sorted_files_with_ext(
+        args.indir, args.inext, lambda p: natural_sort_key(str(p))
     )
 
 
 def get_outputs(
     inputs: Sequence[Path], args: ArgsTester
 ) -> Optional[list[RelativePath]]:
-    if not os.path.exists(args.outdir):
-        os.makedirs(args.outdir)
+    if not args.outdir.exists():
+        args.outdir.mkdir(parents=True)
     if args.outext != args.tempext and not args.reset:
-        outputs = sorted_with_ext(map(Path, os.listdir(args.outdir)), args.outext)
+        outputs = sorted_files_with_ext(args.outdir, args.outext)
         if len(outputs) > 0 and len(outputs) < len(inputs):
             warning("Incomplete output files.")
         return outputs
@@ -196,30 +194,30 @@ def get_outputs(
         return None
 
 
+def temp_clear(args: ArgsTester) -> None:
+    tempfiles = sorted_files_with_ext(args.outdir, args.tempext)
+    if len(tempfiles):
+        info(f"Deleting all .{args.tempext} files")
+        for tempfile in tempfiles:
+            (args.outdir / tempfile).unlink()
+
+
 def setup_ioram(
     args: ArgsTester, inputs: list[RelativePath], _outputs: Optional[list[RelativePath]]
 ) -> None:
     ramdir = Directory("/dev/shm/input_tool/{0}".format(os.getpid()))
     try:
-        os.makedirs(ramdir)
+        ramdir.mkdir(parents=True)
     except Exception as e:
         fatal(f"Failed to create ramdir {ramdir}: {e!r}")
     infob(f"Using {ramdir} for input and output files.")
     for input in inputs:
-        shutil.copy(os.path.join(args.indir, input), os.path.join(ramdir, input))
+        shutil.copy(args.indir / input, ramdir / input)
     for output in _outputs or []:
-        shutil.copy(os.path.join(args.outdir, output), os.path.join(ramdir, output))
+        shutil.copy(args.outdir / output, ramdir / output)
     args.indir = ramdir
     args.outdir = ramdir
     atexit.register(lambda: shutil.rmtree(ramdir))
-
-
-def temp_clear(args: ArgsTester) -> None:
-    tempfiles = sorted_with_ext(map(Path, os.listdir(args.outdir)), args.tempext)
-    if len(tempfiles):
-        info(f"Deleting all .{args.tempext} files")
-        for tempfile in tempfiles:
-            os.remove(os.path.join(args.outdir, tempfile))
 
 
 # ---------------- test solutions ----------------
@@ -233,13 +231,13 @@ def get_result_file(
 ) -> Path:
     if isvalidator or force == "temp":
         return temp_file
-    if not os.path.exists(out_file) or force == "out":
+    if not out_file.exists() or force == "out":
         return out_file
     return temp_file
 
 
 def get_output_creation_message(output_file: Path) -> str:
-    reason = ("doesn't exist", "recompute")[os.path.exists(output_file)]
+    reason = ("doesn't exist", "recompute")[output_file.exists()]
     return f"File {output_file} will be created now ({reason})."
 
 
@@ -254,8 +252,8 @@ def general_run_sol(
 ) -> None:
     try:
         sol.run(ifile, ofile, rfile, checker, *rargs)
-        if cleartemp and ofile != rfile and os.path.exists(rfile):
-            os.remove(rfile)
+        if cleartemp and ofile != rfile and rfile.exists():
+            rfile.unlink()
     except Exception as e:
         traceback.print_exc()
         fatal(repr(e))

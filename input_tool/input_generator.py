@@ -4,10 +4,9 @@
 # © 2022 fezjo
 # Script that helps generating inputs for contests
 import atexit
-import os
 import sys
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Optional
+from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
 from input_tool.common.commands import Config
@@ -59,7 +58,7 @@ def find_idf(directory: Directory) -> Path:
 
 def get_recipe(file: Optional[Path], idf_version: int) -> Recipe:
     if file is not None:
-        if os.path.isdir(file):
+        if file.is_dir():
             file = find_idf(file)
         with open(file, "r") as f:
             text = f.read().splitlines()
@@ -69,22 +68,22 @@ def get_recipe(file: Optional[Path], idf_version: int) -> Recipe:
 
 
 def setup_indir(indir: Directory, inext: str, clear_input: bool) -> None:
-    if not os.path.exists(indir):
+    if not indir.exists():
         infob(f"Creating directory '{indir}'")
-        os.makedirs(indir)
+        indir.mkdir(parents=True)
 
-    filestoclear = os.listdir(indir)
+    filestoclear = list(indir.iterdir())
     if filestoclear and clear_input:
         infob(f"Cleaning directory '{indir}:'")
         # delete only following files
         exttodel = ["in", "out", "temp", inext]
         for file in filestoclear:
-            if file.endswith(inext) and "sample" in file:
-                info(f"  ommiting file '{file}'")
-            elif file.rsplit(".", 1)[-1] not in exttodel:
-                info(f"  not deleting file '{file}'")
+            if file.name.endswith(inext) and "sample" in file.name:
+                info(f"  ommiting file '{file.name}'")
+            elif file.suffix.lstrip(".") not in exttodel:
+                info(f"  not deleting file '{file.name}'")
             else:
-                os.remove(f"{indir}/{file}")
+                file.unlink()
 
 
 def get_ifile(x: Input, args: ArgsGenerator, path: bool = False) -> Path:

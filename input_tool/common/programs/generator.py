@@ -1,6 +1,5 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
-import os
 import subprocess
 
 from input_tool.common.commands import Config
@@ -22,7 +21,7 @@ class Generator(Program):
         cmd = f"{ulimit_cmd}; {self.run_cmd} > {ifile}"
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
         p.communicate(str.encode(text))
-        if not p.returncode and not os.path.exists(ifile):
+        if not p.returncode and not ifile.exists():
             warning(
                 "Generator ran successfully, but output file was not created. What?"
             )

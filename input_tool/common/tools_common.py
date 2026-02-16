@@ -55,7 +55,7 @@ def setup_config(
     if not Config.progdir:
         Config.progdir = None
     else:
-        os.makedirs(Config.progdir, exist_ok=True)
+        Config.progdir.mkdir(parents=True, exist_ok=True)
 
 
 @atexit.register
@@ -66,7 +66,9 @@ def cleanup_progdir(warn: bool = False) -> None:
         os.removedirs(Config.progdir)
     except OSError:
         if warn:
-            warning(f"Program directory not empty {os.listdir(Config.progdir)}")
+            warning(
+                f"Program directory not empty {[x.name for x in Config.progdir.iterdir()]}"
+            )
 
 
 def cleanup(programs: Iterable[Program]) -> None:
@@ -91,14 +93,10 @@ def prepare_programs(programs: Iterable[Program], threads: int) -> None:
 
 
 def check_data_folder_size(path: Directory, max_size_mb: int = 42) -> None:
-    if not os.path.exists(path):
+    if not path.exists():
         return
     # get total size of all files in the directory recursively
-    total_size_b = 0
-    for dirpath, _, filenames in os.walk(path):
-        for f in filenames:  # includes links
-            fp = os.path.join(dirpath, f)
-            total_size_b += os.path.getsize(fp)
+    total_size_b = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
     total_size_mb = round(total_size_b / 1024**2, 2)
     if total_size_mb > max_size_mb:
         warning(

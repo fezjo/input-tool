@@ -64,7 +64,7 @@ def setup_directory(
     request: pytest.FixtureRequest, path: str, cleanup: bool = True
 ) -> Iterator[None]:
     # change to directory of the test
-    os.chdir(os.path.join(os.path.dirname(request.path), path))
+    os.chdir(Path(request.path).parent / path)
     if cleanup:
         clean(Path.cwd())
     yield

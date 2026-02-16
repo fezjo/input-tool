@@ -52,7 +52,7 @@ class Program:
         if self.force_execute:
             return
         if len(self.name.split()) > 1:
-            if os.path.exists(self.name):
+            if Path(self.name).exists():
                 fatal(f"Error: whitespace in filenames not supported [{self.name}]")
             return
 
@@ -62,13 +62,13 @@ class Program:
             valid: list[str] = []
             for ext_category in (Langs.lang_compiled, Langs.lang_script):
                 for ext in Langs.collect_exts(ext_category):
-                    if os.path.exists(self.name + "." + ext):
+                    if Path(f"{self.name}.{ext}").exists():
                         valid.append(ext)
             if not valid:
                 # could not guess the extension, so we don't know how to compile or run it
                 return
             self.source_path = Path(self.name + "." + valid[0])
-            if os.path.exists(self.name):
+            if Path(self.name).exists():
                 valid.append("<noextension>")
             if len(valid) > 1:
                 default_logger.warning(
@@ -104,14 +104,14 @@ class Program:
                 source_dir, exe = exe.parent, Path(exe.name)
                 path = min(
                     os.path.relpath(source_dir, Config.progdir),
-                    os.path.abspath(source_dir),
+                    str(source_dir.resolve()),
                     key=len,
                 )
                 option_str = " ".join(filter(bool, options))
                 self.compile_cmd = ShellCommand(
                     f'cd {Config.progdir}; make VPATH="{path}" {option_str} {exe}'
                 )
-                self.executable_path = Path(os.path.join(Config.progdir, exe))
+                self.executable_path = Config.progdir / exe
 
         def setup_with_compiled_executable() -> None:
             assert self.executable_path is not None
@@ -174,11 +174,11 @@ class Program:
             # user asked us to run:
             need_compilation = self.executable_path is None or (
                 # source/executable, but the associated executable doesn't exist
-                not os.path.exists(self.executable_path)
+                not self.executable_path.exists()
                 # a source file and it is newer than the executable
                 or (
                     self.name == str(self.source_path)
-                    and is_file_newer(str(self.source_path), str(self.executable_path))
+                    and is_file_newer(self.source_path, self.executable_path)
                 )
                 # so if user specified an executable (not source, but guessed something),
                 # we will not recompile even if it is comparatively stale
@@ -207,18 +207,16 @@ class Program:
     def get_possible_locations_of_executable(
         executable: ExecutableFile | None, run_cmd: ShellCommand, source: Path
     ) -> list[Path]:
-        source_dir, source_basename = os.path.split(source)
-        source_name, _source_ext = os.path.splitext(source_basename)
-        _run_cmd_dir, run_cmd_basename = os.path.split(run_cmd)
+        run_cmd_basename = Path(run_cmd).name
         possibilities = [
             executable,
             run_cmd,
-            os.path.join(source_dir, run_cmd_basename),
-            os.path.join(source_dir, source_name),
-            os.path.join(source_dir, source_basename),
+            source.parent / run_cmd_basename,
+            source.parent / source.stem,
+            source.parent / source.name,
             run_cmd_basename,
-            source_name,
-            source_basename,
+            source.stem,
+            source.name,
         ]
         # keep unique in original order
         return [Path(p) for p in dict.fromkeys(possibilities) if p]
@@ -290,10 +288,10 @@ class Program:
 
     def clear_files(self) -> None:
         for f in self.files_to_clear:
-            if os.path.exists(f):
-                if os.path.isdir(f):
+            if f.exists():
+                if f.is_dir():
                     shutil.rmtree(f)
                 else:
-                    os.remove(f)
+                    f.unlink()
             else:
                 default_logger.warning(f"Not found {f}")

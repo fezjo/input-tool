@@ -3,7 +3,6 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
 # Script that creates sample inputs from task statements or vice versa
-import os
 import sys
 from typing import Iterable, Optional, Sequence
 
@@ -35,10 +34,12 @@ def parse_args() -> ArgsSample:
 
 def read_recipe(path: Optional[Path]) -> list[str]:
     if path:
-        if not os.path.exists(path):
+        if not path.exists():
             fatal(f"Path '{path}' does not exist.")
-        elif os.path.isdir(path):
-            consider = [f for f in os.listdir(path) if f.lower() == "zadanie.md"]
+        elif path.is_dir():
+            consider = [
+                f.name for f in path.iterdir() if f.name.lower() == "zadanie.md"
+            ]
             if len(consider) == 0:
                 fatal(f"Path '{path}' does not contain `zadanie.md`.")
             elif len(consider) > 1:
@@ -47,7 +48,7 @@ def read_recipe(path: Optional[Path]) -> list[str]:
                     f"Specify which one to use {consider}."
                 )
             path = path / consider[0]
-        return open(path, "r").readlines()
+        return path.read_text().splitlines(keepends=True)
     return sys.stdin.readlines()
 
 
@@ -140,9 +141,9 @@ def print_tips() -> None:
 
 def prepare_dirs(dirs: Iterable[Directory]) -> None:
     for d in dirs:
-        if not os.path.exists(d):
+        if not d.exists():
             infob(f"Creating directory '{d}'")
-            os.makedirs(d)
+            d.mkdir(parents=True)
 
 
 def run(args: ArgsSample) -> None:

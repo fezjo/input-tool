@@ -43,10 +43,10 @@ from input_tool.common.os_config import OsConfig
 from input_tool.common.types import Directory, Path, RelativePath
 
 
-def is_file_newer(file1: Union[Path, str], file2: Union[Path, str]) -> Optional[bool]:
-    if not os.path.exists(file1) or not os.path.exists(file2):
+def is_file_newer(file1: Path, file2: Path) -> Optional[bool]:
+    if not file1.exists() or not file2.exists():
         return None
-    return os.path.getctime(file1) > os.path.getctime(file2)
+    return file1.stat().st_ctime > file2.stat().st_ctime
 
 
 def to_base_alnum(p: Union[Path, str]) -> str:

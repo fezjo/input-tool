@@ -1,6 +1,5 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
-import os
 import subprocess
 import tempfile
 from collections import defaultdict
@@ -49,8 +48,8 @@ class Solution(Program):
         return original
 
     def compare_mask(self) -> tuple[int, int, str]:
-        filename = os.path.basename(self.name)
-        name, _ext = os.path.splitext(filename)
+        filename = Path(self.name).name
+        name = Path(filename).stem
         parts = name.split("-")
         score = 0
         if "vzorak" in parts or "vzor" in parts:
@@ -136,7 +135,7 @@ class Solution(Program):
 
     @staticmethod
     def parse_batch(ifile: Path) -> str:
-        inp, _ext = os.path.splitext(ifile.name)
+        inp = ifile.stem
         return inp if inp.endswith("sample") else inp.rsplit(".", 1)[0]
 
     def record(
@@ -281,8 +280,8 @@ class Solution(Program):
             status = Status.err
             logger.warning(repr(e))
         finally:
-            if os.path.exists(timefile):
-                os.remove(timefile)
+            if timefile.exists():
+                timefile.unlink()
 
         return run_times, status
 
@@ -302,9 +301,7 @@ class Solution(Program):
             time = time_format.format(int(seconds[0] * 1000), *seconds[1:])
 
         if Config.inside_oneline:
-            input = ("{:" + str(Config.inside_inputmaxlen) + "s}").format(
-                (str(ifile).rsplit("/", 1)[1])
-            )
+            input = ("{:" + str(Config.inside_inputmaxlen) + "s}").format(ifile.name)
             summary = "{} < {} {}".format(run_cmd, input, time)
         else:
             summary = "    {}  {}".format(run_cmd, time)
