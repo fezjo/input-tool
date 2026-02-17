@@ -70,6 +70,7 @@ def run_autogenerate(args: itool_parser.specs.ArgsAutogenerate):
         memorylimit=0,
         diffcmd="diff",
         showdiff=False,
+        keepwa=False,
         fail_skip=False,
         ioram=False,
     )

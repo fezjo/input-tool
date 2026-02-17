@@ -335,6 +335,15 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, Optional[str]]
         },
         "testing",
     ),
+    "keepwa": (
+        ("--keep-wa",),
+        {
+            "dest": "keepwa",
+            "action": "store_true",
+            "help": "keep failing temporary outputs in <outdir>/wa/<solution>/",
+        },
+        "testing",
+    ),
     "fail_skip": (
         ("-F", "--no-fail-skip"),
         {

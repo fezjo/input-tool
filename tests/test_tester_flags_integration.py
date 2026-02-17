@@ -19,6 +19,43 @@ def test_default_temp_cleanup_removes_temp_files(case_dir):
     assert not temp_files
 
 
+def test_keep_wa_preserves_failing_outputs_with_output_filenames(case_dir):
+    workdir = copy_fixture_tree("sidebyside", case_dir)
+
+    run_itool(["t", "--no-sort", "sol-a.py", "sol-b.py", "--keep-wa"], cwd=workdir)
+
+    wa_sol_dir = workdir / "test" / "wa" / "sol-b.py"
+    assert wa_sol_dir.exists()
+
+    kept_outputs = sorted(p.name for p in wa_sol_dir.glob("*.out"))
+    expected_output_names = {p.name for p in (workdir / "test").glob("*.out")}
+
+    assert kept_outputs
+    assert set(kept_outputs).issubset(expected_output_names)
+
+
+def test_wa_folder_is_kept_on_non_tester_itool_invocation(case_dir):
+    workdir = copy_fixture_tree("sidebyside", case_dir)
+
+    run_itool(["t", "--no-sort", "sol-a.py", "sol-b.py", "--keep-wa"], cwd=workdir)
+    assert (workdir / "test" / "wa").exists()
+
+    run_itool(["colortest"], cwd=workdir)
+
+    assert (workdir / "test" / "wa").exists()
+
+
+def test_wa_folder_is_cleared_on_next_tester_invocation(case_dir):
+    workdir = copy_fixture_tree("sidebyside", case_dir)
+
+    run_itool(["t", "--no-sort", "sol-a.py", "sol-b.py", "--keep-wa"], cwd=workdir)
+    assert (workdir / "test" / "wa").exists()
+
+    run_itool(["t", "--no-sort", "sol-a.py"], cwd=workdir)
+
+    assert not (workdir / "test" / "wa").exists()
+
+
 def test_no_statistics_hides_summary_table(case_dir):
     workdir = copy_fixture_tree("recompute", case_dir)
 

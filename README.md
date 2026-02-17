@@ -249,6 +249,10 @@ Niektoré úlohy potrebujú na určenie správnosti hodnotič. Ten vie byť auto
 
 Ak je výsledkom testovania WA, vypíše sa skrátený výstup hodnotiča. Pri štandardnom `diff`e sa vypíše porovnanie riadkov vedľa seba.
 
+### `--keep-wa`
+
+Ak test zlyhá, výstup sa uloží do priečinka `<outidr>/wa/<sol>` (napríklad `test/wa/sol-100.py/2.a.out`). Ľahšie sa potom analyzuje, čo sa pokazilo. Tento priečinok sa pri ďalšom testovaní automaticky vyčistí.
+
 ### `--pythoncmd`
 
 Niekedy by sme boli radi, keby Python nebol taký pomalý. To sa dá väčšinou vyriešiť použitím _PyPy_ interpretera. Dokážeme to určiť pomocou tohoto argumentu, použitím `--pythoncmd pypy3`.

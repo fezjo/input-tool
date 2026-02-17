@@ -132,6 +132,7 @@ options_tester = [
     "memorylimit",
     "diffcmd",
     "showdiff",
+    "keepwa",
     "fail_skip",
     "ioram",
     "pythoncmd_test",
@@ -167,6 +168,7 @@ class ArgsTester:
     memorylimit: float
     diffcmd: str
     showdiff: bool
+    keepwa: bool
     fail_skip: bool
     ioram: bool
     pythoncmd: str

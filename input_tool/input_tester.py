@@ -249,11 +249,24 @@ def run_sol(
     rfile: TempFile,
     checker: Checker,
     cleartemp: bool,
+    keepwa: bool,
+    outdir: Directory,
     is_output_generator: bool,
     logger: Optional[Logger] = None,
 ) -> None:
     try:
-        sol.run(ifile, ofile, rfile, checker, is_output_generator, logger)
+        status = sol.run(ifile, ofile, rfile, checker, is_output_generator, logger)
+        if (
+            keepwa
+            and status == Status.wa
+            and ofile != rfile
+            and rfile.exists()
+            and not isinstance(sol, Validator)
+        ):
+            sol_name = sol.name.replace("/", "__")
+            wa_dir = outdir / "wa" / sol_name
+            wa_dir.mkdir(parents=True, exist_ok=True)
+            rfile.rename(wa_dir / ofile.name)
         if cleartemp and ofile != rfile and rfile.exists():
             rfile.unlink()
     except Exception as e:
@@ -312,11 +325,22 @@ def build_test_tasks(
                 rfile=result_file,
                 checker=checker,
                 cleartemp=args.cleartemp,
+                keepwa=args.keepwa,
+                outdir=args.outdir,
                 is_generator=is_generator,
                 logger=logger,
             ):
                 run_sol(
-                    sol, ifile, ofile, rfile, checker, cleartemp, is_generator, logger
+                    sol,
+                    ifile,
+                    ofile,
+                    rfile,
+                    checker,
+                    cleartemp,
+                    keepwa,
+                    outdir,
+                    is_generator,
+                    logger,
                 )
 
             task_item = TaskItem(sol.name, batch, str(input), run_task, callbacks)
@@ -492,6 +516,7 @@ def run(args: ArgsTester) -> None:
     Config.inside_oneline = len(solutions) <= 1
     print_solutions_run_commands(solutions)
 
+    shutil.rmtree(args.outdir / "wa", ignore_errors=True)
     inputs = get_inputs(args)
     _outputs = get_outputs(inputs, args)
     if args.ioram:

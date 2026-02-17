@@ -321,13 +321,13 @@ class Solution(Program):
         checker: Checker,
         is_output_generator: bool = False,
         logger: Optional[Logger] = None,
-    ) -> None:
+    ) -> Optional[Status]:
         batch = self.parse_batch(ifile)
         task = str(ifile)
         TASK_HISTORY.start(self.name, batch, task)
         if Config.fail_skip and batch in self.statistics.failedbatches:
             TASK_HISTORY.end(self.name, batch, task, True)
-            return
+            return None
 
         callbacks = TASK_HISTORY.get_callbacks(self.name, batch, task)
         logger = default_logger if logger is None else logger
@@ -347,3 +347,4 @@ class Solution(Program):
 
         self.record(ifile, status, run_times)
         self.output_testcase_summary(ifile, status, run_times, logger)
+        return status

@@ -44,7 +44,7 @@ class Validator(Solution):
         checker: Checker,
         is_output_generator: bool = False,
         logger: Optional[Logger] = None,
-    ) -> None:
+    ) -> Status:
         logger = default_logger if logger is None else logger
         callbacks = (lambda _: None, lambda: False, lambda: None)
         run_times, status = self._run(
@@ -58,3 +58,4 @@ class Validator(Solution):
 
         self.record(ifile, status, run_times)
         self.output_testcase_summary(ifile, status, run_times, logger)
+        return status
