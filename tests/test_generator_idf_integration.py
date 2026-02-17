@@ -1,4 +1,4 @@
-from test_utils import copy_fixture_tree, run_itool
+from test_utils import copy_fixture_tree, get_input_files, run_itool
 
 
 def test_idf_v2_yaml_eval_merge_nofile_multiline_and_escape(case_dir):
@@ -11,12 +11,7 @@ def test_idf_v2_yaml_eval_merge_nofile_multiline_and_escape(case_dir):
     assert not (workdir / "test" / "x.c.in").exists()
     assert (workdir / "test" / "x.d.in").read_text() == "line1\n~line2\n"
     assert (workdir / "test" / "1.e.in").read_text() == "{{name}} {name}\n"
-    assert sorted(p.name for p in (workdir / "test").glob("*.in")) == [
-        "1.e.in",
-        "x.a.in",
-        "x.b.in",
-        "x.d.in",
-    ]
+    assert get_input_files(workdir / "test") == ["1.e.in", "x.a.in", "x.b.in", "x.d.in"]
 
 
 def test_idf_v1_legacy_equals_commands_work(case_dir):
@@ -26,19 +21,14 @@ def test_idf_v1_legacy_equals_commands_work(case_dir):
 
     assert (workdir / "test" / "legacy.a.in").read_text() == "1 hello\n"
     assert (workdir / "test" / "1.b.in").read_text() == "2 world\n"
-    assert sorted(p.name for p in (workdir / "test").glob("*.in")) == [
-        "1.b.in",
-        "legacy.a.in",
-    ]
+    assert get_input_files(workdir / "test") == ["1.b.in", "legacy.a.in"]
 
 
 def test_idf_v2_rejects_nonboolean_nofile(case_dir):
     workdir = copy_fixture_tree("idf_v2_invalid_nofile", case_dir)
 
     result = run_itool(
-        ["g", ".", "-g", "cat", "--idf-version", "2"],
-        cwd=workdir,
-        check=False,
+        ["g", ".", "-g", "cat", "--idf-version", "2"], cwd=workdir, check=False
     )
 
     assert result.returncode != 0

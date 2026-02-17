@@ -5,8 +5,7 @@ def test_default_sort_prefers_better_scored_solution(case_dir):
     workdir = copy_fixture_tree("selection_cases", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-1.py", "sol-100.py", "-t", "0", "-j", "1"],
-        cwd=workdir,
+        ["t", "sol-1.py", "sol-100.py", "-t", "0"], cwd=workdir
     )
 
     assert len(data) == 2
@@ -18,8 +17,7 @@ def test_no_sort_preserves_user_program_order(case_dir):
     workdir = copy_fixture_tree("selection_cases", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "--no-sort", "sol-1.py", "sol-100.py", "-t", "0", "-j", "1"],
-        cwd=workdir,
+        ["t", "--no-sort", "sol-1.py", "sol-100.py", "-t", "0"], cwd=workdir
     )
 
     assert len(data) == 2
@@ -31,8 +29,7 @@ def test_default_deduplicates_same_program_argument(case_dir):
     workdir = copy_fixture_tree("selection_cases", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-100.py", "sol-100.py", "-t", "0", "-j", "1"],
-        cwd=workdir,
+        ["t", "sol-100.py", "sol-100.py", "-t", "0"], cwd=workdir
     )
 
     assert len(data) == 1
@@ -44,8 +41,7 @@ def test_dupprog_keeps_duplicate_program_argument(case_dir):
     workdir = copy_fixture_tree("selection_cases", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "--dupprog", "sol-100.py", "sol-100.py", "-t", "0", "-j", "1"],
-        cwd=workdir,
+        ["t", "--dupprog", "sol-100.py", "sol-100.py", "-t", "0"], cwd=workdir
     )
 
     assert len(data) == 2
@@ -57,17 +53,7 @@ def test_best_only_keeps_validator_and_best_solution(case_dir):
     workdir = copy_fixture_tree("selection_cases", case_dir)
 
     _result, data = run_itool_json(
-        [
-            "t",
-            "--best-only",
-            "val-positive.py",
-            "sol-1.py",
-            "sol-100.py",
-            "-t",
-            "0",
-            "-j",
-            "1",
-        ],
+        ["t", "--best-only", "val-positive.py", "sol-1.py", "sol-100.py", "-t", "0"],
         cwd=workdir,
     )
 

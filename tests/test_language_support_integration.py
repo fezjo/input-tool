@@ -79,10 +79,7 @@ def test_supported_languages_can_be_compiled(case_dir):
             "No supported language toolchains are available in this environment."
         )
 
-    result = run_itool(
-        ["c", *programs, "--progdir", "build", "-j", "1"],
-        cwd=workdir,
-    )
+    result = run_itool(["c", *programs, "--progdir", "build"], cwd=workdir)
 
     assert result.returncode == 0
 
@@ -99,7 +96,7 @@ def test_supported_languages_can_be_tested(case_dir):
         )
 
     _result, data = run_itool_json(
-        ["t", *programs, "--progdir", "build", "--no-statistics", "-t", "0", "-j", "1"],
+        ["t", *programs, "--progdir", "build", "--no-statistics", "-t", "0"],
         cwd=workdir,
     )
 
@@ -121,10 +118,7 @@ def test_supported_languages_in_dir_can_be_compiled(case_dir):
         )
     programs = [f"src/{p}" for p in programs]
 
-    result = run_itool(
-        ["c", *programs, "--progdir", "build", "-j", "1"],
-        cwd=workdir,
-    )
+    result = run_itool(["c", *programs, "--progdir", "build"], cwd=workdir)
 
     assert result.returncode == 0
 
@@ -142,7 +136,7 @@ def test_supported_languages_in_dir_can_be_tested(case_dir):
     programs = [f"src/{p}" for p in programs]
 
     _result, data = run_itool_json(
-        ["t", *programs, "--progdir", "build", "--no-statistics", "-t", "0", "-j", "1"],
+        ["t", *programs, "--progdir", "build", "--no-statistics", "-t", "0"],
         cwd=workdir,
     )
 

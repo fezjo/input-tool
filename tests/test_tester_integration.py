@@ -61,7 +61,7 @@ def test_side_by_side_diff_and_statuses(case_dir):
     normalized_output = [" ".join(line.split()) for line in out.splitlines()]
     normalized_expected = [" ".join(line.split()) for line in expected_lines]
 
-    offset = 9
+    offset = 8
     got = normalized_output[-len(normalized_expected) - offset : -offset]
     assert got == normalized_expected
 
@@ -82,8 +82,7 @@ def test_default_fail_skip_skips_remaining_tests_in_batch(case_dir):
     workdir = copy_fixture_tree("failskip", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-fast.py", "sol-slow.py", "-t", "0.05", "-j", "1"],
-        cwd=workdir,
+        ["t", "sol-fast.py", "sol-slow.py", "-t", "0.05"], cwd=workdir
     )
     by_name = {row["name"]: row for row in data}
 
@@ -97,8 +96,7 @@ def test_no_fail_skip_runs_remaining_tests_in_batch(case_dir):
     workdir = copy_fixture_tree("failskip", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-fast.py", "sol-slow.py", "-t", "0.05", "-j", "1", "-F"],
-        cwd=workdir,
+        ["t", "sol-fast.py", "sol-slow.py", "-t", "0.05", "-F"], cwd=workdir
     )
     by_name = {row["name"]: row for row in data}
 
@@ -111,9 +109,9 @@ def test_no_fail_skip_runs_remaining_tests_in_batch(case_dir):
 def test_outputs_are_reused_unless_reset_requested(case_dir):
     workdir = copy_fixture_tree("recompute", case_dir)
 
-    first = run_itool(["t", "sol-a.py", "sol-b.py", "-j", "1"], cwd=workdir)
-    second = run_itool(["t", "sol-a.py", "sol-b.py", "-j", "1"], cwd=workdir)
-    third = run_itool(["t", "sol-a.py", "sol-b.py", "-j", "1", "-R"], cwd=workdir)
+    first = run_itool(["t", "sol-a.py", "sol-b.py"], cwd=workdir)
+    second = run_itool(["t", "sol-a.py", "sol-b.py"], cwd=workdir)
+    third = run_itool(["t", "sol-a.py", "sol-b.py", "-R"], cwd=workdir)
 
     first_text = filter_out_ansi_escape_codes(first.stdout)
     second_text = filter_out_ansi_escape_codes(second.stdout)
@@ -128,9 +126,7 @@ def test_tester_fails_on_missing_input_directory(case_dir):
     workdir = copy_fixture_tree("missing_input", case_dir)
 
     result = run_itool(
-        ["t", "sol.py", "--input", "does-not-exist"],
-        cwd=workdir,
-        check=False,
+        ["t", "sol.py", "--input", "does-not-exist"], cwd=workdir, check=False
     )
 
     assert result.returncode != 0
@@ -154,36 +150,28 @@ def test_validator_reports_valid_status_when_inputs_pass(case_dir):
     workdir = copy_fixture_tree("validator_ok", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "val-positive.py", "sol-copy.py", "-t", "0", "-j", "1"],
-        cwd=workdir,
+        ["t", "val-positive.py", "sol-copy.py", "-t", "0"], cwd=workdir
     )
     by_name = {row["name"]: row["result"] for row in data}
 
-    assert by_name == {
-        "val-positive.py": "VALID",
-        "sol-copy.py": "OK",
-    }
+    assert by_name == {"val-positive.py": "VALID", "sol-copy.py": "OK"}
 
 
 def test_validator_reports_exc_when_input_fails_validation(case_dir):
     workdir = copy_fixture_tree("validator_fail", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "val-positive.py", "sol-copy.py", "-t", "0", "-j", "1"],
-        cwd=workdir,
+        ["t", "val-positive.py", "sol-copy.py", "-t", "0"], cwd=workdir
     )
     by_name = {row["name"]: row["result"] for row in data}
 
-    assert by_name == {
-        "val-positive.py": "EXC",
-        "sol-copy.py": "OK",
-    }
+    assert by_name == {"val-positive.py": "EXC", "sol-copy.py": "OK"}
 
 
 def test_json_normalized_snapshot_contract(case_dir):
     workdir = copy_fixture_tree("batch_letters", case_dir)
 
-    _result, data = run_itool_json(["t", "sol.py", "-t", "0", "-j", "1"], cwd=workdir)
+    _result, data = run_itool_json(["t", "sol.py", "-t", "0"], cwd=workdir)
     normalized = normalize_results_for_assertions(data)
 
     assert normalized == [

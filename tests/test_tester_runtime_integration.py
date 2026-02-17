@@ -13,29 +13,17 @@ from test_utils import (
 
 def _measure_tester_wall_time(workdir: Path, threads: int, timeout: float) -> float:
     start = time.monotonic()
-    run_itool(
-        [
-            "t",
-            ".",
-            "-j",
-            str(threads),
-            "-t",
-            str(timeout),
-            "-R",
-            "-q",
-        ],
-        cwd=workdir,
-    )
+    run_itool(["t", ".", "-R", "-q", "-t", str(timeout)], cwd=workdir, threads=threads)
     return time.monotonic() - start
 
 
 def test_tester_wtime_marks_t_statuses(case_dir):
     workdir = copy_fixture_tree("timelimits", case_dir)
-    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir, threads=None)
 
     sols = ["sol.cpp", "sol-1.0.cpp", "sol-1.py"]
     _result, data = run_itool_json(
-        ["t", *sols, "-t", "2", "--wtime", "0.0001", "-j", "1"], cwd=workdir
+        ["t", *sols, "-t", "2", "--wtime", "0.0001"], cwd=workdir
     )
 
     assert len(data) == len(sols)
@@ -45,12 +33,11 @@ def test_tester_wtime_marks_t_statuses(case_dir):
 
 def test_tester_wtime_high_threshold_produces_no_t_statuses(case_dir):
     workdir = copy_fixture_tree("timelimits", case_dir)
-    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir, threads=None)
 
     sols = ["sol.cpp", "sol-1.0.cpp", "sol-1.py"]
     _result, data = run_itool_json(
-        ["t", *sols, "-t", "1,cpp=0.1", "--wtime", "100", "-j", "1"],
-        cwd=workdir,
+        ["t", *sols, "-t", "1,cpp=0.1", "--wtime", "100"], cwd=workdir
     )
 
     assert len(data) == len(sols)
@@ -62,7 +49,7 @@ def test_tester_memorylimit_triggers_failure(case_dir):
     workdir = copy_fixture_tree("tester_memory", case_dir)
 
     _result, data = run_itool_json(
-        ["t", ".", "-m", "100", "-t", "0", "-j", "1", "-q"], cwd=workdir
+        ["t", ".", "-m", "100", "-t", "0", "-q"], cwd=workdir
     )
     assert len(data) == 2
     assert {row["name"] for row in data} == {"sol-mem.cpp", "sol-mem.py"}
@@ -81,7 +68,7 @@ def test_tester_no_compile_requires_prebuilt_binary(case_dir):
     workdir = copy_fixture_tree("progdir", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-a.cpp", "--no-compile", "-t", "0", "-j", "1"], cwd=workdir
+        ["t", "sol-a.cpp", "--no-compile", "-t", "0"], cwd=workdir
     )
 
     assert len(data) == 1
@@ -92,9 +79,7 @@ def test_tester_no_compile_requires_prebuilt_binary(case_dir):
 def test_tester_execute_treats_program_as_shell_command(case_dir):
     workdir = copy_fixture_tree("tester_execute", case_dir)
 
-    _result, data = run_itool_json(
-        ["t", "--execute", "cat", "-t", "0", "-j", "1"], cwd=workdir
-    )
+    _result, data = run_itool_json(["t", "--execute", "cat", "-t", "0"], cwd=workdir)
 
     assert len(data) == 1
     assert data[0]["name"] == "cat"
@@ -106,7 +91,7 @@ def test_tester_execute_nonexistent_command_results_exc(case_dir):
     workdir = copy_fixture_tree("tester_execute", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "--execute", "definitely_missing_cmd", "-t", "0", "-j", "1"], cwd=workdir
+        ["t", "--execute", "definitely_missing_cmd", "-t", "0"], cwd=workdir
     )
 
     assert len(data) == 1
@@ -118,16 +103,7 @@ def test_tester_pythoncmd_override_is_used(case_dir):
     workdir = copy_fixture_tree("tester_pythoncmd", case_dir)
 
     result, data = run_itool_json(
-        [
-            "t",
-            "sol.py",
-            "--pythoncmd",
-            "definitely_missing_python",
-            "-t",
-            "0",
-            "-j",
-            "1",
-        ],
+        ["t", "sol.py", "--pythoncmd", "definitely_missing_python", "-t", "0"],
         cwd=workdir,
     )
 
@@ -141,22 +117,9 @@ def test_tester_custom_output_dir_and_extensions(case_dir):
     workdir = copy_fixture_tree("tester_custom_io", case_dir)
 
     _result, data = run_itool_json(
-        [
-            "t",
-            "sol.py",
-            "--input",
-            "input_data",
-            "--inext",
-            "dat",
-            "--output",
-            "output_data",
-            "--outext",
-            "ans",
-            "-t",
-            "0",
-            "-j",
-            "1",
-        ],
+        ["t", "sol.py", "-t", "0"]
+        + ["--input", "input_data", "--output", "output_data"]
+        + ["--inext", "dat", "--outext", "ans"],
         cwd=workdir,
     )
 
@@ -172,7 +135,7 @@ def test_tester_progdir_override_compiles_to_custom_dir(case_dir):
     workdir = copy_fixture_tree("progdir", case_dir)
 
     _result, data = run_itool_json(
-        ["t", "sol-a.cpp", "--progdir", "build", "-t", "0", "-j", "1"], cwd=workdir
+        ["t", "sol-a.cpp", "--progdir", "build", "-t", "0"], cwd=workdir
     )
 
     assert (workdir / "build" / "sol-a").exists()
@@ -183,11 +146,9 @@ def test_tester_progdir_override_compiles_to_custom_dir(case_dir):
 
 def test_statistics_table_header_contract(case_dir):
     workdir = copy_fixture_tree("progdir", case_dir)
-    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir, threads=None)
 
-    result = run_itool(
-        ["t", "sol-a.cpp", "./sol-b.cpp", "cdir/sol-c.cpp", "-j", "1"], cwd=workdir
-    )
+    result = run_itool(["t", "sol-a.cpp", "./sol-b.cpp", "cdir/sol-c.cpp"], cwd=workdir)
     text = filter_out_ansi_escape_codes(result.stdout)
 
     header_line = next(
@@ -212,11 +173,9 @@ def test_statistics_table_header_contract(case_dir):
 
 def test_statistics_table_row_alignment_contract(case_dir):
     workdir = copy_fixture_tree("progdir", case_dir)
-    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir, threads=None)
 
-    result = run_itool(
-        ["t", "sol-a.cpp", "./sol-b.cpp", "cdir/sol-c.cpp", "-j", "1"], cwd=workdir
-    )
+    result = run_itool(["t", "sol-a.cpp", "./sol-b.cpp", "cdir/sol-c.cpp"], cwd=workdir)
     lines = filter_out_ansi_escape_codes(result.stdout).splitlines()
     row_lines = [line for line in lines if line.startswith("| sol")]
 
@@ -229,7 +188,7 @@ def test_statistics_table_row_alignment_contract(case_dir):
 def test_statistics_table_batch_letters_contract(case_dir):
     workdir = copy_fixture_tree("batch_letters", case_dir)
 
-    result = run_itool(["t", "sol.py", "-t", "0", "-j", "1"], cwd=workdir)
+    result = run_itool(["t", "sol.py", "-t", "0"], cwd=workdir)
     text = filter_out_ansi_escape_codes(result.stdout)
     rows = parse_statistics(text)
 
@@ -243,9 +202,7 @@ def test_statistics_table_batch_letters_contract(case_dir):
 def test_tester_rustime_prints_rus_columns(case_dir):
     workdir = copy_fixture_tree("progdir", case_dir)
 
-    result = run_itool(
-        ["t", "sol-a.cpp", "--rustime", "-t", "0", "-j", "1"], cwd=workdir
-    )
+    result = run_itool(["t", "sol-a.cpp", "--rustime", "-t", "0"], cwd=workdir)
 
     assert result.returncode == 0
     assert "[" in result.stdout
@@ -259,7 +216,7 @@ def test_tester_ioram_executes_in_ramdisk(case_dir):
 
     workdir = copy_fixture_tree("progdir", case_dir)
 
-    result = run_itool(["t", "sol-a.cpp", "--ioram", "-t", "0", "-j", "1"], cwd=workdir)
+    result = run_itool(["t", "sol-a.cpp", "--ioram", "-t", "0"], cwd=workdir)
 
     assert result.returncode == 0
     assert "Using /dev/shm/input_tool/" in result.stdout
@@ -267,7 +224,7 @@ def test_tester_ioram_executes_in_ramdisk(case_dir):
 
 def test_parallel_testing_linear_fixture_is_faster_with_more_threads(case_dir):
     workdir = copy_fixture_tree("parallel_finish_order_linear", case_dir)
-    run_itool(["g", ".", "-g", "cat", "-q", "--no-update-check"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat", "-q"], cwd=workdir, threads=None)
 
     single_thread = _measure_tester_wall_time(workdir, threads=1, timeout=0.2)
     three_threads = _measure_tester_wall_time(workdir, threads=3, timeout=0.2)
@@ -277,7 +234,7 @@ def test_parallel_testing_linear_fixture_is_faster_with_more_threads(case_dir):
 
 def test_parallel_testing_poly_fixture_is_faster_with_more_threads(case_dir):
     workdir = copy_fixture_tree("parallel_finish_order_poly", case_dir)
-    run_itool(["g", ".", "-g", "cat", "-q", "--no-update-check"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat", "-q"], cwd=workdir, threads=None)
 
     single_thread = _measure_tester_wall_time(workdir, threads=1, timeout=0.2)
     three_threads = _measure_tester_wall_time(workdir, threads=3, timeout=0.2)
@@ -296,6 +253,6 @@ def test_parallel_testing_takes_minimal_amount_of_time(case_dir):
     we expect to finish under 2.5 seconds.
     """
     workdir = copy_fixture_tree("parallel_finish_order", case_dir)
-    run_itool(["g", ".", "-g", "cat", "-q", "--no-update-check"], cwd=workdir)
+    run_itool(["g", ".", "-g", "cat", "-q"], cwd=workdir, threads=None)
 
     assert _measure_tester_wall_time(workdir, threads=7, timeout=1) < 2.7

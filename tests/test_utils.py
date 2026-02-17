@@ -4,7 +4,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, Optional
 
 import pytest
 
@@ -55,6 +55,10 @@ def parse_statistics(output: str) -> list[tuple[str, int, int, str, str, str]]:
     return [line_to_stat(row) for row in rows if row.startswith("|")]
 
 
+def get_input_files(dir: Path) -> list[str]:
+    return sorted(p.name for p in dir.glob("*.in"))
+
+
 def clean(workdir: Path) -> None:
     shutil.rmtree(workdir / "test", ignore_errors=True)
 
@@ -96,12 +100,34 @@ def copy_fixture_tree(name: str, destination: Path) -> Path:
     return dst
 
 
+PARALLELIZABLE_COMMANDS = (
+    "compile",
+    "c",
+    "autogenerate",
+    "ag",
+    "generate",
+    "g",
+    "test",
+    "t",
+)
+
+
 def run_itool(
     args: list[str],
     cwd: Path,
     check: bool = True,
     merge_output: bool = True,
+    threads: Optional[int] = 1,
+    no_update_check: bool = True,
 ) -> subprocess.CompletedProcess[str]:
+    if no_update_check and args[0] in ("autogenerate", "ag", "generate", "g"):
+        args.append("--no-update-check")
+    if (
+        threads is not None
+        and not ("-j" in args or "--threads" in args)
+        and args[0] in PARALLELIZABLE_COMMANDS
+    ):
+        args.extend(["--threads", str(threads)])
     result = subprocess.run(
         ["uv", "run", "itool", *args],
         cwd=cwd,
@@ -118,9 +144,9 @@ def run_itool(
 
 
 def run_itool_json(
-    args: list[str], cwd: Path, json_path: str = "out.json"
+    args: list[str], cwd: Path, json_path: str = "out.json", threads: Optional[int] = 1
 ) -> tuple[subprocess.CompletedProcess[str], list[dict[str, Any]]]:
-    result = run_itool([*args, "--json", json_path], cwd=cwd)
+    result = run_itool([*args, "--json", json_path], cwd=cwd, threads=threads)
     with open(cwd / json_path) as f:
         data = json.load(f)
     return result, data
