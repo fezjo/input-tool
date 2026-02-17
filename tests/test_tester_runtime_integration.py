@@ -222,6 +222,7 @@ def test_tester_ioram_executes_in_ramdisk(case_dir):
     assert "Using /dev/shm/input_tool/" in result.stdout
 
 
+@pytest.mark.timing_sensitive
 def test_parallel_testing_linear_fixture_is_faster_with_more_threads(case_dir):
     workdir = copy_fixture_tree("parallel_finish_order_linear", case_dir)
     run_itool(["g", ".", "-g", "cat", "-q"], cwd=workdir, threads=None)
@@ -232,6 +233,7 @@ def test_parallel_testing_linear_fixture_is_faster_with_more_threads(case_dir):
     assert three_threads < single_thread * 0.5
 
 
+@pytest.mark.timing_sensitive
 def test_parallel_testing_poly_fixture_is_faster_with_more_threads(case_dir):
     workdir = copy_fixture_tree("parallel_finish_order_poly", case_dir)
     run_itool(["g", ".", "-g", "cat", "-q"], cwd=workdir, threads=None)
@@ -242,6 +244,7 @@ def test_parallel_testing_poly_fixture_is_faster_with_more_threads(case_dir):
     assert three_threads < single_thread * 0.5
 
 
+@pytest.mark.timing_sensitive
 def test_parallel_testing_takes_minimal_amount_of_time(case_dir):
     """
     The input has 12 batches by 4 testcases each,

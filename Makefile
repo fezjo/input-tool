@@ -8,6 +8,8 @@ RUN_DEV_TEST := $(if $(filter 1,$(USE_UV)),uv run --group dev --group test,)
 
 .PHONY: help black ruff mypy test lint typecheck checkall testall
 
+TIMING_SENSITIVE_EXPR := timing_sensitive
+
 help:
 	@echo "Available targets:"
 	@echo "  black      Run black formatter"
@@ -31,7 +33,8 @@ mypy:
 	$(RUN_DEV) mypy .
 
 test:
-	$(RUN_TEST) pytest .
+	$(RUN_TEST) pytest -m "not $(TIMING_SENSITIVE_EXPR)" .
+	$(RUN_TEST) pytest -n 0 -m $(TIMING_SENSITIVE_EXPR) .
 
 lint: black ruff
 
@@ -41,4 +44,5 @@ typecheck:
 checkall: lint typecheck
 
 testall:
-	$(RUN_DEV_TEST) pytest --black --ruff --mypy .
+	$(RUN_DEV_TEST) pytest --black --ruff --mypy -m "not $(TIMING_SENSITIVE_EXPR)" .
+	$(RUN_DEV_TEST) pytest -n 0 -m $(TIMING_SENSITIVE_EXPR) .
