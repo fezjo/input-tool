@@ -9,15 +9,21 @@ from input_tool.input_findlimits import (
     SolutionExpectation,
     SolutionTimingData,
     TimelimitConstraint,
+    TimelimitResult,
     _find_best_compromise,
     _robust_max,
     compute_retry_cap,
+    compute_solution_margins,
+    compute_timelimit_cap,
     compute_timelimit_for_language,
+    find_must_tle_needing_verification,
     find_solutions_needing_retry,
     infer_ok_count,
+    merge_timing_data,
     parse_batch_string,
     parse_score,
     parse_verdict_tag,
+    valid_range_gap,
 )
 
 
@@ -53,6 +59,7 @@ def _parse_valid_range(output: str) -> Dict[str, Tuple[float, float]]:
 
     Looks for lines like: "Valid range: [0.050s, 0.500s]"
     or "Valid range: [0.050s, +inf)"
+    or "Conflicting range: [0.500s, 0.100s] (min > max, ...)"
     """
     results: Dict[str, Tuple[float, float]] = {}
     current_lang = None
@@ -61,7 +68,8 @@ def _parse_valid_range(output: str) -> Dict[str, Tuple[float, float]]:
         if lang_match:
             current_lang = lang_match.group(1)
         range_match = re.search(
-            r"Valid range:\s*\[([\d.]+)s,\s*(?:([\d.]+)s|\+inf)[)\]]", line
+            r"(?:Valid|Conflicting) range:\s*\[([\d.]+)s,\s*(?:([\d.]+)s|\+inf)[)\]]",
+            line,
         )
         if range_match and current_lang:
             low = float(range_match.group(1))
@@ -180,6 +188,55 @@ def test_findlimits_basic_cache_reuse(case_dir):
     recommended2 = _parse_recommended(output2)
     assert recommended1 == recommended2, (
         f"Cached results differ: {recommended1} != {recommended2}"
+    )
+
+
+@pytest.mark.timing_sensitive
+def test_findlimits_cache_retry_on_tle(case_dir):
+    """When cached data has TLE on must-pass batches and max_timelimit increases,
+    the retry loop should trigger for the cached solution."""
+    workdir = copy_fixture_tree("findlimits_retry", case_dir)
+
+    # First run with very low max_timelimit: sol-4-outlier.py will TLE on
+    # batch 4 (sleeps 0.6s) which it expects to pass (score=4 means 4/4 OK).
+    # baseline_multiplier=3 keeps caps low (3 * ~0.02s = ~0.06s).
+    output1 = _run_findlimits(
+        workdir, extra_args=["--max-timelimit", "0.3", "--baseline-multiplier", "3"]
+    )
+    # Should mention max cap warning (can't retry beyond 0.3s)
+    assert "max cap" in output1.lower() or "cannot retry" in output1.lower(), (
+        f"Expected max cap warning in first run:\n{output1}"
+    )
+
+    # Cache file should exist
+    cache_file = workdir / "test" / ".findlimits_cache.json"
+    assert cache_file.exists(), "Cache file not created after first run"
+
+    # Second run with higher max_timelimit but same baseline_multiplier:
+    # cap from baselines will be ~0.06s, cached cap is 0.3s >= 0.06s,
+    # so cache is accepted. But batch 4 of sol-4-outlier.py still TLE'd.
+    # The retry loop should now detect this and retry at higher cap.
+    output2 = _run_findlimits(
+        workdir, extra_args=["--max-timelimit", "5", "--baseline-multiplier", "3"]
+    )
+    # Should mention "cached" (sol-4-outlier loaded from cache)
+    assert "cached" in output2.lower(), f"Second run doesn't mention cache:\n{output2}"
+    # Should mention "Retrying" (sol-4-outlier.py gets retried from cached TLE)
+    assert "retrying" in output2.lower(), (
+        f"Second run doesn't retry cached TLE:\n{output2}"
+    )
+    # sol-4-outlier.py batch 4 should now have actual time (~0.6s), not TLE
+    assert "sol-4-outlier.py" in output2
+    # Should NOT show "needs rerun" for sol-4-outlier anymore
+    needs_rerun_lines = [
+        line for line in output2.splitlines() if "needs rerun" in line.lower()
+    ]
+    outlier_needs_rerun = [
+        line for line in needs_rerun_lines if "sol-4-outlier" in line
+    ]
+    assert not outlier_needs_rerun, (
+        f"sol-4-outlier.py still needs rerun after retry:\n"
+        + "\n".join(outlier_needs_rerun)
     )
 
 
@@ -322,8 +379,8 @@ def test_retry_discovers_actual_time(case_dir):
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
     output = _run_findlimits_retry(workdir)
 
-    # Should see at least one retry pass
-    assert "Retry Pass" in output, f"No retry pass found in output:\n{output}"
+    # Should see at least one retry (inline "Retrying" message)
+    assert "Retrying" in output, f"No retry found in output:\n{output}"
 
     # After retry, timing table should show sol-4-outlier.py with all OOOO
     # (not OOOT). Find the "Actual" column for this solution.
@@ -383,11 +440,16 @@ def test_retry_iterates_until_success(case_dir):
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
     output = _run_findlimits_retry(workdir)
 
-    # Count retry passes — should be at least 2 with multiplier=3 and
-    # outlier sleeping 0.6s (initial cap ~0.13s, round 1 ~0.39s, round 2 ~1.17s)
-    retry_passes = re.findall(r"Retry Pass \d+", output)
-    assert len(retry_passes) >= 2, (
-        f"Expected at least 2 retry passes, got {len(retry_passes)}:\n{output}"
+    # Count "Retrying" lines for the outlier — should be at least 2 with
+    # multiplier=3 and outlier sleeping 0.6s (initial cap ~0.13s,
+    # retry 1 ~0.39s, retry 2 ~1.17s)
+    retrying_lines = [
+        line
+        for line in output.splitlines()
+        if "Retrying" in line and "sol-4-outlier.py" in line
+    ]
+    assert len(retrying_lines) >= 2, (
+        f"Expected at least 2 retries for outlier, got {len(retrying_lines)}:\n{output}"
     )
 
 
@@ -430,6 +492,49 @@ class TestRobustMax:
         result = _robust_max([1.0, 2.0, 3.0, 4.0, 5.0], percentile=50.0)
         # P50 of [1,2,3,4,5] at index 2.0 -> 3.0
         assert abs(result - 3.0) < 0.01
+
+
+class TestComputeTimelimitCap:
+    """Test the adaptive timelimit cap computation using P75 across solutions."""
+
+    def _make_sol(self, name: str = "sol.py"):
+        from unittest.mock import MagicMock
+
+        sol = MagicMock()
+        sol.name = name
+        return sol
+
+    def test_no_baseline_returns_max(self):
+        """When no baseline data exists, use max_timelimit."""
+        cap = compute_timelimit_cap(self._make_sol(), [], 3.0, 10.0)
+        assert cap == 10.0
+
+    def test_single_solution_baseline(self):
+        """With one solution, P75 falls back to max (< 4 values)."""
+        cap = compute_timelimit_cap(self._make_sol(), [0.5], 3.0, 10.0)
+        # _robust_max([0.5]) = 0.5; cap = 3.0 * 0.5 = 1.5
+        assert abs(cap - 1.5) < 0.01
+
+    def test_multiple_solutions_uses_p75(self):
+        """With 4+ solutions, uses P75 for outlier protection."""
+        # 4 solutions: max-batch-times are [0.05, 0.06, 0.07, 1.5]
+        # P75 at index 2.25: lerp(0.07, 1.5, 0.25) = 0.4275
+        cap = compute_timelimit_cap(
+            self._make_sol(), [0.05, 0.06, 0.07, 1.5], 3.0, 30.0
+        )
+        # cap = 3.0 * 0.4275 = 1.2825
+        assert cap < 3.0 * 1.5, "Outlier should not dominate cap"
+        assert cap > 3.0 * 0.07, "Cap should be above normal solution times"
+
+    def test_capped_at_max_timelimit(self):
+        """Cap should not exceed max_timelimit."""
+        cap = compute_timelimit_cap(self._make_sol(), [5.0], 3.0, 10.0)
+        assert cap == 10.0
+
+    def test_minimum_floor(self):
+        """Cap should not go below 0.1."""
+        cap = compute_timelimit_cap(self._make_sol(), [0.001], 3.0, 10.0)
+        assert cap >= 0.1
 
 
 class TestFindSolutionsNeedingRetry:
@@ -545,38 +650,97 @@ class TestFindSolutionsNeedingRetry:
 
 class TestComputeRetryCap:
     def test_increases_from_previous(self):
-        td = SolutionTimingData(
-            name="sol",
-            lang="python",
-            batch_max_times={"1": None},
-            batch_statuses={"1": "T"},
-            timelimit_used=0.5,
-        )
-        cap = compute_retry_cap(td, {"1": 0.05}, 3.0, 10.0)
-        assert cap == 1.5  # 3 * 0.5 = 1.5 > 3 * 0.05 = 0.15
+        cap = compute_retry_cap(0.5, 10.0)
+        assert cap == 1.5  # 3 * 0.5
 
     def test_bounded_by_max_timelimit(self):
-        td = SolutionTimingData(
-            name="sol",
-            lang="python",
-            batch_max_times={"1": None},
-            batch_statuses={"1": "T"},
-            timelimit_used=5.0,
-        )
-        cap = compute_retry_cap(td, {"1": 0.05}, 3.0, 10.0)
+        cap = compute_retry_cap(5.0, 10.0)
         assert cap == 10.0  # 3 * 5.0 = 15.0, capped at 10.0
 
-    def test_uses_baseline_when_higher(self):
-        td = SolutionTimingData(
+    def test_custom_multiplier(self):
+        cap = compute_retry_cap(0.5, 10.0, retry_multiplier=2.0)
+        assert cap == 1.0  # 2 * 0.5
+
+    def test_rounds_up_when_close_to_max(self):
+        """When cap * multiplier^(1/4) >= max, should round up to max."""
+        # prev_cap=8.0, multiplier=3.0: 8 * 3^0.25 = 8 * 1.316 = 10.5 >= 10
+        # So should round up to 10.0 instead of 24.0 then capping
+        cap = compute_retry_cap(8.0, 10.0)
+        assert cap == 10.0
+
+    def test_does_not_round_up_when_far_from_max(self):
+        """When cap * multiplier^(1/4) < max, use normal 3x increase."""
+        # prev_cap=1.0, multiplier=3.0: 1 * 3^0.25 = 1.316 < 10
+        cap = compute_retry_cap(1.0, 10.0)
+        assert cap == 3.0  # normal 3x
+
+    def test_minimum_cap(self):
+        cap = compute_retry_cap(0.01, 10.0)
+        assert cap >= 0.1  # minimum floor
+
+
+class TestMergeTimingData:
+    """Test merging retry results into existing timing data."""
+
+    def test_replaces_tle_batch(self):
+        """Retry results for TLE'd batches should replace old data."""
+        old = SolutionTimingData(
             name="sol",
             lang="python",
-            batch_max_times={"1": None},
-            batch_statuses={"1": "T"},
-            timelimit_used=0.1,
+            batch_max_times={"1": 0.05, "2": 0.1, "3": None},
+            batch_statuses={"1": "O", "2": "O", "3": "T"},
+            timelimit_used=0.5,
         )
-        cap = compute_retry_cap(td, {"1": 0.5}, 10.0, 20.0)
-        # 3 * 0.1 = 0.3, but baseline 10 * 0.5 = 5.0 is higher
-        assert cap == 5.0
+        new = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"3": 0.8},
+            batch_statuses={"3": "O"},
+            timelimit_used=1.5,
+        )
+        merged = merge_timing_data(old, new)
+        assert merged.batch_max_times == {"1": 0.05, "2": 0.1, "3": 0.8}
+        assert merged.batch_statuses == {"1": "O", "2": "O", "3": "O"}
+        assert merged.timelimit_used == 1.5
+
+    def test_keeps_old_batches_unchanged(self):
+        """Batches not rerun should keep their old data."""
+        old = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.05, "2": None},
+            batch_statuses={"1": "O", "2": "T"},
+            timelimit_used=0.5,
+        )
+        new = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"2": 0.3},
+            batch_statuses={"2": "O"},
+            timelimit_used=1.5,
+        )
+        merged = merge_timing_data(old, new)
+        assert merged.batch_max_times["1"] == 0.05
+        assert merged.batch_statuses["1"] == "O"
+
+    def test_uses_higher_timelimit(self):
+        """timelimit_used should be the max of old and new."""
+        old = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.1},
+            batch_statuses={"1": "O"},
+            timelimit_used=2.0,
+        )
+        new = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"2": 0.2},
+            batch_statuses={"2": "O"},
+            timelimit_used=1.5,
+        )
+        merged = merge_timing_data(old, new)
+        assert merged.timelimit_used == 2.0
 
 
 class TestLowerBoundConstraints:
@@ -657,3 +821,301 @@ class TestLowerBoundConstraints:
         assert not result.all_satisfied
         lower_bound_msgs = [m for m in result.unsatisfied if "needs rerun" in m]
         assert len(lower_bound_msgs) >= 1
+
+
+class TestFindMustTleNeedingVerification:
+    """Test the Phase 3 robustness verification detection logic."""
+
+    def _make_expectation(
+        self,
+        name: str,
+        batch_string: str,
+    ) -> SolutionExpectation:
+        from unittest.mock import MagicMock
+
+        from input_tool.common.commands import Langs
+
+        sol = MagicMock()
+        sol.name = name
+        return SolutionExpectation(
+            solution=sol,
+            lang=Langs.Lang.python,
+            batch_string=batch_string,
+            positional=True,
+        )
+
+    def test_no_verification_when_tle_at_high_cap(self):
+        """Must-TLE batch that TLE'd at cap >> recommended: no concern."""
+        timing_data = {
+            "sol": SolutionTimingData(
+                name="sol",
+                lang="python",
+                batch_max_times={"1": 0.1, "2": None},
+                batch_statuses={"1": "O", "2": "T"},
+                timelimit_used=10.0,  # TLE'd at 10s
+            ),
+        }
+        exp = self._make_expectation("sol", "OT")
+        result = find_must_tle_needing_verification(
+            timing_data, [exp], ["1", "2"], recommended_tl=1.0
+        )
+        # cap=10.0, recommended=1.0, ratio=10x >= closeness_ratio=3x: no concern
+        assert len(result) == 0
+
+    def test_verification_needed_when_tle_at_close_cap(self):
+        """Must-TLE batch that TLE'd at cap close to recommended: needs verification."""
+        timing_data = {
+            "sol": SolutionTimingData(
+                name="sol",
+                lang="python",
+                batch_max_times={"1": 0.1, "2": None},
+                batch_statuses={"1": "O", "2": "T"},
+                timelimit_used=1.1,  # TLE'd at 1.1s
+            ),
+        }
+        exp = self._make_expectation("sol", "OT")
+        result = find_must_tle_needing_verification(
+            timing_data, [exp], ["1", "2"], recommended_tl=1.0
+        )
+        # cap=1.1, recommended=1.0, ratio=1.1x < closeness_ratio=3x: needs verification
+        assert len(result) == 1
+        assert result[0][1] == ["2"]
+
+    def test_no_verification_for_finished_must_tle(self):
+        """Must-TLE batch that finished (has actual time): no verification needed."""
+        timing_data = {
+            "sol": SolutionTimingData(
+                name="sol",
+                lang="python",
+                batch_max_times={"1": 0.1, "2": 2.5},
+                batch_statuses={"1": "O", "2": "O"},
+                timelimit_used=5.0,
+            ),
+        }
+        exp = self._make_expectation("sol", "OT")
+        result = find_must_tle_needing_verification(
+            timing_data, [exp], ["1", "2"], recommended_tl=1.0
+        )
+        # Batch 2 finished with actual time 2.5s, not TLE'd: no verification
+        assert len(result) == 0
+
+    def test_only_must_tle_batches_checked(self):
+        """Only batches expected to TLE ('T') are checked, not 'O' or 'W'."""
+        timing_data = {
+            "sol": SolutionTimingData(
+                name="sol",
+                lang="python",
+                batch_max_times={"1": None, "2": None, "3": None},
+                batch_statuses={"1": "T", "2": "T", "3": "T"},
+                timelimit_used=1.5,
+            ),
+        }
+        exp = self._make_expectation("sol", "OWT")
+        result = find_must_tle_needing_verification(
+            timing_data, [exp], ["1", "2", "3"], recommended_tl=1.0
+        )
+        # Only batch 3 has expected='T'; batches 1,2 are O,W
+        assert len(result) == 1
+        assert result[0][1] == ["3"]
+
+    def test_custom_closeness_ratio(self):
+        """Custom closeness_ratio changes the threshold."""
+        timing_data = {
+            "sol": SolutionTimingData(
+                name="sol",
+                lang="python",
+                batch_max_times={"1": 0.1, "2": None},
+                batch_statuses={"1": "O", "2": "T"},
+                timelimit_used=5.0,
+            ),
+        }
+        exp = self._make_expectation("sol", "OT")
+        # With closeness_ratio=10: cap=5.0, recommended=1.0, ratio=5x < 10: needs verify
+        result = find_must_tle_needing_verification(
+            timing_data, [exp], ["1", "2"], recommended_tl=1.0, closeness_ratio=10.0
+        )
+        assert len(result) == 1
+        # With closeness_ratio=3: cap=5.0, recommended=1.0, ratio=5x >= 3: no concern
+        result = find_must_tle_needing_verification(
+            timing_data, [exp], ["1", "2"], recommended_tl=1.0, closeness_ratio=3.0
+        )
+        assert len(result) == 0
+
+
+class TestValidRangeGap:
+    """Test the valid range gap computation."""
+
+    def test_both_bounds(self):
+        from input_tool.common.commands import Langs
+
+        result = TimelimitResult(
+            lang=Langs.Lang.python,
+            recommended=1.0,
+            valid_min=0.5,
+            valid_max=5.0,
+            all_satisfied=True,
+            num_satisfied=2,
+            num_total=2,
+            constraints=[],
+            unsatisfied=[],
+        )
+        assert abs(valid_range_gap(result) - 10.0) < 0.01
+
+    def test_no_upper_bound(self):
+        from input_tool.common.commands import Langs
+
+        result = TimelimitResult(
+            lang=Langs.Lang.python,
+            recommended=1.0,
+            valid_min=0.5,
+            valid_max=None,
+            all_satisfied=True,
+            num_satisfied=1,
+            num_total=1,
+            constraints=[],
+            unsatisfied=[],
+        )
+        assert valid_range_gap(result) == float("inf")
+
+    def test_no_lower_bound(self):
+        from input_tool.common.commands import Langs
+
+        result = TimelimitResult(
+            lang=Langs.Lang.python,
+            recommended=1.0,
+            valid_min=None,
+            valid_max=5.0,
+            all_satisfied=True,
+            num_satisfied=1,
+            num_total=1,
+            constraints=[],
+            unsatisfied=[],
+        )
+        assert valid_range_gap(result) == float("inf")
+
+
+class TestComputeSolutionMargins:
+    """Test the per-solution headroom and missing margin computation."""
+
+    def _make_expectation(
+        self,
+        name: str,
+        batch_string: str,
+    ) -> SolutionExpectation:
+        from unittest.mock import MagicMock
+
+        from input_tool.common.commands import Langs
+
+        sol = MagicMock()
+        sol.name = name
+        return SolutionExpectation(
+            solution=sol,
+            lang=Langs.Lang.python,
+            batch_string=batch_string,
+            positional=True,
+        )
+
+    def test_headroom_only(self):
+        """Solution with only must-pass batches: headroom computed, no missing."""
+        td = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.1, "2": 0.3},
+            batch_statuses={"1": "O", "2": "O"},
+            timelimit_used=1.0,
+        )
+        exp = self._make_expectation("sol", "OO")
+        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        # headroom = 1.0 / 0.3 = 3.33
+        assert headroom is not None
+        assert abs(headroom - 1.0 / 0.3) < 0.01
+        assert missing is None
+
+    def test_missing_only(self):
+        """Solution with only must-TLE batches that finished: missing computed."""
+        td = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 2.0, "2": 5.0},
+            batch_statuses={"1": "O", "2": "O"},
+            timelimit_used=10.0,
+        )
+        exp = self._make_expectation("sol", "TT")
+        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        assert headroom is None
+        # missing = min(2.0, 5.0) / 1.0 = 2.0
+        assert missing is not None
+        assert abs(missing - 2.0) < 0.01
+
+    def test_both_margins(self):
+        """Solution with both must-pass and must-TLE batches."""
+        td = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.1, "2": 0.3, "3": 2.5},
+            batch_statuses={"1": "O", "2": "O", "3": "O"},
+            timelimit_used=5.0,
+        )
+        exp = self._make_expectation("sol", "OOT")
+        headroom, missing = compute_solution_margins(td, exp, ["1", "2", "3"], 1.0)
+        assert headroom is not None
+        assert abs(headroom - 1.0 / 0.3) < 0.01
+        assert missing is not None
+        assert abs(missing - 2.5) < 0.01
+
+    def test_tle_batch_no_actual_time(self):
+        """Must-TLE batch that TLE'd: missing not computable."""
+        td = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.1, "2": None},
+            batch_statuses={"1": "O", "2": "T"},
+            timelimit_used=1.0,
+        )
+        exp = self._make_expectation("sol", "OT")
+        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        assert headroom is not None
+        assert abs(headroom - 10.0) < 0.01  # 1.0 / 0.1
+        assert missing is None
+
+    def test_wa_batch_counts_as_must_pass(self):
+        """W/E batches are must-pass for headroom computation."""
+        td = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.1, "2": 0.5, "3": 3.0},
+            batch_statuses={"1": "O", "2": "W", "3": "O"},
+            timelimit_used=5.0,
+        )
+        exp = self._make_expectation("sol", "OWT")
+        headroom, missing = compute_solution_margins(td, exp, ["1", "2", "3"], 1.0)
+        # max must-pass time includes W batch: max(0.1, 0.5) = 0.5
+        assert headroom is not None
+        assert abs(headroom - 2.0) < 0.01
+        assert missing is not None
+        assert abs(missing - 3.0) < 0.01
+
+    def test_non_positional_returns_none(self):
+        """Non-positional expectations: margins not computed."""
+        from unittest.mock import MagicMock
+
+        from input_tool.common.commands import Langs
+
+        sol = MagicMock()
+        sol.name = "sol"
+        exp = SolutionExpectation(
+            solution=sol,
+            lang=Langs.Lang.python,
+            expected_ok_count=2,
+            positional=False,
+        )
+        td = SolutionTimingData(
+            name="sol",
+            lang="python",
+            batch_max_times={"1": 0.1, "2": 0.3},
+            batch_statuses={"1": "O", "2": "O"},
+            timelimit_used=1.0,
+        )
+        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        assert headroom is None
+        assert missing is None

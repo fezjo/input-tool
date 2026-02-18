@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # © 2026 fezjo
 # Find optimal per-language timelimits from solution expectations.
+# DISCLAIMER: This file is purely vibe coded, don't judge it and don't judge me.
 import json
 import math
 import os
 import re
+import threading
 import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -243,10 +245,20 @@ def run_solution_on_inputs(
     checker: Optional[Checker],
     timelimit: timedelta,
     num_threads: int,
+    only_batches: Optional[set[str]] = None,
+    must_pass_batches: Optional[set[str]] = None,
+    can_retry: bool = False,
 ) -> dict[str, list[tuple[Optional[list[timedelta]], Status]]]:
     """Run a single solution on all inputs with a given timelimit.
 
     Returns dict: batch_name -> [(run_times, status), ...] for each input in batch.
+
+    If only_batches is provided, only runs inputs belonging to those batches.
+    If must_pass_batches is provided and can_retry is True, a TLE on any of
+    those batches triggers early abort: remaining queued tasks are skipped and
+    running tasks in the TLE'd batch are killed. When can_retry is False
+    (already at max timelimit), TLEs only kill same-batch siblings via
+    cb_kill_siblings so other batches can finish for a complete picture.
     """
     # Set the timelimit for this solution's language
     lang = Langs.from_filename(Path(sol.name).name)
@@ -267,6 +279,9 @@ def run_solution_on_inputs(
         list
     )
 
+    # Abort event: set when a TLE occurs on a must_pass batch
+    abort_event = threading.Event()
+
     parallel_logger_manager = ParallelLoggerManager()
 
     def logger_finalize(logger: BufferedLogger) -> None:
@@ -275,11 +290,13 @@ def run_solution_on_inputs(
 
     tasks: list[TaskItem] = []
     for input_file in inputs:
+        batch = Solution.parse_batch(input_file)
+        if only_batches is not None and batch not in only_batches:
+            continue
         ifile = indir / input_file
         prefix = str(outdir / input_file.with_suffix(""))
         ofile = Path(prefix + "." + outext)
         tfile = TempFile(prefix + ".fl." + tempext)
-        batch = Solution.parse_batch(input_file)
 
         logger = parallel_logger_manager.get_sink()
 
@@ -295,6 +312,11 @@ def run_solution_on_inputs(
             results=results,
         ):
             try:
+                if abort_event.is_set():
+                    # Already aborting — skip this task
+                    results[batch].append((None, Status.tle))
+                    return
+
                 TASK_HISTORY.start(sol.name, batch, str(input_file))
                 callbacks = TASK_HISTORY.get_callbacks(sol.name, batch, str(input_file))
                 run_times, status = sol._run(
@@ -308,6 +330,18 @@ def run_solution_on_inputs(
                 sol.record(ifile, status, run_times)
                 sol.output_testcase_summary(ifile, status, run_times, logger)
                 results[batch].append((run_times, status))
+
+                # If TLE on a must_pass batch and retry is possible,
+                # signal abort to skip remaining batches (they'll be
+                # rerun at a higher cap anyway). If no retry is possible,
+                # let other batches finish for a more complete picture.
+                if (
+                    status == Status.tle
+                    and can_retry
+                    and must_pass_batches is not None
+                    and batch in must_pass_batches
+                ):
+                    abort_event.set()
 
                 # Clean temp file
                 if tfile.exists():
@@ -331,6 +365,16 @@ def run_solution_on_inputs(
             register_quit_with_executor(executor)
 
             def get_new_task(_=None):
+                if abort_event.is_set():
+                    # Drain remaining tasks from the queue (update progress)
+                    while True:
+                        task = queue.pop()
+                        if task is None:
+                            break
+                        progress_bar.update()
+                        for callback in task.callbacks:
+                            callback(None)
+                    return
                 task = queue.pop()
                 if task is None:
                     return
@@ -403,6 +447,28 @@ def collect_timing_data(
     )
 
 
+def merge_timing_data(
+    old: SolutionTimingData, new: SolutionTimingData
+) -> SolutionTimingData:
+    """Merge retry timing data into existing data.
+
+    Keeps old data for batches not rerun, replaces with new data for
+    batches that were rerun. Uses the higher timelimit_used (the retry cap).
+    """
+    merged_times = dict(old.batch_max_times)
+    merged_statuses = dict(old.batch_statuses)
+    for batch in new.batch_max_times:
+        merged_times[batch] = new.batch_max_times[batch]
+        merged_statuses[batch] = new.batch_statuses[batch]
+    return SolutionTimingData(
+        name=old.name,
+        lang=old.lang,
+        batch_max_times=merged_times,
+        batch_statuses=merged_statuses,
+        timelimit_used=max(old.timelimit_used, new.timelimit_used),
+    )
+
+
 def _robust_max(values: list[float], percentile: float = 75.0) -> float:
     """Return a robust estimate of the maximum, using a high percentile.
 
@@ -427,23 +493,23 @@ def _robust_max(values: list[float], percentile: float = 75.0) -> float:
 
 def compute_timelimit_cap(
     sol: Solution,
-    baseline_times: dict[str, float],
+    baseline_max_times: list[float],
     baseline_multiplier: float,
     max_timelimit: float,
 ) -> float:
     """Compute the timelimit cap for a solution based on baseline data.
 
     For the very first solutions (no baseline), use max_timelimit.
-    Otherwise, use baseline_multiplier * robust_max(baseline times).
+    Otherwise, use baseline_multiplier * _robust_max(baseline_max_times).
 
-    Uses P75 instead of max to protect against outlier batches where one
-    solution is disproportionately slow, preventing inflated caps for
-    subsequent solutions.
+    baseline_max_times is a list of per-solution max-batch-times (each
+    solution's slowest non-TLE batch). Uses P75 across solutions to
+    protect against one unusually slow solution inflating caps.
     """
-    if not baseline_times:
+    if not baseline_max_times:
         return max_timelimit
 
-    robust_baseline = _robust_max(list(baseline_times.values()))
+    robust_baseline = _robust_max(baseline_max_times)
     cap = baseline_multiplier * robust_baseline
     # Don't go below a reasonable minimum or above max
     return max(0.1, min(cap, max_timelimit))
@@ -767,6 +833,27 @@ def _find_best_compromise(
 # ==================== Retry Logic ====================
 
 
+def get_must_pass_batches(
+    exp: Optional[SolutionExpectation], batches: list[str]
+) -> Optional[set[str]]:
+    """Get the set of batches that must pass (not TLE) for a given expectation.
+
+    For positional expectations: batches with O/W/E must pass.
+    For non-positional: we don't know which specific batches need to pass,
+    so we can't do early abort (return None).
+    Returns None if no expectation is available (no abort logic).
+    """
+    if exp is None:
+        return None
+    if exp.positional and exp.batch_string is not None:
+        result: set[str] = set()
+        for batch, expected_char in zip(batches, exp.batch_string):
+            if expected_char in ("O", "W", "E"):
+                result.add(batch)
+        return result if result else None
+    return None
+
+
 def find_solutions_needing_retry(
     timing_data: dict[str, SolutionTimingData],
     expectations: list[SolutionExpectation],
@@ -820,36 +907,86 @@ def find_solutions_needing_retry(
 
 
 def compute_retry_cap(
-    td: SolutionTimingData,
-    baseline_times: dict[str, float],
-    baseline_multiplier: float,
+    prev_cap: float,
     max_timelimit: float,
+    retry_multiplier: float = 3.0,
 ) -> float:
     """Compute the retry cap for a solution that TLE'd.
 
-    Strategy: progressively increase from the previous cap. Uses the
-    higher of:
-    - 3x the previous cap (exponential back-off)
-    - baseline_multiplier * robust_max(baseline_times)
-    Capped at max_timelimit.
-
-    The iterative retry loop will keep calling this with increasing
-    caps until the solution finishes or max_timelimit is reached.
+    Strategy: progressively increase from the previous cap by retry_multiplier.
+    If the result is close to max_timelimit (i.e., one more partial step
+    would reach it: cap * multiplier^(1/4) >= max_timelimit), round up
+    to max_timelimit directly to avoid wasting an iteration.
     """
-    prev_cap = td.timelimit_used
+    cap = prev_cap * retry_multiplier
 
-    # Exponential increase from previous cap
-    retry_from_prev = prev_cap * 3.0
+    # Round up: if we're close enough to max that a fractional step
+    # would reach it, just go to max directly.
+    if prev_cap * retry_multiplier**0.25 >= max_timelimit:
+        cap = max_timelimit
 
-    # Also consider baseline-derived cap
-    if baseline_times:
-        robust_baseline = _robust_max(list(baseline_times.values()))
-        retry_from_baseline = baseline_multiplier * robust_baseline
-    else:
-        retry_from_baseline = max_timelimit
-
-    cap = max(retry_from_prev, retry_from_baseline)
     return max(0.1, min(cap, max_timelimit))
+
+
+# ==================== Phase 3: Robustness Verification ====================
+
+
+def find_must_tle_needing_verification(
+    timing_data: dict[str, SolutionTimingData],
+    expectations: list[SolutionExpectation],
+    batches: list[str],
+    recommended_tl: float,
+    closeness_ratio: float = 3.0,
+) -> list[tuple[SolutionExpectation, list[str]]]:
+    """Find must-TLE batches that TLE'd at caps too close to recommended TL.
+
+    A must-TLE batch that TLE'd at cap X is guaranteed to TLE at any TL <= X.
+    But if X is close to recommended_tl, we can't be sure the batch wouldn't
+    finish at X + epsilon (which might be above or below recommended_tl).
+
+    "Close" means: cap / recommended_tl < closeness_ratio. If the batch
+    TLE'd at 10x the recommended TL, there's no concern.
+
+    Returns list of (expectation, [batch_names]) to rerun at higher caps.
+    Only considers positional expectations with explicit 'T' chars.
+    """
+    needs_verification: list[tuple[SolutionExpectation, list[str]]] = []
+
+    for exp in expectations:
+        td = timing_data.get(exp.solution.name)
+        if td is None:
+            continue
+
+        uncertain_batches: list[str] = []
+
+        if exp.positional and exp.batch_string is not None:
+            for batch, expected_char in zip(batches, exp.batch_string):
+                if expected_char != "T":
+                    continue
+                actual_status = td.batch_statuses.get(batch, "?")
+                actual_time = td.batch_max_times.get(batch)
+                if actual_status == "T" and actual_time is None:
+                    # TLE'd — cap was td.timelimit_used.
+                    # Check if this is close to recommended TL.
+                    if td.timelimit_used < recommended_tl * closeness_ratio:
+                        uncertain_batches.append(batch)
+
+        if uncertain_batches:
+            needs_verification.append((exp, uncertain_batches))
+
+    return needs_verification
+
+
+def valid_range_gap(tl_result: TimelimitResult) -> float:
+    """Compute the ratio between valid_max and valid_min.
+
+    Returns inf if either bound is None (open-ended range).
+    """
+    if tl_result.valid_min is None or tl_result.valid_max is None:
+        return float("inf")
+    if tl_result.valid_min <= 0:
+        return float("inf")
+    return tl_result.valid_max / tl_result.valid_min
 
 
 # ==================== Output Presentation ====================
@@ -883,13 +1020,70 @@ def print_expectations(
         info(f"  {name:{name_width}}  {lang_str:>6}  {exp_str}{tag_str}")
 
 
+def compute_solution_margins(
+    td: SolutionTimingData,
+    exp: SolutionExpectation,
+    batches: list[str],
+    recommended_tl: float,
+) -> tuple[Optional[float], Optional[float]]:
+    """Compute headroom and missing margins for a single solution.
+
+    Headroom: recommended_TL / max(must-pass batch times).
+    How much faster the solution runs than the timelimit.
+    E.g., 3.1x means the solution is 3.1x faster than the limit.
+
+    Missing: min(must-TLE batch times that finished) / recommended_TL.
+    How much slower the solution would need to be to lose one more batch.
+    E.g., 2.0x means the next harder batch takes 2x the timelimit.
+
+    Returns (headroom, missing) where None means not computable.
+    Only meaningful for positional expectations.
+    """
+    if not exp.positional or exp.batch_string is None:
+        return None, None
+
+    # Collect must-pass batch times (O/W/E)
+    must_pass_times: list[float] = []
+    # Collect must-TLE batch times (T) that actually finished
+    must_tle_times: list[float] = []
+
+    for batch, expected_char in zip(batches, exp.batch_string):
+        t = td.batch_max_times.get(batch)
+        if expected_char in ("O", "W", "E"):
+            if t is not None:
+                must_pass_times.append(t)
+        elif expected_char == "T":
+            if t is not None:
+                must_tle_times.append(t)
+
+    headroom = None
+    if must_pass_times:
+        max_pass_time = max(must_pass_times)
+        if max_pass_time > 0:
+            headroom = recommended_tl / max_pass_time
+
+    missing = None
+    if must_tle_times:
+        min_tle_time = min(must_tle_times)
+        if recommended_tl > 0:
+            missing = min_tle_time / recommended_tl
+
+    return headroom, missing
+
+
 def print_timing_table(
     timing_data: dict[str, SolutionTimingData],
     expectations: list[SolutionExpectation],
     batches: list[str],
+    tl_results: Optional[dict[Langs.Lang, TimelimitResult]] = None,
 ) -> None:
     """Print detailed timing table for all solutions."""
     infob("\n===== Timing Data =====")
+
+    # Check if we can show margins
+    show_margins = tl_results is not None and any(
+        r.recommended is not None for r in tl_results.values()
+    )
 
     # Header
     name_width = max(
@@ -899,9 +1093,16 @@ def print_timing_table(
     )
     name_width = max(name_width, 8)
     batch_header = "  ".join(f"{'B' + b:>7}" for b in batches)
-    info(f"  {'Solution':{name_width}}  {'Lang':>6}  {batch_header}  Expected  Actual")
+    margin_header = "  Headroom  Missing" if show_margins else ""
     info(
-        f"  {'-' * name_width}  {'-' * 6}  {'  '.join(['-' * 7] * len(batches))}  --------  ------"
+        f"  {'Solution':{name_width}}  {'Lang':>6}  {batch_header}"
+        f"  Expected  Actual{margin_header}"
+    )
+    margin_sep = "  --------  -------" if show_margins else ""
+    info(
+        f"  {'-' * name_width}  {'-' * 6}  "
+        f"{'  '.join(['-' * 7] * len(batches))}"
+        f"  --------  ------{margin_sep}"
     )
 
     for exp in expectations:
@@ -933,8 +1134,21 @@ def print_timing_table(
             actual_chars.append(s)
         actual_str = "".join(actual_chars)
 
+        # Margins
+        margin_str = ""
+        if show_margins and tl_results is not None:
+            tl_result = tl_results.get(exp.lang)
+            if tl_result is not None and tl_result.recommended is not None:
+                headroom, missing = compute_solution_margins(
+                    td, exp, batches, tl_result.recommended
+                )
+                hr_str = f"{headroom:6.1f}x" if headroom is not None else "     - "
+                ms_str = f"{missing:5.1f}x" if missing is not None else "    - "
+                margin_str = f"  {hr_str}  {ms_str}"
+
         info(
-            f"  {name:{name_width}}  {lang_str:>6}  {times_str}  {exp_str:>8}  {actual_str:>6}"
+            f"  {name:{name_width}}  {lang_str:>6}  {times_str}"
+            f"  {exp_str:>8}  {actual_str:>6}{margin_str}"
         )
 
 
@@ -955,7 +1169,15 @@ def print_results(
             continue
 
         if result.valid_min is not None and result.valid_max is not None:
-            info(f"    Valid range: [{result.valid_min:.3f}s, {result.valid_max:.3f}s]")
+            if result.valid_min < result.valid_max:
+                info(
+                    f"    Valid range: [{result.valid_min:.3f}s, {result.valid_max:.3f}s]"
+                )
+            else:
+                warning(
+                    f"    Conflicting range: [{result.valid_min:.3f}s, {result.valid_max:.3f}s] "
+                    f"(min > max, no valid timelimit exists)"
+                )
         elif result.valid_min is not None:
             info(f"    Valid range: [{result.valid_min:.3f}s, +inf)")
         elif result.valid_max is not None:
@@ -1083,7 +1305,7 @@ def run(args: ArgsFindlimits) -> None:
         ("progdir", "pythoncmd", "memorylimit", "quiet", "compile", "execute"),
     )
     Config.rus_time = False
-    Config.fail_skip = False
+    Config.fail_skip = True
     Config.threads = args.threads if args.threads else Config.get_cpu_corecount(0.25)
 
     os.system(f"{Config.os_config.cmd_python} --version")
@@ -1166,124 +1388,62 @@ def run(args: ArgsFindlimits) -> None:
     if cached_data:
         infob(f"\nLoaded {len(cached_data)} cached results from {cache_path}")
 
-    # === Adaptive multi-pass execution ===
+    # === Adaptive execution with integrated retry ===
     infob("\n===== Running Solutions =====")
 
-    # Baseline times per language: lang -> {batch -> max_time}
-    baseline_times: dict[Langs.Lang, dict[str, float]] = defaultdict(dict)
+    # Baseline: per-language list of per-solution max-batch-times.
+    # Each solution contributes one value: its slowest non-TLE batch time.
+    # P75 across solutions protects against outlier solutions inflating caps.
+    baseline_max_times: dict[Langs.Lang, list[float]] = defaultdict(list)
     timing_data: dict[str, SolutionTimingData] = {}
+
+    # Build a lookup from solution name to expectation for retry logic
+    exp_by_name: dict[str, SolutionExpectation] = {
+        exp.solution.name: exp for exp in expectations
+    }
 
     # Pre-populate baselines from cache
     for td in cached_data.values():
         lang = Langs.Lang(td.lang) if td.lang != "unknown" else Langs.Lang.unknown
-        for batch, t in td.batch_max_times.items():
-            if t is not None:
-                if batch not in baseline_times[lang] or t < baseline_times[lang][batch]:
-                    baseline_times[lang][batch] = t
+        non_tle_times = [t for t in td.batch_max_times.values() if t is not None]
+        if non_tle_times:
+            baseline_max_times[lang].append(max(non_tle_times))
 
     for sol in solutions:
         name = Path(sol.name).name
         lang = Langs.from_filename(name)
+        exp = exp_by_name.get(sol.name)
 
-        # Check cache: reuse if the solution was already run with a sufficient cap
+        # Check cache: reuse if data is complete or cap was sufficient.
+        # Complete data = all batches have actual times (no TLEs), so a
+        # higher cap would not reveal anything new.
         cap = compute_timelimit_cap(
             sol,
-            baseline_times.get(lang, {}),
+            baseline_max_times.get(lang, []),
             args.baseline_multiplier,
             args.max_timelimit,
         )
+        used_cache = False
         if sol.name in cached_data:
             td = cached_data[sol.name]
-            if td.timelimit_used >= cap:
+            all_complete = all(t is not None for t in td.batch_max_times.values())
+            if all_complete or td.timelimit_used >= cap:
                 infob(f"  Using cached data for {name}")
                 timing_data[sol.name] = td
-                # Update baselines
-                for batch, t in td.batch_max_times.items():
-                    if t is not None:
-                        cur = baseline_times[lang].get(batch)
-                        if cur is None or t < cur:
-                            baseline_times[lang][batch] = t
-                continue
+                used_cache = True
             else:
                 infob(
                     f"  Cache stale for {name} "
                     f"(cached cap={td.timelimit_used:.2f}s < needed={cap:.2f}s)"
                 )
 
-        infob(f"\n  Running {name} (cap={cap:.2f}s)")
+        if not used_cache:
+            infob(f"\n  Running {name} (cap={cap:.2f}s)")
 
-        # Run solution on all inputs
-        results = run_solution_on_inputs(
-            sol,
-            inputs,
-            args.indir,
-            args.outdir,
-            args.outext,
-            args.tempext,
-            checker,
-            timedelta(seconds=cap),
-            Config.threads,
-        )
+            # Compute must_pass_batches for early abort on unexpected TLE
+            must_pass = get_must_pass_batches(exp, batches)
 
-        # Collect timing data
-        td = collect_timing_data(sol, results, cap)
-        timing_data[sol.name] = td
-
-        # Update baselines
-        for batch, t in td.batch_max_times.items():
-            if t is not None:
-                cur = baseline_times[lang].get(batch)
-                if cur is None or t < cur:
-                    baseline_times[lang][batch] = t
-
-        # Save cache incrementally
-        cached_data[sol.name] = td
-        save_cache(cache_path, cached_data)
-
-    # === Retry loop: rerun solutions that TLE'd on expected-pass batches ===
-    # Keep retrying with progressively higher caps until all expected-pass
-    # batches finish, or max_timelimit is reached.
-    retry_round = 0
-    while True:
-        retry_needed = find_solutions_needing_retry(timing_data, expectations, batches)
-        if not retry_needed:
-            break
-
-        retry_round += 1
-        infob(f"\n===== Retry Pass {retry_round} ({len(retry_needed)} solutions) =====")
-
-        any_progress = False
-        for exp, tle_batches in retry_needed:
-            sol = exp.solution
-            name = Path(sol.name).name
-            lang = exp.lang
-            td = timing_data[sol.name]
-
-            retry_cap = compute_retry_cap(
-                td,
-                baseline_times.get(lang, {}),
-                args.baseline_multiplier,
-                args.max_timelimit,
-            )
-
-            if retry_cap <= td.timelimit_used:
-                # Already at max_timelimit, can't retry higher
-                warning(
-                    f"  {name}: already at max cap "
-                    f"({td.timelimit_used:.2f}s), cannot retry higher"
-                )
-                continue
-
-            infob(
-                f"\n  Retrying {name} (cap={retry_cap:.2f}s, "
-                f"was={td.timelimit_used:.2f}s, "
-                f"TLE batches: {', '.join(tle_batches)})"
-            )
-
-            any_progress = True
-
-            # Rerun on ALL inputs (simpler than filtering by batch; the
-            # overhead of rerunning fast batches is minimal)
+            # Run solution on all inputs
             results = run_solution_on_inputs(
                 sol,
                 inputs,
@@ -1292,30 +1452,87 @@ def run(args: ArgsFindlimits) -> None:
                 args.outext,
                 args.tempext,
                 checker,
-                timedelta(seconds=retry_cap),
+                timedelta(seconds=cap),
                 Config.threads,
+                must_pass_batches=must_pass,
+                can_retry=cap < args.max_timelimit,
             )
 
-            # Collect new timing data, replacing old
-            new_td = collect_timing_data(sol, results, retry_cap)
-            timing_data[sol.name] = new_td
+            # Collect timing data
+            td = collect_timing_data(sol, results, cap)
+            timing_data[sol.name] = td
 
-            # Update baselines (only if new time is LOWER than existing)
-            for batch, t in new_td.batch_max_times.items():
-                if t is not None:
-                    cur = baseline_times[lang].get(batch)
-                    if cur is None or t < cur:
-                        baseline_times[lang][batch] = t
-
-            # Save cache
-            cached_data[sol.name] = new_td
+            # Save cache incrementally
+            cached_data[sol.name] = td
             save_cache(cache_path, cached_data)
 
-        if not any_progress:
-            # All remaining solutions are already at max cap
-            break
+        # === Integrated retry: retry this solution if it has TLE on must-pass
+        # batches (works for both freshly-run and cache-loaded data) ===
+        if exp is not None:
+            while True:
+                retry_needed = find_solutions_needing_retry(timing_data, [exp], batches)
+                if not retry_needed:
+                    break
 
-    # === Compute timelimits ===
+                _, tle_batches = retry_needed[0]
+                prev_cap = timing_data[sol.name].timelimit_used
+                retry_cap = compute_retry_cap(prev_cap, args.max_timelimit)
+
+                if retry_cap <= prev_cap:
+                    if used_cache:
+                        # Cache had TLE at max cap — nothing more we can do
+                        warning(
+                            f"  {name}: cached at max cap "
+                            f"({prev_cap:.2f}s), still has TLE on "
+                            f"batches: {', '.join(tle_batches)}"
+                        )
+                    else:
+                        warning(
+                            f"  {name}: already at max cap "
+                            f"({prev_cap:.2f}s), cannot retry higher"
+                        )
+                    break
+
+                infob(
+                    f"  Retrying {name} (cap={retry_cap:.2f}s, "
+                    f"was={prev_cap:.2f}s, "
+                    f"TLE batches: {', '.join(tle_batches)})"
+                )
+
+                # Only rerun the TLE'd batches (all are must-pass)
+                tle_batch_set = set(tle_batches)
+                retry_results = run_solution_on_inputs(
+                    sol,
+                    inputs,
+                    args.indir,
+                    args.outdir,
+                    args.outext,
+                    args.tempext,
+                    checker,
+                    timedelta(seconds=retry_cap),
+                    Config.threads,
+                    only_batches=tle_batch_set,
+                    must_pass_batches=tle_batch_set,
+                    can_retry=retry_cap < args.max_timelimit,
+                )
+
+                # Merge retry results into existing timing data
+                retry_td = collect_timing_data(sol, retry_results, retry_cap)
+                td = merge_timing_data(timing_data[sol.name], retry_td)
+                timing_data[sol.name] = td
+
+                # Save cache after each retry run
+                cached_data[sol.name] = td
+                save_cache(cache_path, cached_data)
+
+        # Update baselines with final timing data for this solution.
+        # Each solution contributes its max non-TLE batch time.
+        td = timing_data[sol.name]
+        non_tle_times = [t for t in td.batch_max_times.values() if t is not None]
+        if non_tle_times:
+            baseline_max_times[lang].append(max(non_tle_times))
+
+    # === Phase 2: Compute initial timelimits ===
     infob("\n===== Computing Timelimits =====")
 
     # Group by language
@@ -1331,8 +1548,116 @@ def run(args: ArgsFindlimits) -> None:
         )
         tl_results[lang] = result
 
+    # === Phase 3: Robustness verification ===
+    # Check must-TLE batches that TLE'd at caps close to the recommended TL.
+    # Rerun at higher caps to find actual times. Recompute. Iterate until
+    # stable or valid range gap is wide enough.
+    sol_by_name: dict[str, Solution] = {sol.name: sol for sol in solutions}
+    MAX_VERIFICATION_ROUNDS = 3
+    GAP_THRESHOLD = 10.0  # Stop if valid range gap >= 10x
+
+    for verification_round in range(MAX_VERIFICATION_ROUNDS):
+        # Check if any language needs verification
+        any_needs_verification = False
+        for lang in langs_present:
+            result = tl_results[lang]
+            if result.recommended is None:
+                continue
+
+            # Skip if valid range gap is already wide enough
+            gap = valid_range_gap(result)
+            if gap >= GAP_THRESHOLD:
+                continue
+
+            to_verify = find_must_tle_needing_verification(
+                timing_data, expectations, batches, result.recommended
+            )
+            # Filter to this language's solutions
+            lang_to_verify = [
+                (exp, vbatches) for exp, vbatches in to_verify if exp.lang == lang
+            ]
+            if not lang_to_verify:
+                continue
+
+            any_needs_verification = True
+            infob(
+                f"\n===== Robustness Verification (round {verification_round + 1}) "
+                f"for {lang.name} ====="
+            )
+
+            for exp, uncertain_batches in lang_to_verify:
+                sol = sol_by_name.get(exp.solution.name)
+                if sol is None:
+                    continue
+                name = Path(sol.name).name
+                td = timing_data[sol.name]
+                prev_cap = td.timelimit_used
+
+                # Rerun at a higher cap to discover actual times
+                verify_cap = compute_retry_cap(prev_cap, args.max_timelimit)
+                if verify_cap <= prev_cap:
+                    infob(
+                        f"  {name}: already at max cap ({prev_cap:.2f}s), "
+                        f"cannot verify batches: {', '.join(uncertain_batches)}"
+                    )
+                    continue
+
+                infob(
+                    f"  Verifying {name} (cap={verify_cap:.2f}s, "
+                    f"was={prev_cap:.2f}s, "
+                    f"uncertain batches: {', '.join(uncertain_batches)})"
+                )
+
+                verify_batch_set = set(uncertain_batches)
+                verify_results = run_solution_on_inputs(
+                    sol,
+                    inputs,
+                    args.indir,
+                    args.outdir,
+                    args.outext,
+                    args.tempext,
+                    checker,
+                    timedelta(seconds=verify_cap),
+                    Config.threads,
+                    only_batches=verify_batch_set,
+                    # No early abort: we want to discover actual times
+                    can_retry=False,
+                )
+
+                verify_td = collect_timing_data(sol, verify_results, verify_cap)
+                td = merge_timing_data(timing_data[sol.name], verify_td)
+                timing_data[sol.name] = td
+
+                # Report discoveries
+                for batch in uncertain_batches:
+                    t = td.batch_max_times.get(batch)
+                    if t is not None:
+                        infob(
+                            f"    {name} batch {batch}: actual time "
+                            f"{t:.3f}s (was TLE at {prev_cap:.2f}s)"
+                        )
+                    else:
+                        infob(
+                            f"    {name} batch {batch}: still TLE at {verify_cap:.2f}s"
+                        )
+
+                # Save cache after each verification run
+                cached_data[sol.name] = td
+                save_cache(cache_path, cached_data)
+
+        if not any_needs_verification:
+            break
+
+        # Recompute timelimits with updated data
+        infob("\n  Recomputing timelimits after verification...")
+        for lang in langs_present:
+            result = compute_timelimit_for_language(
+                lang, timing_data, expectations, batches
+            )
+            tl_results[lang] = result
+
     # === Output ===
-    print_timing_table(timing_data, expectations, batches)
+    print_timing_table(timing_data, expectations, batches, tl_results)
     print_results(tl_results, batches)
     print_warnings(timing_data, expectations, batches, tl_results)
 
