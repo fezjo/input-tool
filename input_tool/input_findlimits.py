@@ -7,6 +7,7 @@ import math
 import os
 import re
 import threading
+import time
 import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -51,6 +52,13 @@ from input_tool.input_tester import (
 # ==================== Expectation Parsing ====================
 
 BATCH_RESULT_RE = re.compile(r"^[OWTE]{2,}$")
+
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def strip_ansi(s: str) -> str:
+    """Remove ANSI escape codes from string for width calculation."""
+    return ANSI_RE.sub("", s)
 
 
 @dataclass
@@ -175,15 +183,27 @@ class SolutionTimingData:
     timelimit_used: float
 
 
-def load_cache(cache_path: Path) -> dict[str, SolutionTimingData]:
-    """Load cached timing data from file. Returns dict keyed by solution name."""
+def load_cache(
+    cache_path: Path,
+) -> tuple[dict[str, SolutionTimingData], Optional[float]]:
+    """Load cached timing data from file.
+
+    Returns (cache_data, last_start_time).
+    """
     if not cache_path.exists():
-        return {}
+        return {}, None
+
     try:
         with open(cache_path, "r") as f:
             data = json.load(f)
+
+        last_start = data.get("last_start") if isinstance(data, dict) else None
+
+        # Handle old format where data was a list
+        entries = data if isinstance(data, list) else data.get("entries", [])
+
         result = {}
-        for entry in data:
+        for entry in entries:
             td = SolutionTimingData(
                 name=entry["name"],
                 lang=entry["lang"],
@@ -192,14 +212,18 @@ def load_cache(cache_path: Path) -> dict[str, SolutionTimingData]:
                 timelimit_used=entry["timelimit_used"],
             )
             result[td.name] = td
-        return result
+        return result, last_start
     except (json.JSONDecodeError, KeyError, TypeError) as e:
         warning(f"Failed to load cache: {e!r}")
-        return {}
+        return {}, None
 
 
-def save_cache(cache_path: Path, data: dict[str, SolutionTimingData]) -> None:
-    """Save timing data to cache file."""
+def save_cache(
+    cache_path: Path,
+    data: dict[str, SolutionTimingData],
+    last_start: float,
+) -> None:
+    """Save timing data to cache file with last_start timestamp."""
     entries = []
     for td in data.values():
         entries.append(
@@ -212,7 +236,7 @@ def save_cache(cache_path: Path, data: dict[str, SolutionTimingData]) -> None:
             }
         )
     with open(cache_path, "w") as f:
-        json.dump(entries, f, indent=2)
+        json.dump({"last_start": last_start, "entries": entries}, f, indent=2)
 
 
 # ==================== Execution ====================
@@ -1022,53 +1046,133 @@ def print_expectations(
 
 def compute_solution_margins(
     td: SolutionTimingData,
-    exp: SolutionExpectation,
     batches: list[str],
     recommended_tl: float,
 ) -> tuple[Optional[float], Optional[float]]:
     """Compute headroom and missing margins for a single solution.
 
-    Headroom: recommended_TL / max(must-pass batch times).
+    Headroom: recommended_TL / max(batch times that pass at recommended_TL).
     How much faster the solution runs than the timelimit.
     E.g., 3.1x means the solution is 3.1x faster than the limit.
 
-    Missing: min(must-TLE batch times that finished) / recommended_TL.
+    Missing: time_of_next_batch / recommended_TL.
     How much slower the solution would need to be to lose one more batch.
     E.g., 2.0x means the next harder batch takes 2x the timelimit.
 
     Returns (headroom, missing) where None means not computable.
-    Only meaningful for positional expectations.
     """
-    if not exp.positional or exp.batch_string is None:
+    # Get all batch times that are known (not TLE)
+    batch_times: list[tuple[str, float]] = []
+    for batch in batches:
+        t = td.batch_max_times.get(batch)
+        if t is not None:
+            batch_times.append((batch, t))
+
+    if not batch_times:
         return None, None
 
-    # Collect must-pass batch times (O/W/E)
-    must_pass_times: list[float] = []
-    # Collect must-TLE batch times (T) that actually finished
-    must_tle_times: list[float] = []
+    # Sort by time
+    batch_times.sort(key=lambda x: x[1])
 
-    for batch, expected_char in zip(batches, exp.batch_string):
-        t = td.batch_max_times.get(batch)
-        if expected_char in ("O", "W", "E"):
-            if t is not None:
-                must_pass_times.append(t)
-        elif expected_char == "T":
-            if t is not None:
-                must_tle_times.append(t)
+    # Find how many pass at recommended_tl
+    pass_count = sum(1 for _, t in batch_times if t <= recommended_tl)
 
-    headroom = None
-    if must_pass_times:
-        max_pass_time = max(must_pass_times)
+    if pass_count == 0:
+        headroom = None
+    else:
+        # Headroom = recommended / max time of passing batches
+        max_pass_time = max(t for _, t in batch_times[:pass_count])
         if max_pass_time > 0:
             headroom = recommended_tl / max_pass_time
+        else:
+            headroom = None
 
-    missing = None
-    if must_tle_times:
-        min_tle_time = min(must_tle_times)
-        if recommended_tl > 0:
-            missing = min_tle_time / recommended_tl
+    # Missing = time of next batch / recommended
+    if pass_count < len(batch_times):
+        next_batch_time = batch_times[pass_count][1]
+        missing = next_batch_time / recommended_tl
+    else:
+        missing = None
 
     return headroom, missing
+
+
+def compute_outcome_at_timelimit_non_positional(
+    td: SolutionTimingData,
+    batches: list[str],
+    timelimit: float,
+) -> str:
+    """Compute batch outcome string for non-positional expectations.
+
+    Preserves the actual status (O, W, E) but changes it to T if the batch
+    would exceed the timelimit. TLE'd batches always remain T.
+    Output is in the original batch order.
+    """
+    result = []
+
+    for batch in batches:
+        t = td.batch_max_times.get(batch)
+        s = td.batch_statuses.get(batch, "?")
+
+        if s == "T":
+            # TLE'd at original cap - would also TLE at any lower timelimit
+            result.append("T")
+        elif t is not None:
+            # Has actual time - check if it fits in timelimit
+            if t <= timelimit:
+                result.append(s)  # Keep original status (O, W, E)
+            else:
+                result.append("T")
+        else:
+            # Unknown status - skip
+            result.append("?")
+
+    return "".join(result)
+
+    return "".join(result)
+
+
+def compute_batch_outcome_at_timelimit(
+    td: SolutionTimingData,
+    batches: list[str],
+    timelimit: float,
+) -> str:
+    """Compute what the batch outcomes would be at a given timelimit.
+
+    For each batch:
+    - If we have an actual time and it's <= timelimit: O
+    - If we have an actual time and it's > timelimit: T
+    - If the batch TLE'd at the original cap (no actual time):
+      - We know it exceeded the cap (> timelimit_used), which is > timelimit
+      - So it would also TLE at any lower timelimit: T
+    """
+    result = []
+    for batch in batches:
+        t = td.batch_max_times.get(batch)
+        s = td.batch_statuses.get(batch)
+        if t is not None:
+            result.append(s if t <= timelimit else "T")
+        else:
+            # TLE'd at original cap, so it definitely exceeds timelimit too
+            result.append("T")
+    return "".join(result)
+
+
+def highlight_differences(expected: str, actual: str) -> str:
+    """Highlight characters that differ between expected and actual.
+
+    Uses ANSI escape codes to highlight differences in yellow bold.
+    """
+    if len(expected) != len(actual):
+        return actual
+
+    result = []
+    for e, a in zip(expected, actual):
+        if e != a:
+            result.append(f"\033[1;33m{a}\033[0m")  # yellow bold
+        else:
+            result.append(a)
+    return "".join(result)
 
 
 def print_timing_table(
@@ -1080,8 +1184,8 @@ def print_timing_table(
     """Print detailed timing table for all solutions."""
     infob("\n===== Timing Data =====")
 
-    # Check if we can show margins
-    show_margins = tl_results is not None and any(
+    # Check if we can show with-recommended column
+    show_with_recommended = tl_results is not None and any(
         r.recommended is not None for r in tl_results.values()
     )
 
@@ -1093,17 +1197,27 @@ def print_timing_table(
     )
     name_width = max(name_width, 8)
     batch_header = "  ".join(f"{'B' + b:>7}" for b in batches)
-    margin_header = "  Headroom  Missing" if show_margins else ""
-    info(
-        f"  {'Solution':{name_width}}  {'Lang':>6}  {batch_header}"
-        f"  Expected  Actual{margin_header}"
-    )
-    margin_sep = "  --------  -------" if show_margins else ""
-    info(
-        f"  {'-' * name_width}  {'-' * 6}  "
-        f"{'  '.join(['-' * 7] * len(batches))}"
-        f"  --------  ------{margin_sep}"
-    )
+
+    if show_with_recommended:
+        info(
+            f"  {'Solution':{name_width}}  {'Lang':>6}  {batch_header}"
+            f"  Encountered  Expected  W/Recomm  Headroom  Missing"
+        )
+        info(
+            f"  {'-' * name_width}  {'-' * 6}  "
+            f"{'  '.join(['-' * 7] * len(batches))}"
+            f"  -----------  --------  --------  --------  -------"
+        )
+    else:
+        info(
+            f"  {'Solution':{name_width}}  {'Lang':>6}  {batch_header}"
+            f"  Encountered  Expected  Headroom  Missing"
+        )
+        info(
+            f"  {'-' * name_width}  {'-' * 6}  "
+            f"{'  '.join(['-' * 7] * len(batches))}"
+            f"  -----------  --------  --------  -------"
+        )
 
     for exp in expectations:
         td = timing_data.get(exp.solution.name)
@@ -1127,29 +1241,66 @@ def print_timing_table(
         else:
             exp_str = "  -   "
 
-        # Actual batch string
-        actual_chars = []
+        # Encountered batch string (actual result at cap used)
+        encountered_chars = []
         for batch in batches:
             s = td.batch_statuses.get(batch, "?")
-            actual_chars.append(s)
-        actual_str = "".join(actual_chars)
+            encountered_chars.append(s)
+        encountered_str = "".join(encountered_chars)
 
-        # Margins
-        margin_str = ""
-        if show_margins and tl_results is not None:
+        # Compute margins
+        headroom, missing = None, None
+        if tl_results is not None:
             tl_result = tl_results.get(exp.lang)
             if tl_result is not None and tl_result.recommended is not None:
                 headroom, missing = compute_solution_margins(
-                    td, exp, batches, tl_result.recommended
+                    td, batches, tl_result.recommended
                 )
-                hr_str = f"{headroom:6.1f}x" if headroom is not None else "     - "
-                ms_str = f"{missing:5.1f}x" if missing is not None else "    - "
-                margin_str = f"  {hr_str}  {ms_str}"
+        hr_str = f"{headroom:.1f}x" if headroom is not None else "-  "
+        ms_str = f"{missing:.1f}x" if missing is not None else "-  "
+        margin_str = f"{hr_str:>8}  {ms_str:>7}"
 
-        info(
-            f"  {name:{name_width}}  {lang_str:>6}  {times_str}"
-            f"  {exp_str:>8}  {actual_str:>6}{margin_str}"
-        )
+        # With Recommended: what would happen at recommended TL
+        with_recommended_str = ""
+        if show_with_recommended and tl_results is not None:
+            tl_result = tl_results.get(exp.lang)
+            if tl_result is not None and tl_result.recommended is not None:
+                # Compute with-recommended outcome
+                if exp.positional and exp.batch_string:
+                    with_recommended_str = compute_batch_outcome_at_timelimit(
+                        td, batches, tl_result.recommended
+                    )
+                    # Highlight differences from expected
+                    if with_recommended_str != exp.batch_string:
+                        a, b = exp.batch_string, with_recommended_str
+                        with_recommended_str = highlight_differences(a, b)
+                        exp_str = highlight_differences(b, a)
+                elif exp.expected_ok_count is not None:
+                    # Non-positional: compute outcome string at recommended TL
+                    with_recommended_str = compute_outcome_at_timelimit_non_positional(
+                        td, batches, tl_result.recommended
+                    )
+                else:
+                    with_recommended_str = "(-)"
+
+        if show_with_recommended:
+            # Pad columns accounting for ANSI escape codes
+            encountered_padded = f"{encountered_str:<11}"
+            exp_padded = " " * (8 - len(strip_ansi(exp_str))) + exp_str
+            # For with_recommended, calculate display width (strip ANSI)
+            with_padded = with_recommended_str + " " * (
+                8 - len(strip_ansi(with_recommended_str))
+            )
+
+            info(
+                f"  {name:{name_width}}  {lang_str:>6}  {times_str}"
+                f"  {encountered_padded}  {exp_padded}  {with_padded}  {margin_str}"
+            )
+        else:
+            info(
+                f"  {name:{name_width}}  {lang_str:>6}  {times_str}"
+                f"  {encountered_str:<11}  {exp_str:>8}  {margin_str}"
+            )
 
 
 def print_results(
@@ -1350,6 +1501,21 @@ def run(args: ArgsFindlimits) -> None:
         if isinstance(s, Solution) and not isinstance(s, Validator)
     ]
 
+    # Collect source/executable paths that were compiled (for cache invalidation)
+    source_mtimes: dict[str, float] = {}
+    for sol in solutions:
+        # Check if source is newer than cache (for interpreted languages)
+        if sol.source_path and sol.source_path.exists():
+            source_mtimes[sol.name] = sol.source_path.stat().st_mtime
+        # Check if executable is newer than cache (for compiled languages)
+        if sol.executable_path and sol.executable_path.exists():
+            # Use whichever is newer
+            exe_mtime = sol.executable_path.stat().st_mtime
+            if sol.name in source_mtimes:
+                source_mtimes[sol.name] = max(source_mtimes[sol.name], exe_mtime)
+            else:
+                source_mtimes[sol.name] = exe_mtime
+
     # Set display config
     for s in solutions:
         Config.cmd_maxlen = max(Config.cmd_maxlen, len(s.name))
@@ -1382,11 +1548,27 @@ def run(args: ArgsFindlimits) -> None:
     expectations = build_expectations(solutions, num_batches)
     print_expectations(expectations, batches)
 
-    # Load cache
+    # Load cache first (before we know source_mtimes)
     cache_path = Path(args.outdir) / CACHE_FILENAME
-    cached_data = load_cache(cache_path)
+    cached_data, last_start = load_cache(cache_path)
     if cached_data:
         infob(f"\nLoaded {len(cached_data)} cached results from {cache_path}")
+
+    # Invalidate cache entries where source was modified after last_start
+    if last_start is not None:
+        stale_entries = [
+            name
+            for name, td in cached_data.items()
+            if source_mtimes.get(name, 0) > last_start
+        ]
+        for name in stale_entries:
+            del cached_data[name]
+        if stale_entries:
+            infob(f"  Invalidated {len(stale_entries)} stale cache entries")
+
+    # Record new start time (will be saved to cache)
+    current_start = time.time()
+    save_cache(cache_path, cached_data, current_start)
 
     # === Adaptive execution with integrated retry ===
     infob("\n===== Running Solutions =====")
@@ -1464,7 +1646,7 @@ def run(args: ArgsFindlimits) -> None:
 
             # Save cache incrementally
             cached_data[sol.name] = td
-            save_cache(cache_path, cached_data)
+            save_cache(cache_path, cached_data, current_start)
 
         # === Integrated retry: retry this solution if it has TLE on must-pass
         # batches (works for both freshly-run and cache-loaded data) ===
@@ -1523,7 +1705,7 @@ def run(args: ArgsFindlimits) -> None:
 
                 # Save cache after each retry run
                 cached_data[sol.name] = td
-                save_cache(cache_path, cached_data)
+                save_cache(cache_path, cached_data, current_start)
 
         # Update baselines with final timing data for this solution.
         # Each solution contributes its max non-TLE batch time.
@@ -1643,7 +1825,7 @@ def run(args: ArgsFindlimits) -> None:
 
                 # Save cache after each verification run
                 cached_data[sol.name] = td
-                save_cache(cache_path, cached_data)
+                save_cache(cache_path, cached_data, current_start)
 
         if not any_needs_verification:
             break

@@ -100,9 +100,9 @@ def test_findlimits_basic_recommended_timelimit(case_dir):
     # The recommended TL should be strictly between the fastest must_pass
     # (~0.05s + Python overhead) and the slowest must_tle (~0.5s + overhead).
     # With Python startup overhead, actual times are higher, so use generous bounds.
-    assert 0.03 < tl < 1.0, (
-        f"Recommended timelimit {tl:.3f}s is outside expected range (0.03, 1.0)"
-    )
+    assert (
+        0.03 < tl < 1.0
+    ), f"Recommended timelimit {tl:.3f}s is outside expected range (0.03, 1.0)"
 
 
 @pytest.mark.timing_sensitive
@@ -124,9 +124,9 @@ def test_findlimits_basic_valid_range(case_dir):
     # valid_max should be around 0.5s (sol-2-slow batch 3 time) + Python overhead
     # With baseline_multiplier=15, sol-2-slow should actually finish batch 3
     # so we should get a concrete upper bound.
-    assert 0.3 < high < 1.5, (
-        f"valid_max {high:.3f}s is outside expected range (0.3, 1.5)"
-    )
+    assert (
+        0.3 < high < 1.5
+    ), f"valid_max {high:.3f}s is outside expected range (0.3, 1.5)"
 
     # The range should be non-degenerate: low < high
     assert low < high, f"Invalid range: [{low:.3f}, {high:.3f}]"
@@ -139,9 +139,9 @@ def test_findlimits_basic_all_constraints_satisfied(case_dir):
     output = _run_findlimits(workdir)
 
     # Should say "All N constraints satisfied"
-    assert re.search(r"All \d+ constraints satisfied", output), (
-        f"Not all constraints satisfied:\n{output}"
-    )
+    assert re.search(
+        r"All \d+ constraints satisfied", output
+    ), f"Not all constraints satisfied:\n{output}"
 
 
 @pytest.mark.timing_sensitive
@@ -161,9 +161,9 @@ def test_findlimits_basic_recommended_flag(case_dir):
     output = _run_findlimits(workdir)
 
     # Should have a recommended -t flag line like "Recommended -t flag: py=0.2"
-    assert re.search(r"Recommended -t flag:\s+py=[\d.]+", output), (
-        f"No recommended -t flag found:\n{output}"
-    )
+    assert re.search(
+        r"Recommended -t flag:\s+py=[\d.]+", output
+    ), f"No recommended -t flag found:\n{output}"
 
 
 @pytest.mark.timing_sensitive
@@ -186,9 +186,9 @@ def test_findlimits_basic_cache_reuse(case_dir):
 
     # Results should be identical
     recommended2 = _parse_recommended(output2)
-    assert recommended1 == recommended2, (
-        f"Cached results differ: {recommended1} != {recommended2}"
-    )
+    assert (
+        recommended1 == recommended2
+    ), f"Cached results differ: {recommended1} != {recommended2}"
 
 
 @pytest.mark.timing_sensitive
@@ -204,9 +204,9 @@ def test_findlimits_cache_retry_on_tle(case_dir):
         workdir, extra_args=["--max-timelimit", "0.3", "--baseline-multiplier", "3"]
     )
     # Should mention max cap warning (can't retry beyond 0.3s)
-    assert "max cap" in output1.lower() or "cannot retry" in output1.lower(), (
-        f"Expected max cap warning in first run:\n{output1}"
-    )
+    assert (
+        "max cap" in output1.lower() or "cannot retry" in output1.lower()
+    ), f"Expected max cap warning in first run:\n{output1}"
 
     # Cache file should exist
     cache_file = workdir / "test" / ".findlimits_cache.json"
@@ -222,9 +222,9 @@ def test_findlimits_cache_retry_on_tle(case_dir):
     # Should mention "cached" (sol-4-outlier loaded from cache)
     assert "cached" in output2.lower(), f"Second run doesn't mention cache:\n{output2}"
     # Should mention "Retrying" (sol-4-outlier.py gets retried from cached TLE)
-    assert "retrying" in output2.lower(), (
-        f"Second run doesn't retry cached TLE:\n{output2}"
-    )
+    assert (
+        "retrying" in output2.lower()
+    ), f"Second run doesn't retry cached TLE:\n{output2}"
     # sol-4-outlier.py batch 4 should now have actual time (~0.6s), not TLE
     assert "sol-4-outlier.py" in output2
     # Should NOT show "needs rerun" for sol-4-outlier anymore
@@ -389,9 +389,9 @@ def test_retry_discovers_actual_time(case_dir):
         if "sol-4-outlier.py" in line and "OOOO" in line:
             found_outlier_actual = True
             break
-    assert found_outlier_actual, (
-        f"sol-4-outlier.py should show OOOO after retry:\n{output}"
-    )
+    assert (
+        found_outlier_actual
+    ), f"sol-4-outlier.py should show OOOO after retry:\n{output}"
 
 
 @pytest.mark.timing_sensitive
@@ -400,9 +400,9 @@ def test_retry_all_constraints_satisfied(case_dir):
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
     output = _run_findlimits_retry(workdir)
 
-    assert re.search(r"All \d+ constraints satisfied", output), (
-        f"Not all constraints satisfied after retry:\n{output}"
-    )
+    assert re.search(
+        r"All \d+ constraints satisfied", output
+    ), f"Not all constraints satisfied after retry:\n{output}"
 
 
 @pytest.mark.timing_sensitive
@@ -429,9 +429,9 @@ def test_retry_partial_solution_not_retried(case_dir):
     # the outlier is retried, not the partial solution.
     retrying_lines = [line for line in output.splitlines() if "Retrying " in line]
     for line in retrying_lines:
-        assert "sol-2-partial.py" not in line, (
-            f"sol-2-partial.py should not be retried:\n{output}"
-        )
+        assert (
+            "sol-2-partial.py" not in line
+        ), f"sol-2-partial.py should not be retried:\n{output}"
 
 
 @pytest.mark.timing_sensitive
@@ -448,9 +448,9 @@ def test_retry_iterates_until_success(case_dir):
         for line in output.splitlines()
         if "Retrying" in line and "sol-4-outlier.py" in line
     ]
-    assert len(retrying_lines) >= 2, (
-        f"Expected at least 2 retries for outlier, got {len(retrying_lines)}:\n{output}"
-    )
+    assert (
+        len(retrying_lines) >= 2
+    ), f"Expected at least 2 retries for outlier, got {len(retrying_lines)}:\n{output}"
 
 
 # ==================== Unit Tests for Retry/Outlier Functions ====================
@@ -481,9 +481,9 @@ class TestRobustMax:
         normal_max = _robust_max(normal)
         outlier_result = _robust_max(with_outlier)
         # With outlier, P75 should be much less than 1.5
-        assert outlier_result < 0.5, (
-            f"Outlier should not dominate: got {outlier_result}"
-        )
+        assert (
+            outlier_result < 0.5
+        ), f"Outlier should not dominate: got {outlier_result}"
         # But should still be >= normal max (since P75 of 5 values
         # is at index 3 which is 0.08)
         assert outlier_result >= normal_max - 0.01
@@ -813,9 +813,9 @@ class TestLowerBoundConstraints:
         # valid_min should be based on real constraints only (0.1s from sol-fast)
         # not the lower_bound from sol-slow's TLE at 0.5s
         assert result.valid_min is not None
-        assert result.valid_min < 0.5, (
-            f"valid_min {result.valid_min} should not include lower_bound time 0.5"
-        )
+        assert (
+            result.valid_min < 0.5
+        ), f"valid_min {result.valid_min} should not include lower_bound time 0.5"
 
         # There should be unsatisfied lower_bound constraints
         assert not result.all_satisfied
@@ -1024,8 +1024,7 @@ class TestComputeSolutionMargins:
             batch_statuses={"1": "O", "2": "O"},
             timelimit_used=1.0,
         )
-        exp = self._make_expectation("sol", "OO")
-        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        headroom, missing = compute_solution_margins(td, ["1", "2"], 1.0)
         # headroom = 1.0 / 0.3 = 3.33
         assert headroom is not None
         assert abs(headroom - 1.0 / 0.3) < 0.01
@@ -1040,8 +1039,7 @@ class TestComputeSolutionMargins:
             batch_statuses={"1": "O", "2": "O"},
             timelimit_used=10.0,
         )
-        exp = self._make_expectation("sol", "TT")
-        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        headroom, missing = compute_solution_margins(td, ["1", "2"], 1.0)
         assert headroom is None
         # missing = min(2.0, 5.0) / 1.0 = 2.0
         assert missing is not None
@@ -1056,8 +1054,7 @@ class TestComputeSolutionMargins:
             batch_statuses={"1": "O", "2": "O", "3": "O"},
             timelimit_used=5.0,
         )
-        exp = self._make_expectation("sol", "OOT")
-        headroom, missing = compute_solution_margins(td, exp, ["1", "2", "3"], 1.0)
+        headroom, missing = compute_solution_margins(td, ["1", "2", "3"], 1.0)
         assert headroom is not None
         assert abs(headroom - 1.0 / 0.3) < 0.01
         assert missing is not None
@@ -1072,8 +1069,7 @@ class TestComputeSolutionMargins:
             batch_statuses={"1": "O", "2": "T"},
             timelimit_used=1.0,
         )
-        exp = self._make_expectation("sol", "OT")
-        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
+        headroom, missing = compute_solution_margins(td, ["1", "2"], 1.0)
         assert headroom is not None
         assert abs(headroom - 10.0) < 0.01  # 1.0 / 0.1
         assert missing is None
@@ -1087,35 +1083,26 @@ class TestComputeSolutionMargins:
             batch_statuses={"1": "O", "2": "W", "3": "O"},
             timelimit_used=5.0,
         )
-        exp = self._make_expectation("sol", "OWT")
-        headroom, missing = compute_solution_margins(td, exp, ["1", "2", "3"], 1.0)
+        headroom, missing = compute_solution_margins(td, ["1", "2", "3"], 1.0)
         # max must-pass time includes W batch: max(0.1, 0.5) = 0.5
         assert headroom is not None
         assert abs(headroom - 2.0) < 0.01
         assert missing is not None
         assert abs(missing - 3.0) < 0.01
 
-    def test_non_positional_returns_none(self):
-        """Non-positional expectations: margins not computed."""
-        from unittest.mock import MagicMock
-
-        from input_tool.common.commands import Langs
-
-        sol = MagicMock()
-        sol.name = "sol"
-        exp = SolutionExpectation(
-            solution=sol,
-            lang=Langs.Lang.python,
-            expected_ok_count=2,
-            positional=False,
-        )
+    def test_non_positional_returns_values(self):
+        """Non-positional expectations: margins work based on batch times."""
         td = SolutionTimingData(
             name="sol",
             lang="python",
-            batch_max_times={"1": 0.1, "2": 0.3},
-            batch_statuses={"1": "O", "2": "O"},
-            timelimit_used=1.0,
+            batch_max_times={"1": 0.1, "2": 0.3, "3": 5.0},
+            batch_statuses={"1": "O", "2": "O", "3": "O"},
+            timelimit_used=10.0,
         )
-        headroom, missing = compute_solution_margins(td, exp, ["1", "2"], 1.0)
-        assert headroom is None
-        assert missing is None
+        headroom, missing = compute_solution_margins(td, ["1", "2", "3"], 1.0)
+        # 0.1 and 0.3 pass, 0.3 is the max pass time
+        assert headroom is not None
+        assert abs(headroom - 1.0 / 0.3) < 0.01
+        # 5.0 is the next batch that would fail
+        assert missing is not None
+        assert abs(missing - 5.0) < 0.01
