@@ -65,6 +65,7 @@
 itool s . # priečinok so zadanie.md
 itool g .
 itool t .
+itool fl .
 
 # o pomoc požiadame `itool [podpríkaz] -h`, napríklad:
 itool t -h
@@ -280,6 +281,12 @@ itool test -t "3,cpp=0.5,py=5" sols .
 itool test -R vzorove-riesenie.py
 itool test . vzor* ries* program2.cpp cokolvek.py
 ```
+
+## Ostatné podpríkazy
+- `itool compile` (alebo `c`) - kompiluje riešenia, validátory a checkera
+- `itool autogenerate` (alebo `ag`) - vygeneruje vstupy a výstupy podľa IDF podľa vzorového riešenia
+- `itool findlimits` (alebo `fl`) - nájde vhodné časové limity pre jednotlivé jazyky aby spĺňali očakávané výsledky (OK/WA/EXC a TLE) všetkých riešení
+- `itool checkupdates` - skontroluje, či je dostupná nová verzia input-toolu
 
 # Pokročilé
 

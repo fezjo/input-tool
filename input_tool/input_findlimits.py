@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # © 2026 fezjo
 # Find optimal per-language timelimits from solution expectations.
-import atexit
 import json
 import math
 import os
@@ -9,15 +8,13 @@ import re
 import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 from input_tool.common.commands import Config, Langs, natural_sort_key
 from input_tool.common.messages import (
     BufferedLogger,
-    Color,
-    Logger,
     ParallelLoggerManager,
     Status,
     default_logger,
@@ -25,7 +22,6 @@ from input_tool.common.messages import (
     info,
     infob,
     plain,
-    serialize_for_json,
     stylized_tqdm,
     warning,
 )
@@ -33,7 +29,7 @@ from input_tool.common.parser.specifications import ArgsFindlimits
 from input_tool.common.programs.checker import Checker
 from input_tool.common.programs.solution import Solution
 from input_tool.common.programs.validator import Validator
-from input_tool.common.task_history import TASK_HISTORY, TaskHistory
+from input_tool.common.task_history import TASK_HISTORY
 from input_tool.common.task_queue import TaskItem, TaskQueue
 from input_tool.common.tools_common import (
     check_data_folder_size,
@@ -256,7 +252,6 @@ def run_solution_on_inputs(
     lang = Langs.from_filename(Path(sol.name).name)
     Config.timelimits = {Langs.Lang.unknown: timelimit, lang: timelimit}
     Config.warn_timelimits = {Langs.Lang.unknown: timedelta(0)}
-    Config.fail_skip = False
 
     # Reset solution statistics
     sol.statistics = Solution.Statistics(
@@ -306,9 +301,8 @@ def run_solution_on_inputs(
                     ifile, ofile, tfile, checker, False, logger, callbacks
                 )
 
-                # Check correctness via checker if applicable
+                # Clear warn-TLE flag since findlimits doesn't use warntimelimits
                 if status == Status.ok and run_times is not None:
-                    warntle = timedelta(0)
                     status = status.set_warntle(False)
 
                 sol.record(ifile, status, run_times)
@@ -423,7 +417,7 @@ def compute_timelimit_cap(
     if not baseline_times:
         return max_timelimit
 
-    max_baseline = max(baseline_times.values()) if baseline_times else 0.1
+    max_baseline = max(baseline_times.values())
     cap = baseline_multiplier * max_baseline
     # Don't go below a reasonable minimum or above max
     return max(0.1, min(cap, max_timelimit))
@@ -596,6 +590,7 @@ def compute_timelimit_for_language(
     valid_min = max(must_pass_times) if must_pass_times else 0.0
     valid_max = min(must_tle_times) if must_tle_times else float("inf")
 
+    unsatisfied: list[str]
     if valid_min < valid_max:
         # Valid range exists - recommend geometric mean
         if valid_max == float("inf"):
@@ -787,7 +782,7 @@ def print_results(
     # Print ratios between languages
     lang_results = {lang: r for lang, r in results.items() if r.recommended is not None}
     if len(lang_results) > 1:
-        langs = sorted(lang_results.keys(), key=lambda l: l.name)
+        langs = sorted(lang_results.keys(), key=lambda lang: lang.name)
         infob("\n  Language ratios:")
         base_lang = langs[0]
         base_tl = lang_results[base_lang].recommended
@@ -800,7 +795,7 @@ def print_results(
     # Print recommended -t flag
     if lang_results:
         parts = []
-        for lang in sorted(lang_results.keys(), key=lambda l: l.name):
+        for lang in sorted(lang_results.keys(), key=lambda lang: lang.name):
             r = lang_results[lang]
             if r.recommended is not None:
                 ext = Langs.ext[lang][0] if Langs.ext[lang] else lang.name
@@ -849,6 +844,26 @@ def print_warnings(
                         f"{name} batch {batch}: expected OK but got {actual_status} "
                         f"(time={format_time(actual_time).strip()})"
                     )
+
+        elif exp.expected_ok_count is not None:
+            # Score-based: check if the actual score matches at the recommended TL
+            num_would_pass = 0
+            num_wa = 0
+            for batch in batches:
+                s = td.batch_statuses.get(batch, "?")
+                t = td.batch_max_times.get(batch)
+                if s == "O" and t is not None and t <= recommended_tl:
+                    num_would_pass += 1
+                elif s in ("W", "E"):
+                    num_wa += 1
+
+            if num_would_pass != exp.expected_ok_count:
+                warning(
+                    f"{name}: expected {exp.expected_ok_count} OK batches "
+                    f"but would get {num_would_pass} at timelimit "
+                    f"{recommended_tl:.2f}s"
+                    + (f" ({num_wa} WA/EXC)" if num_wa > 0 else "")
+                )
 
         # Warn if verdict tag doesn't match observations
         if exp.verdict_tag == "TLE":
@@ -980,25 +995,30 @@ def run(args: ArgsFindlimits) -> None:
         lang = Langs.from_filename(name)
 
         # Check cache: reuse if the solution was already run with a sufficient cap
-        if sol.name in cached_data:
-            td = cached_data[sol.name]
-            infob(f"  Using cached data for {name}")
-            timing_data[sol.name] = td
-            # Update baselines
-            for batch, t in td.batch_max_times.items():
-                if t is not None:
-                    cur = baseline_times[lang].get(batch)
-                    if cur is None or t < cur:
-                        baseline_times[lang][batch] = t
-            continue
-
-        # Compute timelimit cap for this solution
         cap = compute_timelimit_cap(
             sol,
             baseline_times.get(lang, {}),
             args.baseline_multiplier,
             args.max_timelimit,
         )
+        if sol.name in cached_data:
+            td = cached_data[sol.name]
+            if td.timelimit_used >= cap:
+                infob(f"  Using cached data for {name}")
+                timing_data[sol.name] = td
+                # Update baselines
+                for batch, t in td.batch_max_times.items():
+                    if t is not None:
+                        cur = baseline_times[lang].get(batch)
+                        if cur is None or t < cur:
+                            baseline_times[lang][batch] = t
+                continue
+            else:
+                infob(
+                    f"  Cache stale for {name} "
+                    f"(cached cap={td.timelimit_used:.2f}s < needed={cap:.2f}s)"
+                )
+
         infob(f"\n  Running {name} (cap={cap:.2f}s)")
 
         # Run solution on all inputs
@@ -1035,7 +1055,7 @@ def run(args: ArgsFindlimits) -> None:
     # Group by language
     langs_present = sorted(
         set(e.lang for e in expectations if e.lang != Langs.Lang.unknown),
-        key=lambda l: l.name,
+        key=lambda lang: lang.name,
     )
 
     tl_results: dict[Langs.Lang, TimelimitResult] = {}
