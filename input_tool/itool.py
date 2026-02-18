@@ -78,6 +78,12 @@ def run_autogenerate(args: itool_parser.specs.ArgsAutogenerate):
     run_tester(args_tester)
 
 
+def run_findlimits(args: itool_parser.specs.ArgsFindlimits):
+    from input_tool.input_findlimits import run
+
+    run(args)
+
+
 def run_colortest(args: itool_parser.specs.ArgsGeneric):
     from input_tool.common.messages import color_test
 
@@ -103,6 +109,7 @@ def main():
         "test": run_tester,
         "compile": run_compile,
         "autogenerate": run_autogenerate,
+        "findlimits": run_findlimits,
         "colortest": run_colortest,
         "checkupdates": run_checkupdates,
     }

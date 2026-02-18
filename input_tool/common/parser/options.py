@@ -408,6 +408,30 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, Optional[str]]
         },
         "running",
     ),
+    # findlimits
+    "baseline_multiplier": (
+        ("--baseline-multiplier",),
+        {
+            "dest": "baseline_multiplier",
+            "default": 3.0,
+            "type": float,
+            "metavar": "MULT",
+            "help": "[?] multiplier on baseline time to set timelimit cap "
+            + "for subsequent solutions (default: {})",
+        },
+        "testing",
+    ),
+    "max_timelimit": (
+        ("--max-timelimit",),
+        {
+            "dest": "max_timelimit",
+            "default": 30.0,
+            "type": float,
+            "metavar": "SEC",
+            "help": "[?] maximum timelimit cap for initial runs in seconds (default: {})",
+        },
+        "testing",
+    ),
     # target
     "description": (
         ("description",),

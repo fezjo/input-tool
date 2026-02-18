@@ -284,6 +284,71 @@ class ArgsAutogenerate:
         self.description = Path(self.description) if self.description else None
 
 
+short_description_findlimits = (
+    "Find optimal per-language timelimits from solution expectations."
+)
+description_findlimits = """
+Find timelimits.
+Determine per-language time limits so that solution batch results match
+expectations encoded in filenames (e.g. sol-75-OOOT or sol-3-TLE).
+Runs solutions adaptively, fastest first, to minimize total runtime.
+"""
+
+options_findlimits = [
+    "help",
+    "full_help",
+    "indir",
+    "outdir",
+    "progdir",
+    "inext",
+    "outext",
+    "tempext",
+    "compile",
+    "execute",
+    "colorful",
+    "quiet",
+    "cleartemp",
+    "clearbin",
+    "memorylimit",
+    "diffcmd",
+    "baseline_multiplier",
+    "max_timelimit",
+    "pythoncmd_test",
+    "threads_test",
+    "programs",
+]
+
+
+@dataclass
+class ArgsFindlimits:
+    full_help: bool
+    indir: Directory
+    outdir: Directory
+    progdir: Directory
+    inext: str
+    outext: str
+    tempext: str
+    compile: bool
+    execute: bool
+    colorful: bool
+    quiet: bool
+    cleartemp: bool
+    clearbin: bool
+    memorylimit: float
+    diffcmd: str
+    baseline_multiplier: float
+    max_timelimit: float
+    pythoncmd: str
+    threads: int
+    programs: list[str]
+    deprecated: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.indir = Path(self.indir)
+        self.outdir = Path(self.outdir)
+        self.progdir = Path(self.progdir)
+
+
 description_colortest = """
 Test colors.
 Test color support of terminal by printing all of them and exit.
@@ -305,6 +370,7 @@ Args = Union[
     ArgsTester,
     ArgsCompile,
     ArgsAutogenerate,
+    ArgsFindlimits,
 ]
 
 ArgsT = TypeVar(
@@ -314,6 +380,7 @@ ArgsT = TypeVar(
     ArgsTester,
     ArgsCompile,
     ArgsAutogenerate,
+    ArgsFindlimits,
 )
 
 

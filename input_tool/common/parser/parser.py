@@ -158,6 +158,13 @@ class UnifiedParser:
             specs.short_description_autogenerate,
             specs.options_autogenerate,
         )
+        self.findlimits_parser, self.findlimits_fh_parser = self.add_subparser(
+            "findlimits",
+            ("fl",),
+            specs.description_findlimits,
+            specs.short_description_findlimits,
+            specs.options_findlimits,
+        )
         self.colortest_parser, self.colortest_fh_parser = self.add_subparser(
             "colortest",
             (),
@@ -184,6 +191,8 @@ class UnifiedParser:
             "c": "compile",
             "autogenerate": "autogenerate",
             "ag": "autogenerate",
+            "findlimits": "findlimits",
+            "fl": "findlimits",
             "colortest": "colortest",
             "checkupdates": "checkupdates",
         }
@@ -212,6 +221,11 @@ class UnifiedParser:
                 self.autogenerate_parser,
                 self.autogenerate_fh_parser,
                 specs.ArgsAutogenerate,
+            ),
+            "findlimits": (
+                self.findlimits_parser,
+                self.findlimits_fh_parser,
+                specs.ArgsFindlimits,
             ),
             "colortest": (
                 self.colortest_parser,
