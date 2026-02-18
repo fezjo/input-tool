@@ -435,6 +435,9 @@ class TimelimitConstraint:
     kind: str  # "must_pass" (timelimit > time) or "must_tle" (timelimit < time)
     time: float  # The observed runtime (or cap if TLE)
     weight: float = 1.0  # For optimization when constraints conflict
+    lower_bound: bool = (
+        False  # True if time is only a lower bound (TLE'd, actual unknown)
+    )
 
 
 @dataclass
@@ -486,13 +489,16 @@ def compute_timelimit_for_language(
                             )
                         )
                     elif actual_status == "T":
-                        # TLE'd but expected to finish - use cap as lower bound
+                        # TLE'd but expected to finish — actual time unknown.
+                        # Use cap as lower bound; this constraint cannot be
+                        # meaningfully satisfied without retry.
                         constraints.append(
                             TimelimitConstraint(
                                 exp.solution.name,
                                 batch,
                                 "must_pass",
                                 td.timelimit_used,
+                                lower_bound=True,
                             )
                         )
                 elif expected_char == "T":
@@ -555,17 +561,59 @@ def compute_timelimit_for_language(
                         TimelimitConstraint(exp.solution.name, batch, "must_pass", t)
                     )
             else:
-                # Some currently-OK batches need to become TLE
-                # The fastest `num_ok` batches must pass
-                must_pass = ok_batches_observed[:num_ok]
-                # The slowest (num_ok_observed - num_ok) must TLE
-                must_tle = ok_batches_observed[num_ok:]
+                # Some currently-OK batches need to become TLE.
+                # Constraint: we can only TLE OK batches whose time is
+                # strictly above the max WA/EXC time, because any timelimit
+                # that would TLE a faster OK batch would also TLE slower
+                # WA/EXC batches (preventing them from producing their
+                # wrong output).
+                max_wa_time = (
+                    max(t for _b, t, _s in wa_batches_observed)
+                    if wa_batches_observed
+                    else 0.0
+                )
 
-                for batch, t, _s in must_pass:
+                # Split OK batches into those that CAN be TLE'd (above
+                # max WA time) and those that CANNOT.
+                tle_eligible = [
+                    (b, t, s) for b, t, s in ok_batches_observed if t > max_wa_time
+                ]
+                tle_ineligible = [
+                    (b, t, s) for b, t, s in ok_batches_observed if t <= max_wa_time
+                ]
+
+                num_to_tle = num_ok_observed - num_ok
+                num_can_tle = len(tle_eligible)
+
+                if num_can_tle >= num_to_tle:
+                    # Enough eligible batches: TLE the slowest eligible ones
+                    # (they are farthest from the boundary and easiest to
+                    # TLE), keep the rest as must_pass. All ineligible are
+                    # must_pass.
+                    # tle_eligible is already sorted ascending (subset of
+                    # ok_batches_observed which was sorted).
+                    must_pass_from_eligible = tle_eligible[: num_can_tle - num_to_tle]
+                    must_tle_list = tle_eligible[num_can_tle - num_to_tle :]
+                    must_pass_list = tle_ineligible + must_pass_from_eligible
+                else:
+                    # Not enough eligible batches above WA time. TLE all
+                    # eligible ones. The remaining needed TLEs come from
+                    # the slowest ineligible batches, which will create
+                    # inherent conflicts with WA must_pass constraints.
+                    must_tle_list = list(tle_eligible)
+                    remaining = num_to_tle - num_can_tle
+                    # From ineligible, TLE the slowest ones (end of sorted
+                    # list). These will conflict with WA must_pass.
+                    must_tle_from_ineligible = tle_ineligible[-remaining:]
+                    must_pass_from_ineligible = tle_ineligible[:-remaining]
+                    must_tle_list.extend(must_tle_from_ineligible)
+                    must_pass_list = must_pass_from_ineligible
+
+                for batch, t, _s in must_pass_list:
                     constraints.append(
                         TimelimitConstraint(exp.solution.name, batch, "must_pass", t)
                     )
-                for batch, t, _s in must_tle:
+                for batch, t, _s in must_tle_list:
                     constraints.append(
                         TimelimitConstraint(exp.solution.name, batch, "must_tle", t)
                     )
@@ -583,16 +631,21 @@ def compute_timelimit_for_language(
             unsatisfied=["No timing constraints found"],
         )
 
-    # Compute valid range
-    must_pass_times = [c.time for c in constraints if c.kind == "must_pass"]
+    # Compute valid range (exclude lower_bound constraints — their times are
+    # only lower bounds, so they shouldn't tighten valid_min beyond what we
+    # actually know).
+    must_pass_times = [
+        c.time for c in constraints if c.kind == "must_pass" and not c.lower_bound
+    ]
     must_tle_times = [c.time for c in constraints if c.kind == "must_tle"]
+    lower_bound_constraints = [c for c in constraints if c.lower_bound]
 
     valid_min = max(must_pass_times) if must_pass_times else 0.0
     valid_max = min(must_tle_times) if must_tle_times else float("inf")
 
     unsatisfied: list[str]
-    if valid_min < valid_max:
-        # Valid range exists - recommend geometric mean
+    if valid_min < valid_max and not lower_bound_constraints:
+        # Valid range exists and no uncertain constraints
         if valid_max == float("inf"):
             recommended = valid_min * 1.5
         else:
@@ -601,11 +654,21 @@ def compute_timelimit_for_language(
         num_satisfied = len(constraints)
         unsatisfied = []
     else:
-        # No valid range - find best compromise
+        # No valid range, or some constraints have unknown actual times.
+        # Find best compromise considering all constraints.
+        if valid_min < valid_max:
+            # Range exists but we have lower_bound constraints
+            if valid_max == float("inf"):
+                recommended = valid_min * 1.5
+            else:
+                recommended = math.sqrt(valid_min * valid_max)
+        else:
+            recommended = None  # will be set by _find_best_compromise
+
         recommended, num_satisfied, unsatisfied = _find_best_compromise(
-            constraints, valid_min, valid_max
+            constraints, valid_min, valid_max, recommended
         )
-        all_satisfied = False
+        all_satisfied = num_satisfied == len(constraints)
 
     return TimelimitResult(
         lang=lang,
@@ -624,14 +687,21 @@ def _find_best_compromise(
     constraints: list[TimelimitConstraint],
     valid_min: float,
     valid_max: float,
+    hint: Optional[float] = None,
 ) -> tuple[float, int, list[str]]:
-    """When no valid timelimit exists, find the one that satisfies most constraints."""
+    """When no valid timelimit exists, find the one that satisfies most constraints.
+
+    lower_bound constraints (from TLE'd batches with unknown actual runtime)
+    are always counted as unsatisfied, since we don't know the actual time.
+    """
     # Collect all boundary times as candidate timelimits
     candidates: set[float] = set()
     for c in constraints:
         candidates.add(c.time - 0.001)
         candidates.add(c.time + 0.001)
         candidates.add(c.time)
+    if hint is not None and hint > 0:
+        candidates.add(hint)
 
     best_tl = 0.0
     best_satisfied = -1
@@ -643,7 +713,14 @@ def _find_best_compromise(
         satisfied = 0
         unsatisfied = []
         for c in constraints:
-            if c.kind == "must_pass" and tl > c.time:
+            if c.lower_bound:
+                # Actual time unknown — always unsatisfied
+                unsatisfied.append(
+                    f"  {c.solution_name} batch {c.batch}: "
+                    f"expected pass, time>={c.time:.3f}s (TLE, needs rerun), "
+                    f"timelimit={tl:.3f}s"
+                )
+            elif c.kind == "must_pass" and tl > c.time:
                 satisfied += 1
             elif c.kind == "must_tle" and tl < c.time:
                 satisfied += 1
