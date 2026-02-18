@@ -403,6 +403,28 @@ def collect_timing_data(
     )
 
 
+def _robust_max(values: list[float], percentile: float = 75.0) -> float:
+    """Return a robust estimate of the maximum, using a high percentile.
+
+    Uses the given percentile (default P75) instead of the true max
+    to protect against a single outlier dominating the cap.
+    Falls back to the true max when there are fewer than 4 values
+    (too few for percentile to help).
+    """
+    if not values:
+        return 0.0
+    if len(values) < 4:
+        return max(values)
+    s = sorted(values)
+    idx = (len(s) - 1) * percentile / 100.0
+    lo = int(idx)
+    hi = lo + 1
+    if hi >= len(s):
+        return s[-1]
+    frac = idx - lo
+    return s[lo] * (1 - frac) + s[hi] * frac
+
+
 def compute_timelimit_cap(
     sol: Solution,
     baseline_times: dict[str, float],
@@ -412,13 +434,17 @@ def compute_timelimit_cap(
     """Compute the timelimit cap for a solution based on baseline data.
 
     For the very first solutions (no baseline), use max_timelimit.
-    Otherwise, use baseline_multiplier * max(baseline times).
+    Otherwise, use baseline_multiplier * robust_max(baseline times).
+
+    Uses P75 instead of max to protect against outlier batches where one
+    solution is disproportionately slow, preventing inflated caps for
+    subsequent solutions.
     """
     if not baseline_times:
         return max_timelimit
 
-    max_baseline = max(baseline_times.values())
-    cap = baseline_multiplier * max_baseline
+    robust_baseline = _robust_max(list(baseline_times.values()))
+    cap = baseline_multiplier * robust_baseline
     # Don't go below a reasonable minimum or above max
     return max(0.1, min(cap, max_timelimit))
 
@@ -736,6 +762,94 @@ def _find_best_compromise(
             best_unsatisfied = unsatisfied
 
     return best_tl, best_satisfied, best_unsatisfied
+
+
+# ==================== Retry Logic ====================
+
+
+def find_solutions_needing_retry(
+    timing_data: dict[str, SolutionTimingData],
+    expectations: list[SolutionExpectation],
+    batches: list[str],
+) -> list[tuple[SolutionExpectation, list[str]]]:
+    """Find solutions that TLE'd on batches they were expected to pass.
+
+    Returns list of (expectation, [batch_names]) for solutions that need retry.
+    Only includes solutions where TLE prevents satisfying the expectation:
+    - Positional: expected O/W/E but got TLE
+    - Non-positional: not enough non-TLE batches to meet expected_ok_count
+    """
+    needs_retry: list[tuple[SolutionExpectation, list[str]]] = []
+
+    for exp in expectations:
+        td = timing_data.get(exp.solution.name)
+        if td is None:
+            continue
+
+        tle_batches: list[str] = []
+
+        if exp.positional and exp.batch_string is not None:
+            for batch, expected_char in zip(batches, exp.batch_string):
+                if expected_char in ("O", "W", "E"):
+                    actual_status = td.batch_statuses.get(batch, "?")
+                    if actual_status == "T":
+                        tle_batches.append(batch)
+        elif exp.expected_ok_count is not None:
+            # Non-positional: count how many batches passed vs expected.
+            # Only retry if the number of OK batches is LESS than expected,
+            # meaning some TLE'd batches need to pass for the expectation
+            # to be met. If we already have enough OK batches, the TLEs
+            # are acceptable (they might be the ones we want to TLE).
+            num_ok_or_wa = 0
+            all_tle_batches: list[str] = []
+            for batch in batches:
+                s = td.batch_statuses.get(batch, "?")
+                if s in ("O", "W", "E"):
+                    num_ok_or_wa += 1
+                elif s == "T":
+                    all_tle_batches.append(batch)
+
+            if num_ok_or_wa < exp.expected_ok_count:
+                # Not enough batches passed — retry all TLE'd ones
+                tle_batches = all_tle_batches
+
+        if tle_batches:
+            needs_retry.append((exp, tle_batches))
+
+    return needs_retry
+
+
+def compute_retry_cap(
+    td: SolutionTimingData,
+    baseline_times: dict[str, float],
+    baseline_multiplier: float,
+    max_timelimit: float,
+) -> float:
+    """Compute the retry cap for a solution that TLE'd.
+
+    Strategy: progressively increase from the previous cap. Uses the
+    higher of:
+    - 3x the previous cap (exponential back-off)
+    - baseline_multiplier * robust_max(baseline_times)
+    Capped at max_timelimit.
+
+    The iterative retry loop will keep calling this with increasing
+    caps until the solution finishes or max_timelimit is reached.
+    """
+    prev_cap = td.timelimit_used
+
+    # Exponential increase from previous cap
+    retry_from_prev = prev_cap * 3.0
+
+    # Also consider baseline-derived cap
+    if baseline_times:
+        robust_baseline = _robust_max(list(baseline_times.values()))
+        retry_from_baseline = baseline_multiplier * robust_baseline
+    else:
+        retry_from_baseline = max_timelimit
+
+    cap = max(retry_from_prev, retry_from_baseline)
+    return max(0.1, min(cap, max_timelimit))
 
 
 # ==================== Output Presentation ====================
@@ -1125,6 +1239,81 @@ def run(args: ArgsFindlimits) -> None:
         # Save cache incrementally
         cached_data[sol.name] = td
         save_cache(cache_path, cached_data)
+
+    # === Retry loop: rerun solutions that TLE'd on expected-pass batches ===
+    # Keep retrying with progressively higher caps until all expected-pass
+    # batches finish, or max_timelimit is reached.
+    retry_round = 0
+    while True:
+        retry_needed = find_solutions_needing_retry(timing_data, expectations, batches)
+        if not retry_needed:
+            break
+
+        retry_round += 1
+        infob(f"\n===== Retry Pass {retry_round} ({len(retry_needed)} solutions) =====")
+
+        any_progress = False
+        for exp, tle_batches in retry_needed:
+            sol = exp.solution
+            name = Path(sol.name).name
+            lang = exp.lang
+            td = timing_data[sol.name]
+
+            retry_cap = compute_retry_cap(
+                td,
+                baseline_times.get(lang, {}),
+                args.baseline_multiplier,
+                args.max_timelimit,
+            )
+
+            if retry_cap <= td.timelimit_used:
+                # Already at max_timelimit, can't retry higher
+                warning(
+                    f"  {name}: already at max cap "
+                    f"({td.timelimit_used:.2f}s), cannot retry higher"
+                )
+                continue
+
+            infob(
+                f"\n  Retrying {name} (cap={retry_cap:.2f}s, "
+                f"was={td.timelimit_used:.2f}s, "
+                f"TLE batches: {', '.join(tle_batches)})"
+            )
+
+            any_progress = True
+
+            # Rerun on ALL inputs (simpler than filtering by batch; the
+            # overhead of rerunning fast batches is minimal)
+            results = run_solution_on_inputs(
+                sol,
+                inputs,
+                args.indir,
+                args.outdir,
+                args.outext,
+                args.tempext,
+                checker,
+                timedelta(seconds=retry_cap),
+                Config.threads,
+            )
+
+            # Collect new timing data, replacing old
+            new_td = collect_timing_data(sol, results, retry_cap)
+            timing_data[sol.name] = new_td
+
+            # Update baselines (only if new time is LOWER than existing)
+            for batch, t in new_td.batch_max_times.items():
+                if t is not None:
+                    cur = baseline_times[lang].get(batch)
+                    if cur is None or t < cur:
+                        baseline_times[lang][batch] = t
+
+            # Save cache
+            cached_data[sol.name] = new_td
+            save_cache(cache_path, cached_data)
+
+        if not any_progress:
+            # All remaining solutions are already at max cap
+            break
 
     # === Compute timelimits ===
     infob("\n===== Computing Timelimits =====")
