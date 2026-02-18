@@ -1,0 +1,52 @@
+# seed maxT maxL maxB typ cif<"aA0"
+#1 T<=10 L<=3
+{id}  3 1 10 random a
+{id}  3 2 10 random a
+{id}  3 3 10 random a
+{id} 10 3 10 random a
+{id} 10 3 10 random A
+{id} 10 3 10 random 0
+{id} 10 3 10 random aA0
+{id} 10 3 10   same aA0
+
+#2 T<=10 L<=4
+{id}    10  4 10 random a
+{id}    10  4 10 random A
+{id}    10  4 10 random 0
+{id}    10  4  2 random aA0
+{id}    10  4  3 random aA0
+{id}    10  4 10 random aA0
+{id}    10  4 10   same aA0
+
+#3 T<=1000 L<=5
+{id}   1000  5 10   same aA0
+{id}   1000  5  2 random aA0
+{id}   1000  5  3 random aA0
+{id}   1000  5  5 random aA0
+{id}   1000  5 10 random aA0
+{id}   1000  5 10 random aA0
+
+#4 T<=10000 L<=6
+{id}   1000  6 10 random aA0
+{id}   1000  6 10 random aA0
+{id}   1000  6 10 random aA0
+
+#5 T<=30000 L<=8
+{id}  30000  8 10 random aA0
+{id}  30000  8 10 random aA0
+{id}  30000  8 10 random aA0
+
+#6 T<=30000 L<=10
+{id}  30000 10 10 random aA0
+{id}  30000 10 10 random aA0
+{id}  30000 10 10 random aA0
+
+#7 T<=100000 L<=12
+{id} 100000 12 10 random aA0
+{id} 100000 12 10 random aA0
+{id} 100000 12 10 random aA0
+
+#8 T<=100000 L<=19
+{id} 100000 19 10 random aA0
+{id} 100000 19 10 random aA0
+{id} 100000 19 10 random aA0
