@@ -548,7 +548,10 @@ class TimelimitConstraint:
 
     solution_name: str
     batch: str
-    kind: str  # "must_pass" (timelimit > time) or "must_tle" (timelimit < time)
+    # "must_pass" (timelimit > time, expects O),
+    # "must_finish" (timelimit > time, expects W/E),
+    # "must_tle" (timelimit < time)
+    kind: str
     time: float  # The observed runtime (or cap if TLE)
     weight: float = 1.0  # For optimization when constraints conflict
     lower_bound: bool = (
@@ -594,17 +597,9 @@ def compute_timelimit_for_language(
                 actual_time = td.batch_max_times.get(batch)
                 actual_status = td.batch_statuses.get(batch, "?")
 
-                if expected_char in ("O", "W", "E"):
+                if expected_char == "O":
                     # O: batch must pass (timelimit > actual_time)
-                    # W/E: solution must have enough time to finish and
-                    #   produce wrong output, so also timelimit > actual_time
-                    if actual_time is not None:
-                        constraints.append(
-                            TimelimitConstraint(
-                                exp.solution.name, batch, "must_pass", actual_time
-                            )
-                        )
-                    elif actual_status == "T":
+                    if actual_status == "T":
                         # TLE'd but expected to finish — actual time unknown.
                         # Use cap as lower bound; this constraint cannot be
                         # meaningfully satisfied without retry.
@@ -617,9 +612,38 @@ def compute_timelimit_for_language(
                                 lower_bound=True,
                             )
                         )
+                    elif actual_status == "O" and actual_time is not None:
+                        constraints.append(
+                            TimelimitConstraint(
+                                exp.solution.name, batch, "must_pass", actual_time
+                            )
+                        )
+                elif expected_char in ("W", "E"):
+                    # W/E: solution must have enough time to finish and
+                    # produce wrong output (timelimit > actual_time)
+                    if actual_status == "T":
+                        # TLE'd but expected to finish — actual time unknown.
+                        constraints.append(
+                            TimelimitConstraint(
+                                exp.solution.name,
+                                batch,
+                                "must_finish",
+                                td.timelimit_used,
+                                lower_bound=True,
+                            )
+                        )
+                    elif actual_status in ("W", "E") and actual_time is not None:
+                        constraints.append(
+                            TimelimitConstraint(
+                                exp.solution.name, batch, "must_finish", actual_time
+                            )
+                        )
                 elif expected_char == "T":
                     # This batch must TLE: timelimit < actual_time
-                    if actual_time is not None:
+                    if actual_status in ("O", "W", "E") and actual_time is not None:
+                        # Only add constraint if solution finished (O/W/E).
+                        # WA/EXC means solution didn't produce correct output,
+                        # which is also acceptable for "should TLE".
                         constraints.append(
                             TimelimitConstraint(
                                 exp.solution.name, batch, "must_tle", actual_time
@@ -654,12 +678,8 @@ def compute_timelimit_for_language(
             # Sort OK batches by time (ascending)
             ok_batches_observed.sort(key=lambda x: x[1])
 
-            # WA/EXC batches always need must_pass: the solution must have
-            # enough time to finish and produce its wrong answer.
-            for batch, t, _s in wa_batches_observed:
-                constraints.append(
-                    TimelimitConstraint(exp.solution.name, batch, "must_pass", t)
-                )
+            # WA/EXC batches: don't need constraints. We can't be sure if
+            # they should have been TLE'd or not without positional info.
 
             # For OK batches: determine which should remain OK vs become TLE
             if exp.verdict_tag in ("WA", "EXC"):
@@ -831,19 +851,31 @@ def _find_best_compromise(
         for c in constraints:
             if c.lower_bound:
                 # Actual time unknown — always unsatisfied
+                if c.kind == "must_pass":
+                    expected_str = "pass"
+                elif c.kind == "must_finish":
+                    expected_str = "finish"
+                else:
+                    expected_str = "TLE"
                 unsatisfied.append(
                     f"  {c.solution_name} batch {c.batch}: "
-                    f"expected pass, time>={c.time:.3f}s (TLE, needs rerun), "
+                    f"expected {expected_str}, time>={c.time:.3f}s (TLE, needs rerun), "
                     f"timelimit={tl:.3f}s"
                 )
-            elif c.kind == "must_pass" and tl > c.time:
+            elif c.kind in ("must_pass", "must_finish") and tl > c.time:
                 satisfied += 1
             elif c.kind == "must_tle" and tl < c.time:
                 satisfied += 1
             else:
+                if c.kind == "must_pass":
+                    expected_str = "pass"
+                elif c.kind == "must_finish":
+                    expected_str = "finish"
+                else:
+                    expected_str = "TLE"
                 unsatisfied.append(
                     f"  {c.solution_name} batch {c.batch}: "
-                    f"expected {'pass' if c.kind == 'must_pass' else 'TLE'}, "
+                    f"expected {expected_str}, "
                     f"time={c.time:.3f}s, timelimit={tl:.3f}s"
                 )
         if satisfied > best_satisfied:
