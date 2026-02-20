@@ -572,6 +572,8 @@ class TimelimitResult:
     num_total: int
     constraints: list[TimelimitConstraint]
     unsatisfied: list[str]  # Descriptions of unsatisfied constraints
+    best_compromise_min: Optional[float] = None  # Range where max constraints satisfied
+    best_compromise_max: Optional[float] = None
 
 
 def compute_timelimit_for_language(
@@ -780,6 +782,9 @@ def compute_timelimit_for_language(
     valid_max = min(must_tle_times) if must_tle_times else float("inf")
 
     unsatisfied: list[str]
+    best_compromise_min: Optional[float] = None
+    best_compromise_max: Optional[float] = None
+
     if valid_min < valid_max and not lower_bound_constraints:
         # Valid range exists and no uncertain constraints
         if valid_max == float("inf"):
@@ -792,18 +797,13 @@ def compute_timelimit_for_language(
     else:
         # No valid range, or some constraints have unknown actual times.
         # Find best compromise considering all constraints.
-        if valid_min < valid_max:
-            # Range exists but we have lower_bound constraints
-            if valid_max == float("inf"):
-                recommended = valid_min * 1.5
-            else:
-                recommended = math.sqrt(valid_min * valid_max)
-        else:
-            recommended = None  # will be set by _find_best_compromise
-
-        recommended, num_satisfied, unsatisfied = _find_best_compromise(
-            constraints, valid_min, valid_max, recommended
-        )
+        (
+            best_compromise_min,
+            best_compromise_max,
+            recommended,
+            num_satisfied,
+            unsatisfied,
+        ) = _find_best_compromise(constraints, valid_min, valid_max)
         all_satisfied = num_satisfied == len(constraints)
 
     return TimelimitResult(
@@ -816,6 +816,8 @@ def compute_timelimit_for_language(
         num_total=len(constraints),
         constraints=constraints,
         unsatisfied=unsatisfied,
+        best_compromise_min=best_compromise_min,
+        best_compromise_max=best_compromise_max,
     )
 
 
@@ -824,8 +826,11 @@ def _find_best_compromise(
     valid_min: float,
     valid_max: float,
     hint: Optional[float] = None,
-) -> tuple[float, int, list[str]]:
-    """When no valid timelimit exists, find the one that satisfies most constraints.
+) -> tuple[float, float, float, int, list[str]]:
+    """When no valid timelimit exists, find the range that satisfies most constraints.
+
+    Returns (range_min, range_max, recommended_tl, num_satisfied, unsatisfied_messages).
+    The recommended TL is chosen as the geometric mean of the valid range.
 
     lower_bound constraints (from TLE'd batches with unknown actual runtime)
     are always counted as unsatisfied, since we don't know the actual time.
@@ -839,13 +844,9 @@ def _find_best_compromise(
     if hint is not None and hint > 0:
         candidates.add(hint)
 
-    best_tl = 0.0
-    best_satisfied = -1
-    best_unsatisfied: list[str] = []
-
-    for tl in sorted(candidates):
+    def evaluate(tl: float) -> tuple[int, list[str]]:
         if tl <= 0:
-            continue
+            return 0, ["Timelimit must be positive"]
         satisfied = 0
         unsatisfied = []
         for c in constraints:
@@ -878,12 +879,29 @@ def _find_best_compromise(
                     f"expected {expected_str}, "
                     f"time={c.time:.3f}s, timelimit={tl:.3f}s"
                 )
-        if satisfied > best_satisfied:
-            best_satisfied = satisfied
-            best_tl = tl
-            best_unsatisfied = unsatisfied
+        return satisfied, unsatisfied
 
-    return best_tl, best_satisfied, best_unsatisfied
+    # Track satisfaction at each candidate
+    results: list[tuple[float, int, list[str]]] = []
+
+    for tl in sorted(candidates):
+        results.append((tl, *evaluate(tl)))
+
+    # Find maximum satisfaction count
+    max_satisfied = max(r[1] for r in results) if results else 0
+
+    # Find the range of timelimits achieving max satisfaction
+    best_tls = [r[0] for r in results if r[1] == max_satisfied]
+    range_min = min(best_tls)
+    range_max = max(best_tls)
+
+    # Choose recommended TL as geometric mean of the range
+    recommended = math.sqrt(range_min * range_max) if range_min > 0 else range_max
+
+    # Get unsatisfied messages at recommended TL
+    unsatisfied_at_rec = evaluate(recommended)[1]
+
+    return range_min, range_max, recommended, max_satisfied, unsatisfied_at_rec
 
 
 # ==================== Retry Logic ====================
@@ -1183,6 +1201,7 @@ def compute_batch_outcome_at_timelimit(
         t = td.batch_max_times.get(batch)
         s = td.batch_statuses.get(batch)
         if t is not None:
+            assert s is not None
             result.append(s if t <= timelimit else "T")
         else:
             # TLE'd at original cap, so it definitely exceeds timelimit too
@@ -1372,6 +1391,15 @@ def print_results(
             info(
                 f"    {result.num_satisfied}/{result.num_total} constraints satisfied."
             )
+            # Show the best compromise range
+            if (
+                result.best_compromise_min is not None
+                and result.best_compromise_max is not None
+            ):
+                info(
+                    f"    Best compromise range: "
+                    f"[{result.best_compromise_min:.3f}s, {result.best_compromise_max:.3f}s]"
+                )
             for msg in result.unsatisfied:
                 warning(msg)
 
@@ -1800,9 +1828,7 @@ def run(args: ArgsFindlimits) -> None:
             )
 
             for exp, uncertain_batches in lang_to_verify:
-                sol = sol_by_name.get(exp.solution.name)
-                if sol is None:
-                    continue
+                sol = sol_by_name[exp.solution.name]
                 name = Path(sol.name).name
                 td = timing_data[sol.name]
                 prev_cap = td.timelimit_used

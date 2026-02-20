@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import pytest
 from test_utils import copy_fixture_tree, filter_out_ansi_escape_codes, run_itool
@@ -234,9 +234,10 @@ def test_findlimits_cache_retry_on_tle(case_dir):
     outlier_needs_rerun = [
         line for line in needs_rerun_lines if "sol-4-outlier" in line
     ]
-    assert not outlier_needs_rerun, (
-        f"sol-4-outlier.py still needs rerun after retry:\n"
-        + "\n".join(outlier_needs_rerun)
+    assert (
+        not outlier_needs_rerun
+    ), "sol-4-outlier.py still needs rerun after retry:\n" + "\n".join(
+        outlier_needs_rerun
     )
 
 
@@ -753,9 +754,13 @@ class TestLowerBoundConstraints:
             TimelimitConstraint("sol2", "2", "must_pass", 0.5, lower_bound=True),
             TimelimitConstraint("sol3", "3", "must_tle", 1.0),
         ]
-        tl, satisfied, unsatisfied = _find_best_compromise(
-            constraints, 0.1, 1.0, hint=0.5
-        )
+        (
+            _range_min,
+            _range_max,
+            _tl,
+            satisfied,
+            unsatisfied,
+        ) = _find_best_compromise(constraints, 0.1, 1.0)
         # Only 2 non-lower_bound constraints can be satisfied
         assert satisfied <= 2
         # The lower_bound constraint should be in unsatisfied
