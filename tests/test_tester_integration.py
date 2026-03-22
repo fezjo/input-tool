@@ -52,11 +52,11 @@ def test_side_by_side_diff_and_statuses(case_dir):
     }
 
     expected_lines = [
-        "1 2 3 4 5 6 7 8 9 10                    1 2 3 4 5 6 7 8 9 10",
-        "11 12 13 14 15 16 17 18 19 20         | 12 12 13 14 15 16 17 18 19 20",
+        "1 2 3 4 5 6 7 8 9 10                                        1 2 3 4 5 6 7 8 9 10",
+        "11 12 13 14 15 16 17 18 19 20                             | 12 12 13 14 15 16 17 18 19 20",
         "...",
-        "81 82 83 84 85 86 87 88 89 90         | 81 82 83 84 85 86 87 89 89 90",
-        "91 92 93 94 95 96 97 98 99 100        <",
+        "81 82 83 84 85 86 87 88 89 90                             | 81 82 83 84 85 86 87 89 89 90",
+        "91 92 93 94 95 96 97 98 99 100                            <",
     ]
     normalized_output = [" ".join(line.split()) for line in out.splitlines()]
     normalized_expected = [" ".join(line.split()) for line in expected_lines]
@@ -295,6 +295,34 @@ def test_interactive_tester_auto_detects_interaktiver_variant(case_dir):
         "sol-crash.py": "WA",
         "sol-joker.py": "OK",
         "sol-noflush.py": "TLE",
+        "sol-ok.py": "OK",
+        "sol-sleep.py": "TLE",
+        "sol-stop.py": "WA",
+        "sol-wa.py": "WA",
+    }
+
+
+def test_interactive_kspjudge_uses_special_protocol_from_cwd(case_dir):
+    workdir = copy_fixture_tree("interactive_kspjudge", case_dir)
+    run_itool(["g", ".", "-g", "gen.py"], cwd=workdir)
+
+    _result, data = run_itool_json(
+        [
+            "t",
+            ".",
+            "-t",
+            "0.15",
+            "--wtime",
+            "0",
+            "-F",
+            "--no-sort",
+        ],
+        cwd=workdir,
+    )
+    by_name = {row["name"]: row["result"] for row in data}
+
+    assert by_name == {
+        "sol-crash.py": "EXC",
         "sol-ok.py": "OK",
         "sol-sleep.py": "TLE",
         "sol-stop.py": "WA",

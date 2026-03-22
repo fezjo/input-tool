@@ -2,6 +2,7 @@
 # © 2022 fezjo
 import subprocess
 from collections import defaultdict
+from enum import Enum
 from threading import Event
 from typing import Optional
 
@@ -11,42 +12,61 @@ from input_tool.common.programs.program import Program
 from input_tool.common.types import Path, ShellCommand, TempFile
 
 
+class CheckerType(Enum):
+    # just a simple byte comparator
+    diff = "diff"
+    # custom checker
+    check = "check"
+    chito = "chito"
+    test = "test"
+    tester = "tester"
+    # legacy usage, `./sol < fifo | ./check > fifo`
+    interactive_pipe = "interactive_pipe"
+    # used by KSP Judge, with additional info in task.json
+    interactive_kspjudge = "interactive_kspjudge"
+
+    def is_interactive(self) -> bool:
+        return self in (CheckerType.interactive_pipe, CheckerType.interactive_kspjudge)
+
+
 class Checker(Program):
     def __init__(self, name: str, show_output: bool = False):
         super().__init__(name)
         self.output_ready: defaultdict[Path, Event] = defaultdict(Event)
         self.show_output = show_output
-        self.is_interactive = self.which_interactive_format(name) is not None
+        checker_type = self.determine_checker_type(name)
+        if checker_type is None:
+            assert False, f"Unsupported checker {self.name}"
+        self.type = checker_type
         if name == "diff":
             self.run_cmd = ShellCommand(
-                "diff " + ("-y -W 80 --strip-trailing-cr" if show_output else "-q")
+                "diff " + ("-y -W 120 --strip-trailing-cr" if show_output else "-q")
             )
             self.compilecmd = None
             self.force_execute = True
 
     @staticmethod
     def filename_befits(filename: str) -> bool:
-        return (
-            Checker.which_checker_format(filename) is not None
-            or Checker.which_interactive_format(filename) is not None
+        return Checker.determine_checker_type(filename) is not None
+
+    @staticmethod
+    def determine_checker_type(filename: str) -> Optional[CheckerType]:
+        basename = to_base_alnum(filename)
+        prefixes: tuple[tuple[str, CheckerType], ...] = (
+            ("diff", CheckerType.diff),
+            ("check", CheckerType.check),
+            ("chito", CheckerType.chito),
+            ("tester", CheckerType.tester),
+            ("test", CheckerType.test),
         )
-
-    @staticmethod
-    def which_checker_format(filename: str) -> Optional[str]:
-        basename = to_base_alnum(filename)
-        prefixes = ("diff", "check", "chito", "tester")
-        for prefix in prefixes:
+        for prefix, checker_type in prefixes:
             if basename.startswith(prefix):
-                return prefix
-        return None
-
-    @staticmethod
-    def which_interactive_format(filename: str) -> Optional[str]:
-        basename = to_base_alnum(filename)
-        prefixes = ("interactiver", "interaktiver")
-        for prefix in prefixes:
-            if basename.startswith(prefix):
-                return prefix
+                return checker_type
+        if basename.startswith("interactiver") or basename.startswith("interaktiver"):
+            if Path("task.json").is_file():
+                return CheckerType.interactive_kspjudge
+            else:
+                return CheckerType.interactive_pipe
         return None
 
     def compare_mask(self) -> tuple[int, int, str]:
@@ -59,20 +79,14 @@ class Checker(Program):
         tfile: TempFile,
     ) -> Optional[str]:
         diff_map = {
-            "diff": f" {ofile} {tfile}",
-            "check": f" {ifile} {ofile} {tfile}",
-            "chito": f" {ifile} {tfile} {ofile}",
-            "test": f" ./ ./ {ifile} {ofile} {tfile}",
-            "tester": f" ./ ./ {ifile} {ofile} {tfile}",
+            CheckerType.diff: f" {ofile} {tfile}",
+            CheckerType.check: f" {ifile} {ofile} {tfile}",
+            CheckerType.chito: f" {ifile} {tfile} {ofile}",
+            CheckerType.test: f" ./ ./ {ifile} {ofile} {tfile}",
+            CheckerType.tester: f" ./ ./ {ifile} {ofile} {tfile}",
         }
-        prefix = self.which_checker_format(self.name)
-        if prefix and self.run_cmd is not None:
-            return self.run_cmd + diff_map[prefix]
-        return None
-
-    def interactive_cmd(self, ifile: Path) -> Optional[str]:
-        if self.is_interactive and self.run_cmd is not None:
-            return self.run_cmd + f" {ifile}"
+        if self.run_cmd is not None and self.type in diff_map:
+            return self.run_cmd + diff_map[self.type]
         return None
 
     def check(

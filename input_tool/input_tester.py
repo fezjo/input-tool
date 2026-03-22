@@ -298,7 +298,7 @@ def build_test_tasks(
         generating_output = False
         for si, sol in enumerate(solutions):
             result_file = Path(temp_file_template.format(si))
-            if checker.is_interactive:
+            if checker.type.is_interactive():
                 is_generator = False
             else:
                 result_force = (
