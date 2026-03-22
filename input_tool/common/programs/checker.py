@@ -16,6 +16,7 @@ class Checker(Program):
         super().__init__(name)
         self.output_ready: defaultdict[Path, Event] = defaultdict(Event)
         self.show_output = show_output
+        self.is_interactive = self.which_interactive_format(name) is not None
         if name == "diff":
             self.run_cmd = ShellCommand(
                 "diff " + ("-y -W 80 --strip-trailing-cr" if show_output else "-q")
@@ -25,12 +26,24 @@ class Checker(Program):
 
     @staticmethod
     def filename_befits(filename: str) -> bool:
-        return Checker.which_checker_format(filename) is not None
+        return (
+            Checker.which_checker_format(filename) is not None
+            or Checker.which_interactive_format(filename) is not None
+        )
 
     @staticmethod
     def which_checker_format(filename: str) -> Optional[str]:
         basename = to_base_alnum(filename)
-        prefixes = ["diff", "check", "chito", "tester"]
+        prefixes = ("diff", "check", "chito", "tester")
+        for prefix in prefixes:
+            if basename.startswith(prefix):
+                return prefix
+        return None
+
+    @staticmethod
+    def which_interactive_format(filename: str) -> Optional[str]:
+        basename = to_base_alnum(filename)
+        prefixes = ("interactiver", "interaktiver")
         for prefix in prefixes:
             if basename.startswith(prefix):
                 return prefix
@@ -55,6 +68,11 @@ class Checker(Program):
         prefix = self.which_checker_format(self.name)
         if prefix and self.run_cmd is not None:
             return self.run_cmd + diff_map[prefix]
+        return None
+
+    def interactive_cmd(self, ifile: Path) -> Optional[str]:
+        if self.is_interactive and self.run_cmd is not None:
+            return self.run_cmd + f" {ifile}"
         return None
 
     def check(

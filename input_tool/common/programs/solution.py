@@ -1,5 +1,7 @@
 # © 2014 jano <janoh@ksp.sk>
 # © 2022 fezjo
+import os
+import shlex
 import subprocess
 import tempfile
 from collections import defaultdict
@@ -162,13 +164,8 @@ class Solution(Program):
     def get_timelimit(self, timelimits: Config.Timelimit) -> timedelta:
         return Config.get_timelimit(timelimits, self.extension, self.lang)
 
-    def get_exec_cmd(
-        self,
-        ifile: Path,
-        tfile: TempFile,
-        timelimit: timedelta = timedelta(0),
-        memorylimit: float = 0.0,
-    ) -> tuple[TempFile, ShellCommand]:
+    @staticmethod
+    def get_wrapper_cmds(timelimit: timedelta = timedelta(0), memorylimit: float = 0.0):
         f_timefile = tempfile.NamedTemporaryFile(delete=False)
         f_timefile.close()
         timefile = TempFile(f_timefile.name)
@@ -183,20 +180,73 @@ class Solution(Program):
             f"{osc.cmd_ulimit} -s {memorylimit_kb}",
             f"{osc.cmd_ulimit} -v {memorylimit_kb}",
         )
-        timelimit_cmd = (
-            f"{osc.cmd_timeout} {timelimit.total_seconds()}" if timelimit else ""
-        )
-        time_cmd = (
+        time_prefix = (
             f'{osc.cmd_time} -f "%e %U %S" -a -o {timefile} -q'
             if Config.rus_time
             else ""
         )
         date_cmd = f"{osc.cmd_date} +%s%N >> {timefile}"
+
+        timeout_prefix = (
+            f"{osc.cmd_timeout} {timelimit.total_seconds()}" if timelimit else ""
+        )
+
+        return timefile, ulimit_cmds, timeout_prefix, time_prefix, date_cmd
+
+    def get_exec_cmd(
+        self,
+        ifile: Path,
+        tfile: TempFile,
+        timelimit: timedelta = timedelta(0),
+        memorylimit: float = 0.0,
+    ) -> tuple[TempFile, ShellCommand]:
+        timefile, ulimit_cmds, timeout_prefix, time_prefix, date_cmd = (
+            self.get_wrapper_cmds(timelimit, memorylimit)
+        )
         prog_cmd = f"{self.run_cmd} {self.run_args(ifile)} < {ifile} > {tfile}"
         cmds = (
             *ulimit_cmds,
             date_cmd,
-            f"{time_cmd} {timelimit_cmd} {prog_cmd}",
+            f"{time_prefix} {timeout_prefix} {prog_cmd}",
+            "rc=$?",
+            date_cmd,
+            "exit $rc",
+        )
+        cmd = ShellCommand("; ".join(cmds))
+        return timefile, cmd
+
+    def get_interactive_exec_cmd(
+        self,
+        ifile: Path,
+        checker: Checker,
+        timelimit: timedelta = timedelta(0),
+        memorylimit: float = 0.0,
+    ) -> tuple[TempFile, ShellCommand]:
+        checker_cmd = checker.interactive_cmd(ifile)
+        if checker_cmd is None:
+            raise ValueError(
+                f"Checker {checker.name} does not support interactive mode"
+            )
+
+        timefile, ulimit_cmds, timeout_prefix, time_prefix, date_cmd = (
+            self.get_wrapper_cmds(timelimit, memorylimit)
+        )
+
+        f_fifo = tempfile.NamedTemporaryFile(delete=False)
+        f_fifo.close()
+        fifo = TempFile(f_fifo.name)
+        fifo_str = shlex.quote(str(fifo))
+        os.unlink(fifo)
+
+        fifo_cmd = f"trap 'rm -f {fifo_str}' EXIT; mkfifo {fifo_str}"
+        run_cmd = f"{self.run_cmd} {self.run_args(ifile)}".strip()
+        pipeline = shlex.quote(f"{run_cmd} < {fifo_str} | {checker_cmd} > {fifo_str}")
+
+        cmds = (
+            *ulimit_cmds,
+            date_cmd,
+            fifo_cmd,
+            f"{time_prefix} {timeout_prefix} sh -c {pipeline}",
             "rc=$?",
             date_cmd,
             "exit $rc",
@@ -207,13 +257,15 @@ class Solution(Program):
     def run_args(self, ifile: Path) -> str:
         return ""
 
-    def translate_exit_code_to_status(self, exit_code: int) -> Status:
+    def translate_exit_code_to_status(
+        self, exit_code: int, is_interactive: bool
+    ) -> Status:
         if exit_code == 0:
             return Status.ok
         if exit_code == 124:
             return Status.tle
         if exit_code > 0:
-            return Status.exc
+            return Status.wa if is_interactive else Status.exc
         return Status.err
 
     def get_times(
@@ -247,7 +299,13 @@ class Solution(Program):
         run_times: Optional[list[timedelta]] = None
         timelimit = self.get_timelimit(Config.timelimits)
         memorylimit = float(Config.memorylimit)
-        timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
+        is_interactive = checker is not None and checker.is_interactive
+        if is_interactive:
+            timefile, cmd = self.get_interactive_exec_cmd(
+                ifile, checker, timelimit, memorylimit
+            )
+        else:
+            timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
         try:
             if cb_was_killed():
                 return None, Status.tle
@@ -264,14 +322,16 @@ class Solution(Program):
                 TASK_HISTORY.end(self.name, self.parse_batch(ifile), str(ifile))
                 if not self.quiet and process.stderr:
                     logger.infod(process.stderr.read().decode("utf-8"))
-                status = self.translate_exit_code_to_status(process.returncode)
+                status = self.translate_exit_code_to_status(
+                    process.returncode, is_interactive
+                )
             if status == Status.tle:
                 cb_kill_siblings()
 
             run_times = self.get_times(timefile, logger)
             if not run_times and status == Status.ok:
                 status = Status.exc
-            if checker is not None and status == Status.ok:
+            if checker is not None and status == Status.ok and not is_interactive:
                 if not is_output_generator:
                     checker.output_ready[ifile].wait()
                 if checker.check(ifile, ofile, tfile, logger):

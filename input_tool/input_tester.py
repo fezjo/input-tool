@@ -297,17 +297,17 @@ def build_test_tasks(
         output_ready.clear()
         generating_output = False
         for si, sol in enumerate(solutions):
-            result_force = (
-                "temp" if generating_output else "out" if args.reset else "none"
-            )
-            result_file = get_result_file(
-                output_file,
-                Path(temp_file_template.format(si)),
-                isinstance(sol, Validator),
-                result_force,
-            )
-
-            is_generator = result_file == output_file
+            result_file = Path(temp_file_template.format(si))
+            if checker.is_interactive:
+                is_generator = False
+            else:
+                result_force = (
+                    "temp" if generating_output else "out" if args.reset else "none"
+                )
+                result_file = get_result_file(
+                    output_file, result_file, isinstance(sol, Validator), result_force
+                )
+                is_generator = result_file == output_file
             logger = parallel_logger_manager.get_sink()
             batch = Solution.parse_batch(input)
             callbacks: list[Callable] = []

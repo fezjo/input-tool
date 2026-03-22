@@ -183,3 +183,120 @@ def test_json_normalized_snapshot_contract(case_dir):
             "failedbatches": [],
         }
     ]
+
+
+def test_interactive_tester_ignores_interactiver_for_explicit_file_list(case_dir):
+    workdir = copy_fixture_tree("interactive_echo", case_dir)
+    run_itool(["g", ".", "-g", "gen.py"], cwd=workdir)
+
+    _result, data = run_itool_json(
+        [
+            "t",
+            "sol-ok.py",
+            "sol-joker.py",
+            "sol-crash.py",
+            "sol-wa.py",
+            "-t",
+            "0.15",
+            "--wtime",
+            "0",
+            "-F",
+            "--no-sort",
+        ],
+        cwd=workdir,
+    )
+
+    by_name = {row["name"]: row["result"] for row in data}
+    assert by_name == {
+        "sol-crash.py": "EXC",
+        "sol-joker.py": "WA",
+        "sol-ok.py": "OK",
+        "sol-wa.py": "WA",
+    }
+
+
+def test_interactive_tester_auto_detects_interactiver_for_directory(case_dir):
+    workdir = copy_fixture_tree("interactive_echo", case_dir)
+    run_itool(["g", ".", "-g", "gen.py"], cwd=workdir)
+
+    _result, data = run_itool_json(
+        [
+            "t",
+            ".",
+            "-t",
+            "0.15",
+            "--wtime",
+            "0",
+            "-j",
+            "4",
+            "-F",
+            "--no-sort",
+        ],
+        cwd=workdir,
+    )
+    by_name = {row["name"]: row["result"] for row in data}
+
+    assert by_name == {
+        # we are not able to distinguish solution crashing and interactiver returning wrong answer
+        "sol-crash.py": "WA",
+        "sol-joker.py": "OK",
+        "sol-noflush.py": "TLE",
+        "sol-ok.py": "OK",
+        "sol-sleep.py": "TLE",
+        "sol-stop.py": "WA",
+        "sol-wa.py": "WA",
+    }
+
+
+def test_interactive_tester_accepts_interactiver_via_diff_flag(case_dir):
+    workdir = copy_fixture_tree("interactive_echo", case_dir)
+    run_itool(["g", ".", "-g", "gen.py"], cwd=workdir)
+
+    _result, data = run_itool_json(
+        [
+            "t",
+            "sol-ok.py",
+            "sol-joker.py",
+            "-t",
+            "0.15",
+            "--wtime",
+            "0",
+            "-j",
+            "4",
+            "-F",
+            "--no-sort",
+            "-d",
+            "interactiver.py",
+        ],
+        cwd=workdir,
+    )
+    by_name = {row["name"]: row["result"] for row in data}
+
+    assert by_name == {
+        "sol-ok.py": "OK",
+        "sol-joker.py": "OK",
+    }
+
+
+def test_interactive_tester_auto_detects_interaktiver_variant(case_dir):
+    workdir = copy_fixture_tree("interactive_echo", case_dir)
+    run_itool(["g", ".", "-g", "gen.py"], cwd=workdir)
+    (workdir / "interactiver.py").rename(workdir / "interaktiver.py")
+
+    _result, data = run_itool_json(
+        ["t", ".", "-t", "0.15", "--wtime", "0", "-F", "--no-sort"],
+        cwd=workdir,
+    )
+    by_name = {row["name"]: row["result"] for row in data}
+
+    print(by_name)
+
+    assert by_name == {
+        "sol-crash.py": "WA",
+        "sol-joker.py": "OK",
+        "sol-noflush.py": "TLE",
+        "sol-ok.py": "OK",
+        "sol-sleep.py": "TLE",
+        "sol-stop.py": "WA",
+        "sol-wa.py": "WA",
+    }
