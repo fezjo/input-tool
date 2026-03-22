@@ -91,6 +91,7 @@ def test_findlimits_basic_recommended_timelimit(case_dir):
     The recommended timelimit should be the geometric mean of the range bounds.
     """
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits(workdir)
 
     recommended = _parse_recommended(output)
@@ -110,6 +111,7 @@ def test_findlimits_basic_valid_range(case_dir):
     """The valid range should span from the slowest must_pass time
     to the fastest must_tle time."""
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits(workdir)
 
     ranges = _parse_valid_range(output)
@@ -136,6 +138,7 @@ def test_findlimits_basic_valid_range(case_dir):
 def test_findlimits_basic_all_constraints_satisfied(case_dir):
     """All constraints should be satisfiable with the recommended timelimit."""
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits(workdir)
 
     # Should say "All N constraints satisfied"
@@ -148,6 +151,7 @@ def test_findlimits_basic_all_constraints_satisfied(case_dir):
 def test_findlimits_basic_wa_solution_display(case_dir):
     """sol-0-WA-wrong.py should be shown with [WA] tag in expectations."""
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits(workdir)
 
     # The expectations table should show WA tag
@@ -158,6 +162,7 @@ def test_findlimits_basic_wa_solution_display(case_dir):
 def test_findlimits_basic_recommended_flag(case_dir):
     """The output should include a recommended -t flag string."""
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits(workdir)
 
     # Should have a recommended -t flag line like "Recommended -t flag: py=0.2"
@@ -170,6 +175,7 @@ def test_findlimits_basic_recommended_flag(case_dir):
 def test_findlimits_basic_cache_reuse(case_dir):
     """Running findlimits twice should reuse cached results on the second run."""
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
 
     # First run
     output1 = _run_findlimits(workdir)
@@ -196,6 +202,7 @@ def test_findlimits_cache_retry_on_tle(case_dir):
     """When cached data has TLE on must-pass batches and max_timelimit increases,
     the retry loop should trigger for the cached solution."""
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
 
     # First run with very low max_timelimit: sol-4-outlier.py will TLE on
     # batch 4 (sleeps 0.6s) which it expects to pass (score=4 means 4/4 OK).
@@ -234,10 +241,9 @@ def test_findlimits_cache_retry_on_tle(case_dir):
     outlier_needs_rerun = [
         line for line in needs_rerun_lines if "sol-4-outlier" in line
     ]
-    assert (
-        not outlier_needs_rerun
-    ), "sol-4-outlier.py still needs rerun after retry:\n" + "\n".join(
-        outlier_needs_rerun
+    assert not outlier_needs_rerun, (
+        "sol-4-outlier.py still needs rerun after retry:\n"
+        + "\n".join(outlier_needs_rerun)
     )
 
 
@@ -245,6 +251,7 @@ def test_findlimits_cache_retry_on_tle(case_dir):
 def test_findlimits_basic_expectations_table(case_dir):
     """The output should show parsed expectations for all solutions."""
     workdir = copy_fixture_tree("findlimits_basic", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits(workdir)
 
     # Should list all three solutions
@@ -378,6 +385,7 @@ def _run_findlimits_retry(workdir: Path, extra_args: Optional[list] = None) -> s
 def test_retry_discovers_actual_time(case_dir):
     """After retry, outlier solution should have actual times (not TLE) in final table."""
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits_retry(workdir)
 
     # Should see at least one retry (inline "Retrying" message)
@@ -399,6 +407,7 @@ def test_retry_discovers_actual_time(case_dir):
 def test_retry_all_constraints_satisfied(case_dir):
     """After retry, all constraints should be satisfied."""
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits_retry(workdir)
 
     assert re.search(
@@ -410,6 +419,7 @@ def test_retry_all_constraints_satisfied(case_dir):
 def test_retry_outlier_time_in_valid_range(case_dir):
     """Outlier's batch 4 time (~0.6s) should appear in the valid range."""
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits_retry(workdir)
 
     ranges = _parse_valid_range(output)
@@ -424,6 +434,7 @@ def test_retry_outlier_time_in_valid_range(case_dir):
 def test_retry_partial_solution_not_retried(case_dir):
     """sol-2-partial.py should NOT be retried (its TLEs are expected)."""
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits_retry(workdir)
 
     # Retry sections mention "Retrying <name>". Check that only
@@ -439,6 +450,7 @@ def test_retry_partial_solution_not_retried(case_dir):
 def test_retry_iterates_until_success(case_dir):
     """With baseline_multiplier=3, retry should take multiple rounds for the outlier."""
     workdir = copy_fixture_tree("findlimits_retry", case_dir)
+    run_itool(["ag", ".", "."], cwd=workdir)
     output = _run_findlimits_retry(workdir)
 
     # Count "Retrying" lines for the outlier — should be at least 2 with

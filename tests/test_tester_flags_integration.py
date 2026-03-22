@@ -22,6 +22,7 @@ def test_default_temp_cleanup_removes_temp_files(case_dir):
 def test_keep_wa_preserves_failing_outputs_with_output_filenames(case_dir):
     workdir = copy_fixture_tree("sidebyside", case_dir)
 
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
     run_itool(["t", "--no-sort", "sol-a.py", "sol-b.py", "--keep-wa"], cwd=workdir)
 
     wa_sol_dir = workdir / "test" / "wa" / "sol-b.py"
@@ -37,6 +38,7 @@ def test_keep_wa_preserves_failing_outputs_with_output_filenames(case_dir):
 def test_wa_folder_is_kept_on_non_tester_itool_invocation(case_dir):
     workdir = copy_fixture_tree("sidebyside", case_dir)
 
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
     run_itool(["t", "--no-sort", "sol-a.py", "sol-b.py", "--keep-wa"], cwd=workdir)
     assert (workdir / "test" / "wa").exists()
 
@@ -48,6 +50,7 @@ def test_wa_folder_is_kept_on_non_tester_itool_invocation(case_dir):
 def test_wa_folder_is_cleared_on_next_tester_invocation(case_dir):
     workdir = copy_fixture_tree("sidebyside", case_dir)
 
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
     run_itool(["t", "--no-sort", "sol-a.py", "sol-b.py", "--keep-wa"], cwd=workdir)
     assert (workdir / "test" / "wa").exists()
 
