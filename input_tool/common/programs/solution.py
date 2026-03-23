@@ -24,7 +24,8 @@ def create_temp_file() -> TempFile:
 
 def create_temp_fifo() -> TempFile:
     fifo = create_temp_file()
-    os.unlink(fifo)
+    fifo.unlink()
+    os.mkfifo(fifo)
     return fifo
 
 
@@ -263,20 +264,16 @@ class Solution(Program):
     def get_interactive_wrapped_cmd(
         self,
         body_cmd: str,
-        fifo_paths: Iterable[TempFile],
         timelimit: timedelta,
         memorylimit: float,
     ) -> tuple[TempFile, ShellCommand]:
         timefile, ulimit_cmds, timeout_prefix, time_prefix, date_cmd = (
             self.get_wrapper_cmds(timelimit, memorylimit)
         )
-        fifo_clean = "rm -f " + " ".join(map(str, fifo_paths))
-        fifo_create = "; ".join(f"mkfifo {path}" for path in fifo_paths)
 
         cmds = (
             *ulimit_cmds,
             date_cmd,
-            f"trap '{fifo_clean}' EXIT; {fifo_create}",
             f"{time_prefix} {timeout_prefix} sh -c {shlex.quote(body_cmd)}",
             "rc=$?",
             date_cmd,
@@ -291,7 +288,7 @@ class Solution(Program):
         checker: Checker,
         timelimit: timedelta = timedelta(0),
         memorylimit: float = 0.0,
-    ) -> tuple[TempFile, ShellCommand]:
+    ) -> tuple[TempFile, Iterable[TempFile], ShellCommand]:
         assert checker.type == CheckerType.interactive_pipe
 
         fifo = create_temp_fifo()
@@ -299,11 +296,10 @@ class Solution(Program):
         pipeline = f"{run_cmd} < {fifo} | {checker.run_cmd} {ifile} > {fifo}"
         timefile, cmd = self.get_interactive_wrapped_cmd(
             pipeline,
-            (fifo,),
             timelimit,
             memorylimit,
         )
-        return timefile, cmd
+        return timefile, (fifo,), cmd
 
     def get_interactive_kspjudge_exec_cmd(
         self,
@@ -311,7 +307,7 @@ class Solution(Program):
         checker: Checker,
         timelimit: timedelta = timedelta(0),
         memorylimit: float = 0.0,
-    ) -> tuple[TempFile, TempFile, ShellCommand]:
+    ) -> tuple[TempFile, TempFile, Iterable[TempFile], ShellCommand]:
         assert checker.type == CheckerType.interactive_kspjudge
 
         fifo_in = create_temp_fifo()
@@ -333,11 +329,29 @@ class Solution(Program):
         )
         timefile, cmd = self.get_interactive_wrapped_cmd(
             body_cmd,
-            (fifo_in, fifo_out),
             timelimit,
             memorylimit,
         )
-        return timefile, result_file, cmd
+        return timefile, result_file, (fifo_in, fifo_out), cmd
+
+    @staticmethod
+    def apply_additional_interactive_status_policy(
+        status: Status,
+        checker_type: Optional[CheckerType],
+        result_file: Optional[TempFile],
+        logger: Logger,
+    ) -> Status:
+        if checker_type == CheckerType.interactive_pipe and status == Status.exc:
+            # with this kind of interactiver, wa is signaled by nonzero exit code
+            return Status.wa
+        if checker_type == CheckerType.interactive_kspjudge and status == Status.ok:
+            # with this kind of interactiver, there is extra information written in the result file
+            assert result_file is not None
+            verdict_status = parse_interactive_verdict(result_file, logger)
+            if verdict_status is not None:
+                return verdict_status
+            return Status.err
+        return status
 
     def run_args(self, ifile: Path) -> str:
         return ""
@@ -365,6 +379,36 @@ class Solution(Program):
             logger.warning(repr(e))
         return None
 
+    def generate_execution_parameters(
+        self, ifile: Path, tfile: TempFile, checker: Optional[Checker]
+    ) -> tuple[
+        Optional[CheckerType],
+        Iterable[TempFile],
+        Optional[TempFile],
+        TempFile,
+        ShellCommand,
+    ]:
+        timelimit = self.get_timelimit(Config.timelimits)
+        memorylimit = float(Config.memorylimit)
+        checker_type = checker.type if checker else None
+        if checker_type == CheckerType.interactive_kspjudge:
+            assert checker is not None
+            timefile, result_file, fifo_paths, cmd = (
+                self.get_interactive_kspjudge_exec_cmd(
+                    ifile, checker, timelimit, memorylimit
+                )
+            )
+            return checker_type, fifo_paths, result_file, timefile, cmd
+        elif checker_type == CheckerType.interactive_pipe:
+            assert checker is not None
+            timefile, fifo_paths, cmd = self.get_interactive_exec_cmd(
+                ifile, checker, timelimit, memorylimit
+            )
+            return checker_type, fifo_paths, None, timefile, cmd
+        else:
+            timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
+            return None, (), None, timefile, cmd
+
     def _run(
         self,
         ifile: Path,
@@ -379,21 +423,11 @@ class Solution(Program):
             logger.fatal(f"{self.name} not prepared for execution")
         cb_set_process, cb_was_killed, cb_kill_siblings = callbacks
 
+        checker_type, fifo_paths, result_file, timefile, cmd = (
+            self.generate_execution_parameters(ifile, tfile, checker)
+        )
+
         run_times: Optional[list[timedelta]] = None
-        timelimit = self.get_timelimit(Config.timelimits)
-        memorylimit = float(Config.memorylimit)
-        result_file: Optional[TempFile] = None
-        checker_type = checker.type if checker else None
-        if checker_type == CheckerType.interactive_kspjudge:
-            timefile, result_file, cmd = self.get_interactive_kspjudge_exec_cmd(
-                ifile, checker, timelimit, memorylimit
-            )
-        elif checker_type == CheckerType.interactive_pipe:
-            timefile, cmd = self.get_interactive_exec_cmd(
-                ifile, checker, timelimit, memorylimit
-            )
-        else:
-            timefile, cmd = self.get_exec_cmd(ifile, tfile, timelimit, memorylimit)
         try:
             if cb_was_killed():
                 return None, Status.tle
@@ -411,23 +445,9 @@ class Solution(Program):
                 if not self.quiet and process.stderr:
                     logger.infod(process.stderr.read().decode("utf-8"))
                 status = self.translate_exit_code_to_status(process.returncode)
-                if (
-                    checker_type == CheckerType.interactive_pipe
-                    and status == Status.exc
-                ):
-                    # with this kind of interactiver, wa is signaled by nonzero exit code
-                    status = Status.wa
-                if (
-                    checker_type == CheckerType.interactive_kspjudge
-                    and status == Status.ok
-                ):
-                    # with this kind of interactiver, there is extra information written in the result file
-                    assert result_file is not None
-                    verdict_status = parse_interactive_verdict(result_file, logger)
-                    if verdict_status is not None:
-                        status = verdict_status
-                    elif status == Status.ok:
-                        status = Status.err
+                status = self.apply_additional_interactive_status_policy(
+                    status, checker_type, result_file, logger
+                )
             if status == Status.tle:
                 cb_kill_siblings()
 
@@ -447,6 +467,9 @@ class Solution(Program):
             status = Status.err
             logger.warning(repr(e))
         finally:
+            for fifo_path in fifo_paths:
+                if fifo_path.exists():
+                    fifo_path.unlink()
             if timefile.exists():
                 timefile.unlink()
             if result_file is not None and result_file.exists():
