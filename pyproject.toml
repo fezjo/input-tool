@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "input-tool"
-version = "2.0.3"
+version = "2.1.0"
 description = "Tool which simplifies creating and testing inputs for programming contests."
 license = { text = "MIT" }
 authors = [{ name = "jablkoj (Ján Hozza)" }, { name = "fezjo (Jozef Číž)" }]
