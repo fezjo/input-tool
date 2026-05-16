@@ -6,7 +6,7 @@ RUN_DEV := $(if $(filter 1,$(USE_UV)),uv run --group dev,)
 RUN_TEST := $(if $(filter 1,$(USE_UV)),uv run --group test,)
 RUN_DEV_TEST := $(if $(filter 1,$(USE_UV)),uv run --group dev --group test,)
 
-.PHONY: help black ruff mypy test lint typecheck checkall testall
+.PHONY: help black ruff mypy test lint typecheck checkall testall audit outdated
 
 TIMING_SENSITIVE_EXPR := timing_sensitive
 
@@ -20,6 +20,8 @@ help:
 	@echo "  typecheck  Run mypy (keeps going in composed targets)"
 	@echo "  checkall   Run lint + typecheck"
 	@echo "  testall    Run pytest with black, ruff and mypy plugins"
+	@echo "  audit      Check for known vulnerabilities"
+	@echo "  outdated   Show packages behind latest"
 	@echo ""
 	@echo "Runner: $(if $(RUN),uv run (+ groups),direct)"
 
@@ -46,3 +48,9 @@ checkall: lint typecheck
 testall:
 	$(RUN_DEV_TEST) pytest --black --ruff --mypy -m "not $(TIMING_SENSITIVE_EXPR)" .
 	$(RUN_DEV_TEST) pytest -n 0 -m $(TIMING_SENSITIVE_EXPR) .
+
+audit:
+	$(RUN) uv audit --preview-features audit
+
+outdated:
+	$(RUN) uv pip list --outdated
