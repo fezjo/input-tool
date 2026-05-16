@@ -18,5 +18,5 @@ for t in range(T):
     dlzka_sifry = len(sifra)
     zaklad = max(2, len(kluc))
     for i in range(dlzka_sifry):
-        odpoved += kluc[sifra[i]]*zaklad**(dlzka_sifry-i-1)
+        odpoved += kluc[sifra[i]] * zaklad ** (dlzka_sifry - i - 1)
     print(odpoved)

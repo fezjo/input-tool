@@ -241,9 +241,10 @@ def test_findlimits_cache_retry_on_tle(case_dir):
     outlier_needs_rerun = [
         line for line in needs_rerun_lines if "sol-4-outlier" in line
     ]
-    assert not outlier_needs_rerun, (
-        "sol-4-outlier.py still needs rerun after retry:\n"
-        + "\n".join(outlier_needs_rerun)
+    assert (
+        not outlier_needs_rerun
+    ), "sol-4-outlier.py still needs rerun after retry:\n" + "\n".join(
+        outlier_needs_rerun
     )
 
 

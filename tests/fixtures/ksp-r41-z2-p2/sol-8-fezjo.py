@@ -10,6 +10,7 @@ def solve():
     res = int(mini, base)
     print(res)
 
+
 TC = int(input())
 for _ in range(TC):
     solve()

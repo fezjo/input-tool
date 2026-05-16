@@ -13,5 +13,5 @@ for t in range(T):
     dlzka_sifry = len(sifra)
     zaklad = max(2, len(kluc))
     for i in range(dlzka_sifry):
-        ans += kluc[sifra[i]]*zaklad**(dlzka_sifry-i-1)
+        ans += kluc[sifra[i]] * zaklad ** (dlzka_sifry - i - 1)
     print(ans)
