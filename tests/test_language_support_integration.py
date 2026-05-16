@@ -2,7 +2,6 @@ import shutil
 import warnings
 
 import pytest
-
 from test_utils import copy_fixture_tree, run_itool, run_itool_json
 
 

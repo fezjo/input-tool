@@ -1,5 +1,4 @@
 import pytest
-
 from test_utils import run_itool
 
 

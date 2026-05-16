@@ -1,7 +1,6 @@
 from test_utils import (
     copy_fixture_tree,
     filter_out_ansi_escape_codes,
-    get_input_files,
     run_itool,
 )
 

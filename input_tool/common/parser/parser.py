@@ -303,7 +303,7 @@ class UnifiedParser:
         if subcommand not in self.alias_mapping:
             raise NameError(f"Unrecognized subcommand {subcommand}")
         subcommand = self.alias_mapping[subcommand]
-        (_, fh_parser, container) = self.mapping[subcommand]
+        _, fh_parser, container = self.mapping[subcommand]
         delattr(args, "subcommand")
         args = container(**vars(args))
         if hasattr(args, "full_help") and args.full_help:
