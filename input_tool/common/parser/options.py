@@ -256,8 +256,8 @@ argument_options: dict[str, tuple[tuple[str, ...], ParserOptions, Optional[str]]
         ("-g", "--gen"),
         {
             "dest": "gencmd",
-            "default": "gen",
-            "help": "generator used for generating inputs (default: {})",
+            "default": None,
+            "help": "generator used for generating inputs (default: auto-detect gen.*)",
         },
         "generating",
     ),

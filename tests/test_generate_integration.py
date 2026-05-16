@@ -119,3 +119,49 @@ def test_generate_threads_parallel_generation(case_dir):
     assert get_input_files(workdir / "test") == ["1.a.in", "1.b.in"]
     assert (workdir / "test" / "1.a.in").read_text() == "10\n"
     assert (workdir / "test" / "1.b.in").read_text() == "20\n"
+
+
+def test_generate_does_not_overwrite_sample_files(case_dir):
+    workdir = copy_fixture_tree("generate_keeps_samples", case_dir)
+
+    run_itool(["s", "task.md", "--force-multi"], cwd=workdir)
+    assert (workdir / "test" / "00.sample.a.in").read_text() == "3 4\n"
+    assert (workdir / "test" / "00.sample.a.out").read_text() == "7\n"
+
+    run_itool(["g", ".", "-g", "cat"], cwd=workdir)
+
+    assert (workdir / "test" / "00.sample.a.in").read_text() == "3 4\n"
+    assert (workdir / "test" / "00.sample.a.out").read_text() == "7\n"
+    assert (workdir / "test" / "1.in").read_text() == "10\n"
+
+
+def test_generate_recompiles_when_source_changes_with_explicit_extension(case_dir):
+    workdir = copy_fixture_tree("generate_cpp", case_dir)
+
+    run_itool(["g", ".", "-g", "gen.cpp"], cwd=workdir)
+    assert (workdir / "test" / "1.in").read_text() == "3\n"
+
+    (workdir / "gen.cpp").write_text(
+        "#include<bits/stdc++.h>\nusing namespace std;\n"
+        "int main(){int n;cin>>n;cout<<n*2<<'\\n';}\n"
+    )
+
+    run_itool(["g", ".", "-g", "gen.cpp"], cwd=workdir)
+    assert (workdir / "test" / "1.in").read_text() == "6\n"
+
+
+def test_generate_recompiles_when_source_changes_without_explicit_extension(case_dir):
+    # Regression: when no -g flag is given, the default auto-detects gen.cpp and
+    # uses it as the gencmd (including extension), so freshness checking applies.
+    workdir = copy_fixture_tree("generate_cpp", case_dir)
+
+    run_itool(["g", "."], cwd=workdir)
+    assert (workdir / "test" / "1.in").read_text() == "3\n"
+
+    (workdir / "gen.cpp").write_text(
+        "#include<bits/stdc++.h>\nusing namespace std;\n"
+        "int main(){int n;cin>>n;cout<<n*2<<'\\n';}\n"
+    )
+
+    run_itool(["g", "."], cwd=workdir)
+    assert (workdir / "test" / "1.in").read_text() == "6\n"

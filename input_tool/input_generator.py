@@ -9,7 +9,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Optional
 
 from input_tool.common.check_updates import check_for_updates
-from input_tool.common.commands import Config
+from input_tool.common.commands import Config, Langs
 from input_tool.common.messages import (
     Color,
     Status,
@@ -36,6 +36,15 @@ from input_tool.common.tools_common import (
     setup_config,
 )
 from input_tool.common.types import Directory, Path
+
+
+def resolve_gencmd(gencmd: Optional[str]) -> str:
+    if gencmd is not None:
+        return gencmd
+    for ext in Langs.collect_exts(Langs.lang_all):
+        if Path(f"gen.{ext}").exists():
+            return f"gen.{ext}"
+    return "gen"
 
 
 def parse_args() -> ArgsGenerator:
@@ -78,7 +87,7 @@ def setup_indir(indir: Directory, inext: str, clear_input: bool) -> None:
         # delete only following files
         exttodel = ["in", "out", "temp", inext]
         for file in filestoclear:
-            if file.name.endswith(inext) and "sample" in file.name:
+            if "sample" in file.name:
                 info(f"  ommiting file '{file.name}'")
             elif file.suffix.lstrip(".") not in exttodel:
                 info(f"  not deleting file '{file.name}'")
@@ -147,7 +156,7 @@ def run(args: ArgsGenerator) -> None:
     recipe.inputs.sort()
 
     programs = {x: Generator(x) for x in recipe.programs}
-    gencmd = args.gencmd
+    gencmd = resolve_gencmd(args.gencmd)
     programs[gencmd] = Generator(gencmd)
     prepare_programs(programs.values(), max(4, Config.threads))
 

@@ -1,7 +1,7 @@
 # © 2024 fezjo
 from argparse import Namespace
 from dataclasses import dataclass, field
-from typing import Any, Type, TypeVar, Union
+from typing import Any, Optional, Type, TypeVar, Union
 
 from input_tool.common.types import Directory, Path
 
@@ -85,7 +85,7 @@ class ArgsGenerator:
     quiet: bool
     clearinput: bool
     clearbin: bool
-    gencmd: str
+    gencmd: Optional[str]
     idf_version: int
     pythoncmd: str
     threads: int
