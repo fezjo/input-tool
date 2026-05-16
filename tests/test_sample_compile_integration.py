@@ -135,6 +135,19 @@ def test_compile_pythoncmd_override_for_python_targets(case_dir):
     assert "Python interpreter 'definitely_missing_python' not found" in result.stdout
 
 
+def test_sample_warns_about_stale_files_when_samples_are_removed(case_dir):
+    workdir = copy_fixture_tree("sample_stale_warning", case_dir)
+
+    run_itool(["s", "task_two_samples.md", "--force-multi"], cwd=workdir)
+    assert (workdir / "test" / "00.sample.b.in").exists()
+
+    result = run_itool(["s", "task_one_sample.md", "--force-multi"], cwd=workdir)
+
+    assert "00.sample.b.in" in result.stdout
+    assert "00.sample.b.out" in result.stdout
+    assert "stale" in result.stdout
+
+
 def test_compile_boring_disables_colors(case_dir):
     workdir = copy_fixture_tree("progdir", case_dir)
 

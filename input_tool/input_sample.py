@@ -164,9 +164,21 @@ def run(args: ArgsSample) -> None:
     prepare_samples(samples)
     print_tips()
 
+    existing_sample_files = {
+        f
+        for d in (args.indir, args.outdir)
+        if d.exists()
+        for f in d.iterdir()
+        if "sample" in f.name
+    }
+
     prepare_dirs((args.indir, args.outdir))
     for sample in samples:
         sample.save()
+
+    written = {sample.get_name(sample.path, sample.ext) for sample in samples}
+    for f in sorted(existing_sample_files - written):
+        warning(f"Sample file '{f}' was not rewritten and may be stale.")
 
     info(str(default_logger.statistics))
 
